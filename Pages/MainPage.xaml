@@ -3,66 +3,104 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:DuszaVerseny2025.Pages"
              x:Class="DuszaVerseny2025.MainPage"
-             BackgroundColor="#0f0f0f">
+             BackgroundColor="#0f0f0f"
+             x:Name="RootPage">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="25"
-                                Padding="20">
+    <Grid RowSpacing="10"
+          Padding="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
+        <StackLayout Grid.Row="0"
+                     HorizontalOptions="Center"
+                     Spacing="0">
             <Label Text="DAMAREEN"
-                    HorizontalOptions="Center"
-                    FontAttributes="Bold"
-                    FontSize="28"
-                    FontFamily="RetroByte"
-                    TextColor="Black"/>
+                   HorizontalOptions="Center"
+                   FontAttributes="Bold"
+                   FontSize="28"
+                   FontFamily="RetroByte"
+                   TextColor="White"/>
             <Label Text="✝"
-                    HorizontalOptions="Center"
-                    FontSize="22"
-                    FontFamily="RetroByte"
-                    TextColor="Black"/>
+                   HorizontalOptions="Center"
+                   FontSize="22"
+                   FontFamily="RetroByte"
+                   TextColor="White"/>
+        </StackLayout>
 
-            <Label x:Name="SelectionLabel"
-                    Text="Selected: 0 / 2"
-                    FontSize="20"
-                    TextColor="#FFD700"
-                    FontAttributes="Bold"
-                    FontFamily="RetroByte"
-                    HorizontalOptions="Center"/>
-            <VerticalStackLayout Margin="0,20,0,0">
+        <Grid Grid.Row="1"
+              ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="10*"/>
+                <ColumnDefinition Width="6*"/>
+            </Grid.ColumnDefinitions>
 
-                <Label Text="Gyujtemeny"
-                        FontAttributes="Bold"
-                        FontSize="16"
-                        FontFamily="RetroByte"
-                        TextColor="#333"/>
-                <CollectionView ItemsSource="{Binding AvailableCards}"
-                                HeightRequest="700">
-                    <CollectionView.ItemsLayout>
-                        <GridItemsLayout Orientation="Vertical"
-                                         Span="3"
-                                         VerticalItemSpacing="3"
-                                         HorizontalItemSpacing="5" />
-                    </CollectionView.ItemsLayout>
+            <Grid Grid.Column="0"
+                  RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="140"/>
+                </Grid.RowDefinitions>
 
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <views:CardView BindingContext="{Binding .}" />
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
+                <Label Grid.Row="0"
+                       Text="Gyujtemeny"
+                       FontAttributes="Bold"
+                       FontSize="16"
+                       FontFamily="RetroByte"
+                       TextColor="#FFD700"/>
 
-            <VerticalStackLayout Margin="0,20,0,0">
-                <Label Text="Pakli"
-                        FontAttributes="Bold"
-                        FontFamily="RetroByte"
-                        FontSize="16"
-                        TextColor="#333"/>
-                <Border BackgroundColor="#16213e"
-                        Padding="15">
+                <Border Grid.Row="1"
+                        Padding="6"
+                        BackgroundColor="Transparent">
+                    <CollectionView ItemsSource="{Binding AvailableCards}"
+                                    VerticalOptions="FillAndExpand"
+                                    SelectionMode="None">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical"
+                                             Span="7"
+                                             VerticalItemSpacing="1"
+                                             HorizontalItemSpacing="1"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <views:CardView BindingContext="{Binding .}"
+                                                HorizontalOptions="Fill"
+                                                VerticalOptions="Fill"/>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Border>
+
+                <Label Grid.Row="2"
+                       x:Name="SelectionLabel"
+                       Text="Selected: 0 / 2"
+                       FontSize="20"
+                       TextColor="#FFD700"
+                       FontAttributes="Bold"
+                       FontFamily="RetroByte"
+                       HorizontalOptions="Center"
+                       Margin="0,6,0,6"/>
+
+                <Label Grid.Row="3"
+                       Text="Pakli"
+                       FontAttributes="Bold"
+                       FontFamily="RetroByte"
+                       FontSize="16"
+                       TextColor="#FFD700"/>
+
+                <Border Grid.Row="4"
+                        BackgroundColor="#16213e"
+                        Padding="8">
                     <CollectionView ItemsSource="{Binding SelectedCards}"
-                                    HeightRequest="320"
-                                    ItemsLayout="HorizontalList">
+                                    ItemsLayout="HorizontalList"
+                                    HorizontalOptions="FillAndExpand"
+                                    HeightRequest="120"
+                                    SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <views:CardView BindingContext="{Binding .}"/>
@@ -70,61 +108,114 @@
                         </CollectionView.ItemTemplate>
                     </CollectionView>
                 </Border>
+            </Grid>
+
+            <VerticalStackLayout Grid.Column="1"
+                                 Spacing="12"
+                                 VerticalOptions="FillAndExpand">
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0"
+                            Text="Barlangi portya - Egyszerű kazamata"
+                            Command="{Binding DungeonButtonCommand}"
+                            CommandParameter="Barlangi portya"
+                            x:Name="EgyszeruKazamata"
+                            Clicked="OnButtonClicked"
+                            FontFamily="RetroByte"
+                            FontSize="16"
+                            TextColor="White"
+                            BackgroundColor="#111111"
+                            CornerRadius="10"
+                            HeightRequest="128"
+                            HorizontalOptions="FillAndExpand"/>
+                    <Frame Grid.Column="1"
+                           WidthRequest="96"
+                           HeightRequest="128"
+                           BackgroundColor="#16213e"
+                           CornerRadius="6"
+                           Padding="6"
+                           VerticalOptions="Center">
+                        <Label Text="Card Placeholder"
+                               FontFamily="RetroByte"
+                               FontSize="12"
+                               TextColor="#FFD700"
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"/>
+                    </Frame>
+                </Grid>
+
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0"
+                            Text="Ősi Szentély - Kis kazamata"
+                            Command="{Binding DungeonButtonCommand}"
+                            CommandParameter="Ősi Szentély"
+                            x:Name="KicsiKazamata"
+                            Clicked="OnButtonClicked"
+                            FontFamily="RetroByte"
+                            FontSize="16"
+                            TextColor="White"
+                            BackgroundColor="#111111"
+                            CornerRadius="10"
+                            HeightRequest="128"
+                            HorizontalOptions="FillAndExpand"/>
+                    <Frame Grid.Column="1"
+                           WidthRequest="96"
+                           HeightRequest="128"
+                           BackgroundColor="#16213e"
+                           CornerRadius="6"
+                           Padding="6"
+                           VerticalOptions="Center">
+                        <Label Text="Card Placeholder"
+                               FontFamily="RetroByte"
+                               FontSize="12"
+                               TextColor="#FFD700"
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"/>
+                    </Frame>
+                </Grid>
+
+                <Grid ColumnSpacing="10"
+                      VerticalOptions="Start">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0"
+                            Text="A melyseg kiralynoje - Nagy kazamata"
+                            Command="{Binding DungeonButtonCommand}"
+                            CommandParameter="A mélység királynője"
+                            x:Name="NagyKazamata"
+                            Clicked="OnButtonClicked"
+                            FontFamily="RetroByte"
+                            FontSize="16"
+                            TextColor="White"
+                            BackgroundColor="#111111"
+                            CornerRadius="10"
+                            HeightRequest="128"
+                            HorizontalOptions="FillAndExpand"/>
+                    <Frame Grid.Column="1"
+                           WidthRequest="96"
+                           HeightRequest="128"
+                           BackgroundColor="#16213e"
+                           CornerRadius="6"
+                           Padding="6"
+                           VerticalOptions="Center">
+                        <Label Text="Card Placeholder"
+                               FontFamily="RetroByte"
+                               FontSize="12"
+                               TextColor="#FFD700"
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"/>
+                    </Frame>
+                </Grid>
             </VerticalStackLayout>
-
-            <Button Text="Unlock Random Card"
-                    Clicked="OnUnlockNext"
-                    FontFamily="RetroByte"
-                    BackgroundColor="#8e44ad"
-                    TextColor="White"
-                    CornerRadius="12"
-                    FontSize="18"
-                    HeightRequest="60"/>
-
-            <VerticalStackLayout Margin="0,30,0,0" Spacing="15">
-
-                <Border BackgroundColor="Black"  Padding="10">
-                    <VerticalStackLayout>
-                        <Label Text="Barlangi portya"
-                                FontFamily="RetroByte"
-                                FontAttributes="Bold"
-                                FontSize="16"/>
-                        <Label Text="Egyszeru kazamata" FontSize="13" FontFamily="RetroByte"/>
-                        <Label Text="Nyeremeny: sebzes" FontSize="13" FontFamily="RetroByte"/>
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border BackgroundColor="Black" Padding="10">
-                    <VerticalStackLayout>
-                        <Label Text="Osi Szentely"
-                                FontFamily="RetroByte"
-                                FontAttributes="Bold"
-                                FontSize="16"/>
-                        <Label Text="Kis kazamata" FontSize="13" FontFamily="RetroByte"/>
-                        <Label Text="Nyeremeny: eletero" FontSize="13" FontFamily="RetroByte"/>
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border BackgroundColor="Black" Padding="10">
-                    <VerticalStackLayout>
-                        <Label Text="A melyseg kiralynoje"
-                                FontAttributes="Bold"
-                                FontFamily="RetroByte"
-                                FontSize="16"/>
-                        <Label Text="Nagy kazamata" FontSize="13" FontFamily="RetroByte"/>
-                    </VerticalStackLayout>
-                </Border>
-
-            </VerticalStackLayout>
-
-            <Button Text="Start Game"
-                Clicked="OnStartGameClicked"
-                BackgroundColor="#27ae60"
-                TextColor="White"
-                CornerRadius="12"
-                FontSize="20"
-                HeightRequest="70"
-                HorizontalOptions="Center"/>
-        </VerticalStackLayout>
-    </ScrollView>
+        </Grid>
+    </Grid>
 </ContentPage>

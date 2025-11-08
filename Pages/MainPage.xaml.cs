@@ -97,7 +97,7 @@ namespace DuszaVerseny2025
             ReorderSelectedCards();
             UpdateSelectionLabel();
         }
-        
+
         private void ReorderSelectedCards()
         {
             for (int i = 0; i < SelectedCards.Count; i++)
@@ -105,7 +105,7 @@ namespace DuszaVerseny2025
                 SelectedCards[i].Order = i + 1;
             }
         }
-        
+
         private void UpdateSelectionLabel()
         {
             SelectionLabel.Text = $"Selected: {SelectedCards.Count} / {_maxSelectable}";
@@ -125,6 +125,25 @@ namespace DuszaVerseny2025
         private async void OnStartGameClicked(object sender, EventArgs e)
         {
             await Navigation.PushAsync(new GamePage(SelectedCards.ToList()));
+        }
+
+        private async void OnButtonClicked(object sender, EventArgs e)
+        {
+            if (sender is Button button)
+            {
+                switch (button.StyleId)
+                {
+                    case "EgyszeruKazamata":
+                        await DisplayAlert("Dungeon Selected", "You chose: Barlangi portya", "OK");
+                        break;
+                    case "KicsiKazamata":
+                        await DisplayAlert("Dungeon Selected", "You chose: Ősi Szentély", "OK");
+                        break;
+                    case "NagyKazamata":
+                        await DisplayAlert("Dungeon Selected", "You chose: A mélység királynője", "OK");
+                        break;
+                }
+            }
         }
 
         protected override void OnDisappearing()

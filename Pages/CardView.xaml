@@ -4,43 +4,42 @@
              xmlns:local="clr-namespace:DuszaVerseny2025.Converters"
              x:Class="DuszaVerseny2025.Pages.CardView"
              x:Name="this"
-             WidthRequest="140"
-             HeightRequest="280">
+             IsEnabled="{Binding IsInteractable}">
 
     <Border x:Name="CardBorder"
             BackgroundColor="#1a1a2e"
             StrokeThickness="3"
-            Padding="12"
+            Padding="2"
             Margin="0"
-            WidthRequest="140"
-            HeightRequest="280"
-            HorizontalOptions="Center"
-            VerticalOptions="Center">
+            HeightRequest="128"
+            WidthRequest="96">
 
-        <Border.Stroke>
-            <Binding Path="." Source="{x:Reference this}">
-                <Binding.Converter>
-                    <local:CardStrokeConverter />
-                </Binding.Converter>
-            </Binding>
-        </Border.Stroke>
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnCardTapped"/>
+        </Border.GestureRecognizers>
 
         <Border.Opacity>
-            <Binding Path="IsInteractable">
+            <Binding Path="Template">
                 <Binding.Converter>
-                    <local:BoolToOpacityConverter TrueValue="1.0" FalseValue="0.5" />
+                    <local:CardTemplateToAvailabilityConverter/>
                 </Binding.Converter>
             </Binding>
         </Border.Opacity>
 
-        <Border.GestureRecognizers>
-            <TapGestureRecognizer Tapped="OnCardTapped" />
-        </Border.GestureRecognizers>
+        <Border.Stroke>
+            <Binding Path="."
+                     Source="{x:Reference this}">
+                <Binding.Converter>
+                    <local:CardStrokeConverter/>
+                </Binding.Converter>
+            </Binding>
+        </Border.Stroke>
 
         <Grid>
-            <BoxView Color="{Binding Template.ElementColor}" CornerRadius="12"/>
+            <BoxView Color="{Binding Template.ElementColor}"/>
 
             <Label Text="{Binding Order}"
+                   FontFamily="RetroByte"
                    IsVisible="{Binding IsSelected}"
                    BackgroundColor="Gold"
                    TextColor="Black"
@@ -52,19 +51,38 @@
                    Margin="0"/>
 
             <Label Text="{Binding Template.Name}"
+                   FontFamily="RetroByte"
                    FontSize="18"
                    TextColor="White"
                    FontAttributes="Bold"
                    HorizontalOptions="Center"
                    VerticalOptions="Center"
-                   Margin="0,0,0,30"/>
+                   Margin="0,0,0,10"/>
 
-            <Grid RowDefinitions="Auto,Auto" VerticalOptions="End" Margin="0,0,0,20">
-                <Image Source="attack_icon.png" HeightRequest="24" HorizontalOptions="Start" Margin="12,0"/>
-                <Label Grid.Column="1" Text="{Binding Template.Attack}" TextColor="#ff6b6b" FontAttributes="Bold" FontSize="18"/>
+            <Grid RowDefinitions="Auto,Auto"
+                  VerticalOptions="End"
+                  Margin="0,0,0,20">
+                <Image Source="attack_icon.png"
+                       HeightRequest="24"
+                       HorizontalOptions="Start"
+                       Margin="12,0"/>
+                <Label Grid.Column="1"
+                       Text="{Binding Template.Attack}"
+                       TextColor="#ff6b6b"
+                       FontAttributes="Bold"
+                       FontSize="18"/>
 
-                <Image Grid.Row="1" Source="health_icon.png" HeightRequest="24" HorizontalOptions="Start" Margin="12,0"/>
-                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Template.Health}" TextColor="#51cf66" FontAttributes="Bold" FontSize="18"/>
+                <Image Grid.Row="1"
+                       Source="health_icon.png"
+                       HeightRequest="24"
+                       HorizontalOptions="Start"
+                       Margin="12,0"/>
+                <Label Grid.Row="1"
+                       Grid.Column="1"
+                       Text="{Binding Template.Health}"
+                       TextColor="#51cf66"
+                       FontAttributes="Bold"
+                       FontSize="18"/>
             </Grid>
         </Grid>
     </Border>
