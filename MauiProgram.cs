@@ -40,8 +40,6 @@ class TestMode
 			var temp = DungeonTemplate.fromFile(args, templates);
 			if (temp != null)
 				dungeons.Add(temp);
-
-			Console.WriteLine(temp);
 		}
 		else if (diff == "jatekos")
 		{
@@ -70,23 +68,59 @@ class TestMode
         }
 	}
 
-	void Fight(string[] args)
+	void Fight(string[] args, List<DungeonTemplate> dungeons, List<CardTemplate> cards,PlayerCollection playerInventory, Deck currentDeck)
 	{
+		// Lowk össze kell rakni a fullos motort csak ide, mert ez nem data amit passzívan lehet kezelni
 
+		GameEngine engine = new GameEngine(cards, dungeons, playerInventory);
+		Dungeon dungeon = engine.GameWorld.generateDungeon(engine.GameWorld.Dungeons.Where(d => d.name == args[0]).First());
+		string lastCard = "";
+		bool didWin = engine.GameWorld.FightDungeon(dungeon, currentDeck, ref lastCard, (ev) =>
+		{
+			
+		});
 	}
 	
-	void Export(string diff, string[] args, PlayerCollection playerInventory, Deck playerDeck)
+	void Export(string diff, string[] args, PlayerCollection playerInventory, Deck playerDeck, string path, List<CardTemplate> cards,
+	List<DungeonTemplate> dungeons)
     {
-        if (diff == "jatekos")
-        {
+		if (diff == "jatekos")
+		{
 			StringBuilder builder = new StringBuilder();
 			builder.Append(playerInventory.Export());
-			
+			builder.AppendLine();
+			builder.Append(playerDeck.Export());
+			File.WriteAllText(Path.Combine(path, args[0]), builder.ToString());
+		}
+		else if (diff == "vilag")
+		{
+			StringBuilder builder = new StringBuilder();
+			StringBuilder bosses = new StringBuilder();
+			foreach (var card in cards)
+			{
+				if (card.IsBoss)
+				{
+					bosses.AppendLine(card.Export());
+					continue;
+				}
+
+				builder.AppendLine(card.Export());
+			}
+			StringBuilder dungeonBuilder = new StringBuilder();
+			Console.WriteLine(dungeons.Count);
+			foreach(var dungeon in dungeons)
+			{
+				dungeonBuilder.AppendLine(dungeon.Export());
+            }
+			builder.AppendLine();
+			builder.AppendLine(bosses.ToString());
+			builder.Append(dungeonBuilder.ToString());
+            File.WriteAllText(Path.Combine(path, args[0]), builder.ToString());
         }
     }
 
 	void Execute(string command, string[] args, List<CardTemplate> templates, List<DungeonTemplate> dungeons,
-	ref PlayerCollection? playerInventory, ref Deck playerDeck)
+	ref PlayerCollection? playerInventory, ref Deck playerDeck, string path)
 	{
 		string[] cmd_args = command.Split(" ");
 		string type = cmd_args[0];
@@ -105,15 +139,14 @@ class TestMode
 				break;
 
 			case "harc":
-				Fight(args);
+				Fight(args, dungeons, templates, playerInventory, playerDeck);
 				break;
 
 			case "export":
-				Export(diff, args, playerInventory, playerDeck);
+				Export(diff, args, playerInventory, playerDeck, path, templates, dungeons);
 				break;
 		}
 	}
-	GameEngine engine;
 
     public void DoTest(string path)
     {
@@ -125,26 +158,10 @@ class TestMode
 		foreach (string line in lines)
 		{
 			string[] args = line.Split(";");
-			Execute(args[0], args.Skip(1).ToArray(), templates, dungeons, ref playerInventory, ref playerDeck);
+			Execute(args[0], args.Skip(1).ToArray(), templates, dungeons, ref playerInventory, ref playerDeck, path);
 		}
-		foreach (var t in templates)
-		{
-			Console.WriteLine($"Boss name ({t.name}): {t.bossName}");
-		}
-
 		if (playerInventory == null) return;
 		if (playerDeck == null) return;
-		
-		foreach (var c in playerInventory.Cards)
-        {
-			Console.WriteLine(c);
-        }
-		foreach (var c in playerDeck.Cards)
-		{
-			Console.WriteLine(c.Name);
-        }
-		
-		engine = new GameEngine(templates, dungeons, playerInventory);
     }
 }
 

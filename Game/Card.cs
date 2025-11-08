@@ -20,6 +20,7 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
     public CardTemplate(int damage, int health, string name, CardTemplate.Type type, string bossName, Card.Attribute bossProficiency) : this(damage, health, name, type)
     {
         _bossName = bossName;
+        _bossProficiency = bossProficiency;
     }
     public enum Type
     {
@@ -43,7 +44,20 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
 
     public string Export()
     {
-        return "";
+        return $"{IsBoss switch
+        {
+            true => "vezer",
+            false => "kartya"
+        }};{name};{damage};{health};{
+            type switch
+            {
+                Type.Air => "levego",
+                Type.Earth => "fold",
+                Type.Fire => "tuz",
+                Type.Water => "viz",
+                _ => ""
+            }
+        }";
     }
 
     public static CardTemplate fromFile(string[] attributes)
@@ -60,7 +74,8 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
 
     public CardTemplate ToBoss(string name, Card.Attribute prof)
     {
-        return new CardTemplate(damage, health, name, type, name, prof);
+        return new CardTemplate(prof == Card.Attribute.Damage ? damage * 2 : damage,
+                                prof == Card.Attribute.Health ? health * 2 : health, name, type, name, prof);
     }
 }
 
@@ -112,9 +127,9 @@ public class Card
     public CardTemplate.Type Type => _type;
     public CardTemplate Template => _template;
 
-    public BossCard promote(Attribute toDouble)
+    public BossCard promote()
     {
-        return new BossCard(this, toDouble);
+        return new BossCard(this);       
     }
 
     public bool Attack(Card otherCard)
@@ -134,8 +149,8 @@ public class Card
 
 public class BossCard : Card
 {
-    public BossCard(Card self, Attribute toDouble) : base(toDouble == Attribute.Damage ? self.Damage * 2 : self.Damage,
-                                                        toDouble == Attribute.Health ? self.Health * 2 : self.Health,
+    public BossCard(Card self) : base(self.Damage,
+                                                        self.Health,
                                                         self.Health,
                                                         self.Template.bossName,
                                                         self.Type, self.Template) {}

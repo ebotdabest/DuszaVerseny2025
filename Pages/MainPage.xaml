@@ -1,32 +1,61 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:views="clr-namespace:DuszaVerseny2025.Pages"
-             x:Class="DuszaVerseny2025.MainPage"
-             BackgroundColor="#0f0f0f">
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:views="clr-namespace:DuszaVerseny2025.Pages"
+                x:Class="DuszaVerseny2025.MainPage"
+                BackgroundColor="#0f0f0f">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="25"
-                                Padding="20">
+    <VerticalStackLayout Spacing="25"
+                            Padding="20">
 
-            <Label Text="DAMAREEN"
-                    HorizontalOptions="Center"
+        <Label Text="DAMAREEN"
+                HorizontalOptions="Center"
+                FontAttributes="Bold"
+                FontSize="28"
+                FontFamily="RetroByte"
+                TextColor="Black"/>
+        <Label Text="✝"
+                HorizontalOptions="Center"
+                FontSize="22"
+                FontFamily="RetroByte"
+                TextColor="Black"/>
+
+        <Label x:Name="SelectionLabel"
+                Text="Selected: 0 / 2"
+                FontSize="20"
+                TextColor="#FFD700"
+                FontAttributes="Bold"
+                FontFamily="RetroByte"
+                HorizontalOptions="Center"/>
+        <VerticalStackLayout Margin="0,20,0,0">
+
+            <Label Text="Gyujtemeny"
                     FontAttributes="Bold"
-                    FontSize="28"
+                    FontSize="16"
                     FontFamily="RetroByte"
-                    TextColor="Black"/>
-            <Label Text="✝"
-                    HorizontalOptions="Center"
-                    FontSize="22"
-                    FontFamily="RetroByte"
-                    TextColor="Black"/>
+                    TextColor="#333"/>
+            <CollectionView ItemsSource="{Binding AvailableCards}"
+                            HeightRequest="700">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical"
+                                        Span="3"
+                                        VerticalItemSpacing="5"
+                                        HorizontalItemSpacing="5"/>
+                </CollectionView.ItemsLayout>
 
-            <Label x:Name="SelectionLabel"
-                    Text="Selected: 0 / 2"
-                    FontSize="20"
-                    TextColor="#FFD700"
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <views:CardView BindingContext="{Binding .}"/>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout Margin="0,20,0,0">
+            <Label Text="Pakli"
                     FontAttributes="Bold"
                     FontFamily="RetroByte"
+<<<<<<< Updated upstream
                     HorizontalOptions="Center"/>
             <VerticalStackLayout Margin="0,20,0,0">
 
@@ -44,80 +73,84 @@
                                          HorizontalItemSpacing="5" />
                     </CollectionView.ItemsLayout>
 
+=======
+                    FontSize="16"
+                    TextColor="#333"/>
+            <Border BackgroundColor="#16213e"
+                    Padding="15">
+                <CollectionView ItemsSource="{Binding SelectedCards}"
+                                HeightRequest="320"
+                                ItemsLayout="HorizontalList">
+>>>>>>> Stashed changes
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <views:CardView BindingContext="{Binding .}" />
+                            <views:CardView BindingContext="{Binding .}"/>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
-            </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
 
-            <VerticalStackLayout Margin="0,20,0,0">
-                <Label Text="Pakli"
-                        FontAttributes="Bold"
-                        FontFamily="RetroByte"
-                        FontSize="16"
-                        TextColor="#333"/>
-                <Border BackgroundColor="#16213e"
-                        Padding="15">
-                    <CollectionView ItemsSource="{Binding SelectedCards}"
-                                    HeightRequest="320"
-                                    ItemsLayout="HorizontalList">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <views:CardView BindingContext="{Binding .}"/>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </Border>
-            </VerticalStackLayout>
+        <Button Text="Unlock Random Card"
+                Clicked="OnUnlockNext"
+                FontFamily="RetroByte"
+                BackgroundColor="#8e44ad"
+                TextColor="White"
+                CornerRadius="12"
+                FontSize="18"
+                HeightRequest="60"/>
 
-            <Button Text="Unlock Random Card"
-                    Clicked="OnUnlockNext"
-                    FontFamily="RetroByte"
-                    BackgroundColor="#8e44ad"
-                    TextColor="White"
-                    CornerRadius="12"
-                    FontSize="18"
-                    HeightRequest="60"/>
+        <VerticalStackLayout Margin="0,30,0,0"
+                Spacing="15">
 
-            <VerticalStackLayout Margin="0,30,0,0" Spacing="15">
+            <Border BackgroundColor="Black"
+                    Padding="10">
+                <VerticalStackLayout>
+                    <Label Text="Barlangi portya"
+                            FontFamily="RetroByte"
+                            FontAttributes="Bold"
+                            FontSize="16"/>
+                    <Label Text="Egyszeru kazamata"
+                            FontSize="13"
+                            FontFamily="RetroByte"/>
+                    <Label Text="Nyeremeny: sebzes"
+                            FontSize="13"
+                            FontFamily="RetroByte"/>
+                </VerticalStackLayout>
+            </Border>
 
-                <Border BackgroundColor="Black"  Padding="10">
-                    <VerticalStackLayout>
-                        <Label Text="Barlangi portya"
-                                FontFamily="RetroByte"
-                                FontAttributes="Bold"
-                                FontSize="16"/>
-                        <Label Text="Egyszeru kazamata" FontSize="13" FontFamily="RetroByte"/>
-                        <Label Text="Nyeremeny: sebzes" FontSize="13" FontFamily="RetroByte"/>
-                    </VerticalStackLayout>
-                </Border>
+            <Border BackgroundColor="Black"
+                    Padding="10">
+                <VerticalStackLayout>
+                    <Label Text="Osi Szentely"
+                            FontFamily="RetroByte"
+                            FontAttributes="Bold"
+                            FontSize="16"/>
+                    <Label Text="Kis kazamata"
+                            FontSize="13"
+                            FontFamily="RetroByte"/>
+                    <Label Text="Nyeremeny: eletero"
+                            FontSize="13"
+                            FontFamily="RetroByte"/>
+                </VerticalStackLayout>
+            </Border>
 
-                <Border BackgroundColor="Black" Padding="10">
-                    <VerticalStackLayout>
-                        <Label Text="Osi Szentely"
-                                FontFamily="RetroByte"
-                                FontAttributes="Bold"
-                                FontSize="16"/>
-                        <Label Text="Kis kazamata" FontSize="13" FontFamily="RetroByte"/>
-                        <Label Text="Nyeremeny: eletero" FontSize="13" FontFamily="RetroByte"/>
-                    </VerticalStackLayout>
-                </Border>
+            <Border BackgroundColor="Black"
+                    Padding="10">
+                <VerticalStackLayout>
+                    <Label Text="A melyseg kiralynoje"
+                            FontAttributes="Bold"
+                            FontFamily="RetroByte"
+                            FontSize="16"/>
+                    <Label Text="Nagy kazamata"
+                            FontSize="13"
+                            FontFamily="RetroByte"/>
+                </VerticalStackLayout>
+            </Border>
 
-                <Border BackgroundColor="Black" Padding="10">
-                    <VerticalStackLayout>
-                        <Label Text="A melyseg kiralynoje"
-                                FontAttributes="Bold"
-                                FontFamily="RetroByte"
-                                FontSize="16"/>
-                        <Label Text="Nagy kazamata" FontSize="13" FontFamily="RetroByte"/>
-                    </VerticalStackLayout>
-                </Border>
+        </VerticalStackLayout>
 
-            </VerticalStackLayout>
-
-            <Button Text="Start Game"
+        <Button Text="Start Game"
                 Clicked="OnStartGameClicked"
                 BackgroundColor="#27ae60"
                 TextColor="White"
@@ -125,6 +158,5 @@
                 FontSize="20"
                 HeightRequest="70"
                 HorizontalOptions="Center"/>
-        </VerticalStackLayout>
-    </ScrollView>
+    </VerticalStackLayout>
 </ContentPage>

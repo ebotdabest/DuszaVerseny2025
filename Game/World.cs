@@ -1,6 +1,8 @@
 namespace DuszaVerseny2025.Engine;
 
+using System.Text;
 using DuszaVerseny2025.Engine.Cards;
+using DuszaVerseny2025.Engine.Serializer;
 
 public class World
 {
@@ -22,7 +24,16 @@ public class World
         return Dungeon.fromTemplate(dungeon);
     }
 
-    public bool FightDungeon(Dungeon d, Deck playerDeck, ref string lastCard, Action<string> callback)
+    public record FightEvent(string event_name, Dictionary<string, object> values)
+    {
+        public static FightEvent makeEvent(string name, params (string key, object value)[] kwargs)
+        {
+            var dict = kwargs.ToDictionary(k => k.key, k => k.value);
+            return new FightEvent(name, dict);
+        }
+    }
+
+    public bool FightDungeon(Dungeon d, Deck playerDeck, ref string lastCard, Action<FightEvent> callback)
     {
         Deck dungeonDeck = d.compileDeck();
 
@@ -113,11 +124,11 @@ public class World
     }
 }
 
-public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Collection collection, CardTemplate? bossTemplate, DungeonTemplate.DungeonReward reward)
+public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Collection collection, CardTemplate? bossTemplate, DungeonTemplate.DungeonReward reward) : ISerialize
 {
     public DungeonTemplate(DungeonType type, string name, Collection collection, DungeonReward reward) : this(type, name, collection, null, reward) { }
 
-    public interface DungeonReward
+    public interface DungeonReward : ISerialize
     {
         public void Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard);
     }
@@ -129,6 +140,17 @@ public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Col
         {
             this.attribute = attribute;
         }
+
+        public string Export()
+        {
+            return $";{attribute switch
+            {
+                Card.Attribute.Health => "eletero",
+                Card.Attribute.Damage => "eletero",
+                _ => ""
+            }}";
+        }
+
         public void Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
         {
             playerCollection.Upgrade(lastPlayedCard.name, attribute);
@@ -142,6 +164,12 @@ public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Col
         {
             this.rewards = rewards;
         }
+
+        public string Export()
+        {
+            return "";
+        }
+
         public void Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
         {
             foreach (var reward in rewards)
@@ -168,10 +196,9 @@ public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Col
 
     public static DungeonTemplate? fromFile(string[] args, List<CardTemplate> cards)
     {
-        // egyszeru;Teszt1a Kazamata;Sadan;eletero
         List<CardTemplate> dungeonTemplates = new List<CardTemplate>();
-
-        foreach(var card in args[2].Split(" "))
+        Console.WriteLine("Cards: " + args[2]);
+        foreach(var card in args[2].Split(","))
         {
             var c = cards.Where(t => t.name == card).ToArray();
             if(c.Length > 0)
@@ -210,8 +237,41 @@ public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Col
             return new DungeonTemplate(type, args[1], dungeonCards, boss, new CardReward(dungeonCards.Cards.ToArray()));
         }
         return null;
+    }
 
-        // return new DungeonTemplate(, args[1], dungeonCards, null, Card.Attribute.None, );
+    public string Export()
+    {
+        //kazamata;egyszeru;Teszt1a Kazamata;Sadan;;eletero
+        //kazamata;egyszeru;Teszt1a Kazamata;Sadan;eletero
+        //kazamata;kis;Teszt2a Kazamata;Aragorn,Eowyn,ObiWan;Darth ObiWan;eletero
+        //kazamata;nagy;Teszt3 Kazamata;Aragorn,Eowyn,ObiWan,Kira,Tul'Arak;Darth ObiWan
+        StringBuilder dungeonBuilder = new StringBuilder();
+        dungeonBuilder.Append("kazamata;");
+        dungeonBuilder.Append(type switch
+        {
+            DungeonType.Small => "egyszeru",
+            DungeonType.Medium => "kis",
+            DungeonType.Big => "nagy",
+            _ => ""
+        });
+        dungeonBuilder.Append(";");
+        dungeonBuilder.Append(name);
+        dungeonBuilder.Append(";");
+
+        string[] names = new string[collection.Size];
+        for (int i = 0; i < collection.Size; i++)
+        {
+            names[i] = collection.Cards[i].name;
+        }
+        dungeonBuilder.Append(string.Join(",", names));
+        if (bossTemplate != null)
+        {
+            dungeonBuilder.Append(";");
+            dungeonBuilder.Append(bossTemplate.Name);
+        }
+        dungeonBuilder.Append(reward.Export());
+
+        return dungeonBuilder.ToString();
     }
 }
 
@@ -245,7 +305,7 @@ public class Dungeon
         _reward = reward;
         if (boss != null)
         {
-            _boss = Card.fromTemplate(boss).promote(boss.bossProficiency);
+            _boss = Card.fromTemplate(boss).promote();
             _hasBoss = true;
         }
 

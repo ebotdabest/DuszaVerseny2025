@@ -106,7 +106,7 @@ public class PlayerCollection : Collection, ISerialize
     }
 }
 
-public class Deck
+public class Deck : ISerialize
 {
     List<Card> _cards;
     Collection _collection;
@@ -145,5 +145,16 @@ public class Deck
         List<Card> cardsCompiled = new List<Card>();
         Array.ForEach(collection.Cards, card => cardsCompiled.Add(Card.fromTemplate(card)));
         return new Deck(cardsCompiled, collection);
+    }
+
+    public string Export()
+    {
+        StringBuilder builder = new StringBuilder();
+        foreach (var card in _cards)
+        {
+            builder.AppendLine("pakli;" + card.Name);
+        }
+
+        return builder.ToString();
     }
 }
