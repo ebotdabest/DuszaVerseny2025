@@ -47,40 +47,63 @@ namespace DuszaVerseny2025
         private void RefreshAvailableCards()
         {
             AvailableCards.Clear();
+            int index = 0;
             foreach (var template in engine.CardTemplates)
             {
                 var vm = new CardViewModel(template)
                 {
-                    IsInteractable = engine.PlayerInventory.Has(template)
+                    IsInteractable = engine.PlayerInventory.Has(template),
+                    OriginalIndex = index++
                 };
                 AvailableCards.Add(vm);
             }
         }
 
         private async void OnCardTapped(CardView sender, CardViewModel vm)
-        {   
+        {
+            if (!vm.IsInteractable) return;
+
             if (vm.IsSelected)
             {
                 vm.IsSelected = false;
                 vm.Order = 0;
                 SelectedCards.Remove(vm);
-                AvailableCards.Add(vm);
+
+                if (vm.OriginalIndex >= 0 && vm.OriginalIndex <= AvailableCards.Count)
+                {
+                    AvailableCards.Insert(vm.OriginalIndex, vm);
+                }
+                else
+                {
+                    AvailableCards.Add(vm);
+                }
             }
             else
             {
                 if (SelectedCards.Count >= _maxSelectable)
                 {
-                    await DisplayAlert("Limit", $"Max {_maxSelectable} cards!", "OK");
+                    await DisplayAlert("Limit", $"Max {_maxSelectable} kártya!", "OK");
                     return;
                 }
 
+                int originalIndex = AvailableCards.IndexOf(vm);
                 AvailableCards.Remove(vm);
-                vm.IsSelected = true;
-                vm.Order = SelectedCards.Count + 1;
+                vm.OriginalIndex = originalIndex;
+
                 SelectedCards.Add(vm);
+                vm.IsSelected = true;
             }
 
+            ReorderSelectedCards();
             UpdateSelectionLabel();
+        }
+        
+        private void ReorderSelectedCards()
+        {
+            for (int i = 0; i < SelectedCards.Count; i++)
+            {
+                SelectedCards[i].Order = i + 1;
+            }
         }
         
         private void UpdateSelectionLabel()
@@ -95,6 +118,7 @@ namespace DuszaVerseny2025
             {
                 engine.PlayerInventory.AddToCollection(locked);
                 RefreshAvailableCards();
+                ReorderSelectedCards();
             }
         }
 

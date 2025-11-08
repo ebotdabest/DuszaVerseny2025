@@ -33,7 +33,14 @@ namespace DuszaVerseny2025.ViewModels
             }
         }
         private bool _isInteractable = true;
-
+        
+        public int OriginalIndex
+        {
+            get => _originalIndex;
+            set { _originalIndex = value; OnPropertyChanged(); }
+        }
+        private int _originalIndex = -1;
+        
         public int Order
         {
             get => _order;
@@ -47,6 +54,7 @@ namespace DuszaVerseny2025.ViewModels
         public CardViewModel(CardTemplate template)
         {
             Template = template;
+            OriginalIndex = -1;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
