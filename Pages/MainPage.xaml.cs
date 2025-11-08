@@ -16,12 +16,16 @@ namespace DuszaVerseny2025
 
         private readonly int _maxSelectable = 2;
         public GameEngine engine;
+        
+        public Command DungeonButtonCommand { get; }
 
         public MainPage()
         {
             InitializeComponent();
             Current = this;
             BindingContext = this;
+            
+            var dungeons = new List<DungeonTemplate>();
 
             var templates = new List<CardTemplate>();
             var arin = new CardTemplate(2, 5, "Arin", CardTemplate.Type.Earth);
@@ -35,6 +39,7 @@ namespace DuszaVerseny2025
             var myra = new CardTemplate(2, 6, "Myra", CardTemplate.Type.Earth);
             var thalen = new CardTemplate(3, 5, "Thalen", CardTemplate.Type.Air);
             var isara = new CardTemplate(2, 6, "Isara", CardTemplate.Type.Water);
+            
             templates.Add(arin);
             templates.Add(liora);
             templates.Add(nerun);
@@ -46,8 +51,27 @@ namespace DuszaVerseny2025
             templates.Add(myra);
             templates.Add(thalen);
             templates.Add(isara);
+            var torakTemplate = new CardTemplate(5, 10, "Torak", CardTemplate.Type.Fire, "Lord Torak", Card.Attribute.Health);
+            templates.Add(torakTemplate);
 
-            var dungeons = new List<DungeonTemplate>();
+            var seliaTemplate = new CardTemplate(6, 12, "Selia", CardTemplate.Type.Water, "Priestess Selia", Card.Attribute.Damage);
+            templates.Add(seliaTemplate);
+            
+            var smallCollection = new Collection(new List<CardTemplate> { selia });
+            var smallReward = new DungeonTemplate.AttributeReward(Card.Attribute.Health);
+            var smallDungeon = new DungeonTemplate(DungeonTemplate.DungeonType.Small, "Barlangi portya", smallCollection, smallReward);
+            dungeons.Add(smallDungeon);
+
+            var mediumCollection = new Collection(new List<CardTemplate> { arin, torak, isara });
+            var mediumReward = new DungeonTemplate.AttributeReward(Card.Attribute.Damage);
+            var mediumDungeon = new DungeonTemplate(DungeonTemplate.DungeonType.Medium, "Ősi Szentély", mediumCollection, torakTemplate, mediumReward);
+            dungeons.Add(mediumDungeon);
+
+            var bigCollection = new Collection(new List<CardTemplate> { arin, torak, isara, thalen, emera });
+            var bigReward = new DungeonTemplate.CardReward(bigCollection.Cards.ToArray());
+            var bigDungeon = new DungeonTemplate(DungeonTemplate.DungeonType.Big, "A mélység királynője", bigCollection, seliaTemplate, bigReward);
+            dungeons.Add(bigDungeon);
+            
             var inventory = new PlayerCollection();
             inventory.AddToCollection(arin);
             inventory.AddToCollection(liora);
@@ -55,6 +79,7 @@ namespace DuszaVerseny2025
             engine = new GameEngine(templates, dungeons, inventory);
 
             MessagingCenter.Subscribe<CardView, CardViewModel>(this, "CardTapped", OnCardTapped);
+            MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) => RefreshAvailableCards());
 
             RefreshAvailableCards();
             UpdateSelectionLabel();
@@ -160,6 +185,24 @@ namespace DuszaVerseny2025
                         break;
                 }
             }
+        }
+        
+        private async void OnDungeonSelected(string dungeonName)
+        {
+            if (SelectedCards.Count < _maxSelectable)
+            {
+                await DisplayAlert("Hiba", "Válassz ki legalább 2 kártyát!", "OK");
+                return;
+            }
+
+            var dungeonTemplate = engine.GameWorld.Dungeons.FirstOrDefault(d => d.name == dungeonName);
+            if (dungeonTemplate == null)
+            {
+                await DisplayAlert("Hiba", "Kazamata nem található!", "OK");
+                return;
+            }
+
+            await Navigation.PushAsync(new GamePage(SelectedCards.ToList(), dungeonTemplate));
         }
 
         protected override void OnDisappearing()

@@ -9,6 +9,28 @@ namespace DuszaVerseny2025.ViewModels
         public CardTemplate Template { get; }
         private bool _isSelected;
         private int _order;
+        private int _currentHealth;
+        private int _currentDamage;
+
+        public int CurrentHealth
+        {
+            get => _currentHealth;
+            set
+            {
+                _currentHealth = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public int CurrentDamage
+        {
+            get => _currentDamage;
+            set
+            {
+                _currentDamage = value;
+                OnPropertyChanged();
+            }
+        }
 
         public bool IsSelected
         {
@@ -19,7 +41,7 @@ namespace DuszaVerseny2025.ViewModels
                 OnPropertyChanged(nameof(IsSelected));
             }
         }
-        
+
         public bool IsInteractable
         {
             get => _isInteractable;
@@ -33,14 +55,14 @@ namespace DuszaVerseny2025.ViewModels
             }
         }
         private bool _isInteractable = true;
-        
+
         public int OriginalIndex
         {
             get => _originalIndex;
             set { _originalIndex = value; OnPropertyChanged(); }
         }
         private int _originalIndex = -1;
-        
+
         public int Order
         {
             get => _order;
@@ -54,6 +76,8 @@ namespace DuszaVerseny2025.ViewModels
         public CardViewModel(CardTemplate template)
         {
             Template = template;
+            CurrentHealth = template.health;
+            CurrentDamage = template.damage;
             OriginalIndex = -1;
         }
 
