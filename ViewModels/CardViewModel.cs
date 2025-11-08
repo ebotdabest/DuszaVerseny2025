@@ -1,5 +1,6 @@
 using DuszaVerseny2025.Engine.Cards;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace DuszaVerseny2025.ViewModels
 {
@@ -18,6 +19,20 @@ namespace DuszaVerseny2025.ViewModels
                 OnPropertyChanged(nameof(IsSelected));
             }
         }
+        
+        public bool IsInteractable
+        {
+            get => _isInteractable;
+            set
+            {
+                if (_isInteractable != value)
+                {
+                    _isInteractable = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        private bool _isInteractable = true;
 
         public int Order
         {
@@ -35,7 +50,7 @@ namespace DuszaVerseny2025.ViewModels
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

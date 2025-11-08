@@ -39,12 +39,14 @@
                                 HeightRequest="700">
                     <CollectionView.ItemsLayout>
                         <GridItemsLayout Orientation="Vertical"
-                                            Span="3"/>
+                                         Span="3"
+                                         VerticalItemSpacing="5"
+                                         HorizontalItemSpacing="5" />
                     </CollectionView.ItemsLayout>
 
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <views:CardView BindingContext="{Binding .}"/>
+                            <views:CardView BindingContext="{Binding .}" />
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>

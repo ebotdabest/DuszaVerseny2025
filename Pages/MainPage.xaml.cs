@@ -49,10 +49,11 @@ namespace DuszaVerseny2025
             AvailableCards.Clear();
             foreach (var template in engine.CardTemplates)
             {
-                if (engine.PlayerInventory.Has(template))
+                var vm = new CardViewModel(template)
                 {
-                    AvailableCards.Add(new CardViewModel(template));
-                }
+                    IsInteractable = engine.PlayerInventory.Has(template)
+                };
+                AvailableCards.Add(vm);
             }
         }
 

@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:DuszaVerseny2025.Converters"
              x:Class="DuszaVerseny2025.Pages.CardView"
-             x:Name="this">
+             x:Name="this"
+             IsEnabled="{Binding IsInteractable}">
 
     <Border x:Name="CardBorder"
             BackgroundColor="#1a1a2e"
