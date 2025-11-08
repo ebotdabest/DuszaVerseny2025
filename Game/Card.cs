@@ -1,4 +1,5 @@
 namespace DuszaVerseny2025.Engine.Cards;
+
 using DuszaVerseny2025.Engine.Serializer;
 
 public record CardTemplate(int damage, int health, string name, CardTemplate.Type type) : ISerialize
@@ -13,7 +14,7 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
         Type.Fire => Colors.IndianRed,
         Type.Water => Colors.DodgerBlue,
         Type.Air => Colors.LightBlue,
-        Type.Earth => Colors.Brown,
+        Type.Earth => Colors.DarkOliveGreen,
         _ => Colors.Gray
     };
 
@@ -48,16 +49,14 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
         {
             true => "vezer",
             false => "kartya"
-        }};{name};{damage};{health};{
-            type switch
-            {
-                Type.Air => "levego",
-                Type.Earth => "fold",
-                Type.Fire => "tuz",
-                Type.Water => "viz",
-                _ => ""
-            }
-        }";
+        }};{name};{damage};{health};{type switch
+        {
+            Type.Air => "levego",
+            Type.Earth => "fold",
+            Type.Fire => "tuz",
+            Type.Water => "viz",
+            _ => ""
+        }}";
     }
 
     public static CardTemplate fromFile(string[] attributes)
@@ -129,7 +128,7 @@ public class Card
 
     public BossCard promote()
     {
-        return new BossCard(this);       
+        return new BossCard(this);
     }
 
     public bool Attack(Card otherCard)
@@ -153,5 +152,6 @@ public class BossCard : Card
                                                         self.Health,
                                                         self.Health,
                                                         self.Template.bossName,
-                                                        self.Type, self.Template) {}
+                                                        self.Type, self.Template)
+    { }
 }

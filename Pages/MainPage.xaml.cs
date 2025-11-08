@@ -24,17 +24,33 @@ namespace DuszaVerseny2025
             BindingContext = this;
 
             var templates = new List<CardTemplate>();
-            var argorn = new CardTemplate(2, 5, "Argorn", CardTemplate.Type.Fire);
-            var luna = new CardTemplate(3, 6, "Luna", CardTemplate.Type.Water);
-            var drake = new CardTemplate(4, 7, "Drake", CardTemplate.Type.Air);
-            templates.Add(argorn);
-            templates.Add(luna);
-            templates.Add(drake);
+            var arin = new CardTemplate(2, 5, "Arin", CardTemplate.Type.Earth);
+            var liora = new CardTemplate(2, 4, "Liora", CardTemplate.Type.Air);
+            var nerun = new CardTemplate(3, 3, "Nerum", CardTemplate.Type.Fire);
+            var selia = new CardTemplate(2, 6, "Selia", CardTemplate.Type.Water);
+            var torak = new CardTemplate(3, 4, "Torak", CardTemplate.Type.Earth);
+            var emera = new CardTemplate(2, 5, "Emera", CardTemplate.Type.Air);
+            var vorn = new CardTemplate(2, 7, "Vorn", CardTemplate.Type.Water);
+            var kael = new CardTemplate(3, 5, "Kael", CardTemplate.Type.Fire);
+            var myra = new CardTemplate(2, 6, "Myra", CardTemplate.Type.Earth);
+            var thalen = new CardTemplate(3, 5, "Thalen", CardTemplate.Type.Air);
+            var isara = new CardTemplate(2, 6, "Isara", CardTemplate.Type.Water);
+            templates.Add(arin);
+            templates.Add(liora);
+            templates.Add(nerun);
+            templates.Add(selia);
+            templates.Add(torak);
+            templates.Add(emera);
+            templates.Add(vorn);
+            templates.Add(kael);
+            templates.Add(myra);
+            templates.Add(thalen);
+            templates.Add(isara);
 
             var dungeons = new List<DungeonTemplate>();
             var inventory = new PlayerCollection();
-            inventory.AddToCollection(argorn);
-            inventory.AddToCollection(luna);
+            inventory.AddToCollection(arin);
+            inventory.AddToCollection(liora);
 
             engine = new GameEngine(templates, dungeons, inventory);
 
