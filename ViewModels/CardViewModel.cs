@@ -1,0 +1,43 @@
+using DuszaVerseny2025.Engine.Cards;
+using System.ComponentModel;
+
+namespace DuszaVerseny2025.ViewModels
+{
+    public class CardViewModel : INotifyPropertyChanged
+    {
+        public CardTemplate Template { get; }
+        private bool _isSelected;
+        private int _order;
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                _isSelected = value;
+                OnPropertyChanged(nameof(IsSelected));
+            }
+        }
+
+        public int Order
+        {
+            get => _order;
+            set
+            {
+                _order = value;
+                OnPropertyChanged(nameof(Order));
+            }
+        }
+
+        public CardViewModel(CardTemplate template)
+        {
+            Template = template;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+}

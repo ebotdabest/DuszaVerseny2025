@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:DuszaVerseny2025.Converters"
+             x:Class="DuszaVerseny2025.Pages.CardView"
+             x:Name="this">
+
+    <Border x:Name="CardBorder"
+            BackgroundColor="#1a1a2e"
+            StrokeThickness="3"
+            Padding="12"
+            Margin="8"
+            HeightRequest="280"
+            WidthRequest="140">
+
+        <Border.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnCardTapped"/>
+        </Border.GestureRecognizers>
+
+        <Border.Opacity>
+            <Binding Path="Template">
+                <Binding.Converter>
+                    <local:CardTemplateToAvailabilityConverter />
+                </Binding.Converter>
+            </Binding>
+        </Border.Opacity>
+
+        <Border.Stroke>
+            <Binding Path="." Source="{x:Reference this}">
+                <Binding.Converter>
+                    <local:CardStrokeConverter />
+                </Binding.Converter>
+            </Binding>
+        </Border.Stroke>
+
+        <Grid>
+            <BoxView Color="{Binding Template.ElementColor}" CornerRadius="12"/>
+
+            <Label Text="{Binding Order}"
+                    FontFamily="RetroByte"
+                    IsVisible="{Binding IsSelected}"
+                    BackgroundColor="Gold"
+                    TextColor="Black"
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    Padding="8,4"
+                    HorizontalOptions="End"
+                    VerticalOptions="Start"
+                    Margin="8"/>
+
+            <Label Text="{Binding Template.Name}"
+                    FontFamily="RetroByte"
+                    FontSize="18"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    Margin="0,0,0,30"/>
+
+            <Grid RowDefinitions="Auto,Auto" VerticalOptions="End" Margin="0,0,0,20">
+                <Image Source="attack_icon.png" HeightRequest="24" HorizontalOptions="Start" Margin="12,0"/>
+                <Label Grid.Column="1" Text="{Binding Template.Attack}" TextColor="#ff6b6b" FontAttributes="Bold" FontSize="18"/>
+
+                <Image Grid.Row="1" Source="health_icon.png" HeightRequest="24" HorizontalOptions="Start" Margin="12,0"/>
+                <Label Grid.Row="1" Grid.Column="1" Text="{Binding Template.Health}" TextColor="#51cf66" FontAttributes="Bold" FontSize="18"/>
+            </Grid>
+        </Grid>
+    </Border>
+</ContentView>
