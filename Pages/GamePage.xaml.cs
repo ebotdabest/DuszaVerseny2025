@@ -17,6 +17,7 @@ namespace DuszaVerseny2025
         public GameEngine engine { get; set; }
         public Deck currentDeck { get; set; }
         public Dungeon dungeon { get; set; }
+        public List<string> HistoryItems { get; set; } = new List<string>();
 
         Card currentCard;
         Card enemyCard;
@@ -28,6 +29,7 @@ namespace DuszaVerseny2025
             InitializeComponent();
             _viewModel = new GameBoardViewModel();
             BindingContext = _viewModel;
+            HistoryItems = new List<string>();
         }
 
         private async void OnNextRoundClicked(object sender, EventArgs e)
@@ -132,7 +134,7 @@ namespace DuszaVerseny2025
         private async Task PlayGame()
         {
             var result = await engine.GameWorld.FightDungeonButFancy(dungeon, currentDeck, OnFightEvent);
-            if (result.Succsess)
+            if (result.Success)
             {
                 System.Console.WriteLine("Player won!");
                 // TODO: Handle victory
@@ -148,48 +150,158 @@ namespace DuszaVerseny2025
         {
             if (ev.event_name.Contains("select")) await Task.Delay(500);
             else await Task.Delay(400);
-            MainThread.BeginInvokeOnMainThread(() =>
+            await MainThread.InvokeOnMainThreadAsync(async () =>
             {
                 if (ev.event_name == "game:select")
                 {
                     enemyCard = (Card)ev.values["card"];
+                    bool isBoss = ev.values.ContainsKey("isBoss") && (bool)ev.values["isBoss"];
+                    ArenaEnemyCard.IsBoss = isBoss;
+                    ArenaEnemyCard.Opacity = 0;
+                    ArenaEnemyCard.Scale = 0.8f;
+                    ArenaEnemyCard.TranslationY = 150;
+                    ArenaEnemyCard.Rotation = 0;
+                    ArenaEnemyCard.TranslationX = 0;
                     _viewModel.ShowEnemy = true;
                     _viewModel.EnemyName = enemyCard.Name;
                     _viewModel.EnemyHealth = enemyCard.Health.ToString();
                     _viewModel.EnemyDamage = enemyCard.Damage.ToString();
+                    ArenaEnemyCard.ElementColor = enemyCard.Template.ElementColor;
                     RenderEnemyCards();
+                    await Task.WhenAll(
+                        ArenaEnemyCard.FadeTo(1, 500, Easing.CubicInOut),
+                        ArenaEnemyCard.ScaleTo(1, 500, Easing.BounceOut),
+                        ArenaEnemyCard.TranslateTo(0, 0, 500, Easing.CubicInOut)
+                    );
                 }
-
                 else if (ev.event_name == "player:select")
                 {
                     currentCard = (Card)ev.values["card"];
+                    ArenaPlayerCard.Opacity = 0;
+                    ArenaPlayerCard.Scale = 0.8f;
+                    ArenaPlayerCard.TranslationY = -150;
+                    ArenaPlayerCard.Rotation = 0;
+                    ArenaPlayerCard.TranslationX = 0;
                     _viewModel.ShowCurrent = true;
                     _viewModel.CurrentName = currentCard.Name;
                     _viewModel.CurrentHealth = currentCard.Health.ToString();
                     _viewModel.CurrentDamage = currentCard.Damage.ToString();
+                    ArenaPlayerCard.ElementColor = currentCard.Template.ElementColor;
                     RenderPlayerCards();
+                    await Task.WhenAll(
+                        ArenaPlayerCard.FadeTo(1, 500, Easing.CubicInOut),
+                        ArenaPlayerCard.ScaleTo(1, 500, Easing.BounceOut),
+                        ArenaPlayerCard.TranslateTo(0, 0, 500, Easing.CubicInOut)
+                    );
                 }
-
                 else if (ev.event_name == "game:attack")
                 {
-                    Card card = (Card)ev.values["card"];
-                    _viewModel.CurrentHealth = card.Health.ToString();
-                    _viewModel.CurrentDamage = card.Damage.ToString();
+                    int damage = (int)ev.values["damage"];
+                    Card targetCard = (Card)ev.values["card"];
+                    _viewModel.CurrentHealth = targetCard.Health.ToString();
+                    _viewModel.CurrentDamage = targetCard.Damage.ToString();
+
+                    ArenaEnemyCard.Scale = 1;
+                    ArenaEnemyCard.Rotation = 0;
+                    ArenaEnemyCard.TranslationX = 0;
+                    await Task.WhenAll(
+                        ArenaEnemyCard.TranslateTo(0, 75, 220, Easing.SpringOut),
+                        ArenaEnemyCard.ScaleTo(1.2f, 220, Easing.SpringOut),
+                        ArenaEnemyCard.RotateTo(-5, 220, Easing.SpringOut)
+                    );
+
+                    DamagePopupLabel.Text = $"-{damage}";
+                    DamagePopupLabel.IsVisible = true;
+                    DamagePopupLabel.Scale = 0.3f;
+                    DamagePopupLabel.Opacity = 1;
+                    DamagePopupLabel.TranslationY = 0;
+                    await Task.WhenAll(
+                        DamagePopupLabel.ScaleTo(1.4f, 180, Easing.BounceOut),
+                        DamagePopupLabel.FadeTo(0, 350, Easing.CubicOut),
+                        DamagePopupLabel.TranslateTo(0, -90, 350, Easing.CubicOut)
+                    );
+                    DamagePopupLabel.IsVisible = false;
+                    DamagePopupLabel.Scale = 1;
+                    DamagePopupLabel.TranslationY = 0;
+
+                    await Task.WhenAll(
+                        ArenaEnemyCard.TranslateTo(0, 0, 250, Easing.SpringIn),
+                        ArenaEnemyCard.ScaleTo(1f, 250, Easing.SpringIn),
+                        ArenaEnemyCard.RotateTo(0, 250, Easing.SpringIn)
+                    );
+
+                    if (int.Parse(_viewModel.CurrentHealth) <= 0)
+                    {
+                        await ShakeAndFade(ArenaPlayerCard);
+                        _viewModel.ShowCurrent = false;
+                    }
                 }
                 else if (ev.event_name == "player:attack")
                 {
-                    System.Console.WriteLine("enemy attack!");
-                    Card enemy = (Card)ev.values["enemy"];
-                    _viewModel.EnemyHealth = enemy.Health.ToString();
-                    _viewModel.EnemyDamage = enemy.Damage.ToString();
-                }
-                else if (ev.event_name == "result")
-                {
+                    int damage = (int)ev.values["damage"];
+                    Card targetCard = (Card)ev.values["enemy"];
+                    _viewModel.EnemyHealth = targetCard.Health.ToString();
+                    _viewModel.EnemyDamage = targetCard.Damage.ToString();
 
+                    ArenaPlayerCard.Scale = 1;
+                    ArenaPlayerCard.Rotation = 0;
+                    ArenaPlayerCard.TranslationX = 0;
+                    await Task.WhenAll(
+                        ArenaPlayerCard.TranslateTo(0, -75, 220, Easing.SpringOut),
+                        ArenaPlayerCard.ScaleTo(1.2f, 220, Easing.SpringOut),
+                        ArenaPlayerCard.RotateTo(5, 220, Easing.SpringOut)
+                    );
+
+                    DamagePopupLabel.Text = $"-{damage}";
+                    DamagePopupLabel.IsVisible = true;
+                    DamagePopupLabel.Scale = 0.3f;
+                    DamagePopupLabel.Opacity = 1;
+                    DamagePopupLabel.TranslationY = 0;
+                    await Task.WhenAll(
+                        DamagePopupLabel.ScaleTo(1.4f, 180, Easing.BounceOut),
+                        DamagePopupLabel.FadeTo(0, 350, Easing.CubicOut),
+                        DamagePopupLabel.TranslateTo(0, -90, 350, Easing.CubicOut)
+                    );
+                    DamagePopupLabel.IsVisible = false;
+                    DamagePopupLabel.Scale = 1;
+                    DamagePopupLabel.TranslationY = 0;
+
+                    await Task.WhenAll(
+                        ArenaPlayerCard.TranslateTo(0, 0, 250, Easing.SpringIn),
+                        ArenaPlayerCard.ScaleTo(1f, 250, Easing.SpringIn),
+                        ArenaPlayerCard.RotateTo(0, 250, Easing.SpringIn)
+                    );
+
+                    if (int.Parse(_viewModel.EnemyHealth) <= 0)
+                    {
+                        await ShakeAndFade(ArenaEnemyCard);
+                        _viewModel.ShowEnemy = false;
+                    }
                 }
             });
         }
 
+        private async Task ShakeAndFade(View card)
+        {
+            await Task.WhenAll(
+                card.TranslateTo(15, 0, 120, Easing.SinIn),
+                card.RotateTo(-8, 120, Easing.SinIn)
+            );
+            await Task.WhenAll(
+                card.TranslateTo(-15, 0, 120, Easing.SinIn),
+                card.RotateTo(8, 120, Easing.SinIn)
+            );
+            await Task.WhenAll(
+                card.TranslateTo(0, 0, 120, Easing.SinIn),
+                card.RotateTo(0, 120, Easing.SinIn)
+            );
+            await card.FadeTo(0, 400, Easing.CubicIn);
+            card.Opacity = 1;
+            card.TranslationX = 0;
+            card.TranslationY = 0;
+            card.Rotation = 0;
+            card.Scale = 1;
+        }
         protected override bool OnBackButtonPressed()
         {
             Device.BeginInvokeOnMainThread(async () =>
@@ -204,7 +316,5 @@ namespace DuszaVerseny2025
             _viewModel.ShowStart = false;
             PlayGame();
         }
-
-
     }
 }

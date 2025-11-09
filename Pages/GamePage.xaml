@@ -3,8 +3,8 @@
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:DuszaVerseny2025"
-             xmlns:views ="clr-namespace:DuszaVerseny2025.Views"
-             BackgroundColor="#0f0f0f">
+             xmlns:views="clr-namespace:DuszaVerseny2025.Views"
+             BackgroundColor="#1a1a1a">
     <Grid RowDefinitions="Auto, 150, *, 150, Auto"
           ColumnDefinitions="*, 250">
         <Label Grid.Row="0"
@@ -18,113 +18,103 @@
                Margin="0,20,0,10"/>
 
         <Grid Grid.Row="1"
-                Grid.Column="0"
-                Margin="10">
-            <Border BackgroundColor="LightGray"
+              Grid.Column="0"
+              Margin="10">
+            <Border BackgroundColor="#333333"
                     Stroke="Black"
-                    StrokeThickness="2"
-                    StrokeShape="RoundRectangle 50"/>
+                    StrokeThickness="2"/>
 
-                <HorizontalStackLayout x:Name="EnemyDeckHolder"
-                                       Spacing="10"
-                                       Padding="10"
-                                       HorizontalOptions="Center"
-                                       VerticalOptions="Center"/>
+            <HorizontalStackLayout x:Name="EnemyDeckHolder"
+                                   Spacing="10"
+                                   Padding="0,0,50,0"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
         </Grid>
 
         <Border Grid.Row="2"
                 Grid.Column="0"
-                BackgroundColor="DarkGray"
+                BackgroundColor="#444444"
                 Stroke="Black"
                 StrokeThickness="2"
-                StrokeShape="RoundRectangle 20"
                 Margin="10">
             <Grid RowDefinitions="*, Auto, *"
                   ColumnDefinitions="*">
 
-                <Button Text="Start game!" Clicked="StartButton_clicked" IsVisible="{Binding ShowStart}" />
+                <Grid Grid.RowSpan="3">
+                    <Button Text="Start game!"
+                            Clicked="StartButton_clicked"
+                            IsVisible="{Binding ShowStart}"
+                            BackgroundColor="#2c3e50"
+                            TextColor="White"
+                            FontSize="16"
+                            FontFamily="RetroByte"
+                            WidthRequest="100"
+                            HeightRequest="40"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"/>
 
-                <Border Grid.Row="0"
-                        HorizontalOptions="Center"
-                        VerticalOptions="End"
-                        BackgroundColor="#2c3e50"
-                        Stroke="Red"
-                        StrokeThickness="2"
-                        Padding="8"
-                        Margin="0,0,0,10"
-                        IsVisible="{Binding ShowEnemy}">
-                    <Grid>
-                        <views:GameCard
-                            CardName="{Binding EnemyName}"
-                            CardHealth="{Binding EnemyHealth}"
-                            CardDamage="{Binding EnemyDamage}"
-                            IsBoss="False"
-                            />
-                    </Grid>
-                </Border>
+                    <views:GameCard Grid.Row="0"
+                                    x:Name="ArenaEnemyCard"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="End"
+                                    Margin="0,0,0,10"
+                                    IsVisible="{Binding ShowEnemy}"
+                                    CardName="{Binding EnemyName}"
+                                    CardHealth="{Binding EnemyHealth}"
+                                    CardDamage="{Binding EnemyDamage}"
+                                    IsBoss="False"/>
 
-                <Border Grid.Row="2"
-                        HorizontalOptions="Center"
-                        VerticalOptions="Start"
-                        BackgroundColor="#2c3e50"
-                        Stroke="Blue"
-                        StrokeThickness="2"
-                        Padding="8"
-                        Margin="0,10,0,0"
-                        IsVisible="{Binding ShowCurrent}">
-                    <Grid>
-                        <views:GameCard
-                            CardName="{Binding CurrentName}"
-                            CardHealth="{Binding CurrentHealth}"
-                            CardDamage="{Binding CurrentDamage}"
-                            IsBoss="False"
-                            />
-                    </Grid>
-                </Border>
+                    <views:GameCard Grid.Row="2"
+                                    x:Name="ArenaPlayerCard"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Start"
+                                    Margin="0,10,0,0"
+                                    IsVisible="{Binding ShowCurrent}"
+                                    CardName="{Binding CurrentName}"
+                                    CardHealth="{Binding CurrentHealth}"
+                                    CardDamage="{Binding CurrentDamage}"
+                                    IsBoss="False"/>
+                </Grid>
+
+                <Label x:Name="DamagePopupLabel"
+                       Grid.RowSpan="3"
+                       FontSize="48"
+                       FontFamily="RetroByte"
+                       FontAttributes="Bold"
+                       TextColor="Red"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       Opacity="0"
+                       Scale="0"
+                       IsVisible="False"/>
             </Grid>
         </Border>
-        
+
         <Border Grid.Row="3"
                 Grid.Column="0"
-                BackgroundColor="LightGray"
+                BackgroundColor="#333333"
                 Stroke="Black"
                 StrokeThickness="2"
-                StrokeShape="RoundRectangle 50"
                 Margin="10">
             <HorizontalStackLayout HorizontalOptions="Center"
-                                 VerticalOptions="Center"
-                                 x:Name="PlayerDeckHolder"/>
+                                   VerticalOptions="Center"
+                                   x:Name="PlayerDeckHolder"/>
         </Border>
 
         <Border Grid.Row="1"
                 Grid.Column="1"
                 Grid.RowSpan="3"
-                BackgroundColor="White"
+                BackgroundColor="#2c3e50"
                 Stroke="Black"
                 StrokeThickness="1"
                 Margin="10">
             <VerticalStackLayout Margin="10">
-                <Label Text="Tortenesei ▼"
+                <Label Text="Események ▼"
                        FontSize="16"
                        FontFamily="RetroByte"
                        FontAttributes="Bold"/>
-                <ScrollView>
-                    <CollectionView ItemsSource="{Binding HistoryItems}"
-                                    HeightRequest="500">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border BackgroundColor="WhiteSmoke"
-                                        Padding="5"
-                                        Margin="0,2">
-                                    <Label Text="{Binding HistoryText}"
-                                           FontSize="12"
-                                           FontFamily="RetroByte"
-                                           LineBreakMode="WordWrap"
-                                           TextColor="Black"/>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                <ScrollView HeightRequest="500">
+                    <VerticalStackLayout x:Name="HistoryContainer"/>
                 </ScrollView>
             </VerticalStackLayout>
         </Border>
