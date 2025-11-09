@@ -2,6 +2,7 @@ using System.Text;
 using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Serializer;
+using DuszaVerseny2025.Engine.Utils;
 
 public class CardRegistry
 {
@@ -66,7 +67,7 @@ public class Collection
 
 public class PlayerCollection : Collection, ISerialize
 {
-    public PlayerCollection() : base(new List<CardTemplate>()) {}
+    public PlayerCollection() : base(new List<CardTemplate>()) { }
 
     public string Export()
     {
@@ -74,14 +75,7 @@ public class PlayerCollection : Collection, ISerialize
         foreach (var card in _cards)
         {
             builder.Append($"gyujtemeny;{card.name};{card.damage};{card.health};");
-            builder.Append(card.type switch
-            {
-                CardTemplate.Type.Air => "levego",
-                CardTemplate.Type.Fire => "tuz",
-                CardTemplate.Type.Water => "viz",
-                CardTemplate.Type.Earth => "fold",
-                _ => ""
-            });
+            builder.Append(Utils.GetTypeName(card.type));
             builder.AppendLine();
         }
 
@@ -95,11 +89,11 @@ public class PlayerCollection : Collection, ISerialize
         CardTemplate newTemplate;
         if (toUpgrade == Card.Attribute.Health)
         {
-            newTemplate = template.MakeAnother(1, 2);
+            newTemplate = template.MakeAnother(0, 2);
         }
         else
         {
-            newTemplate = template.MakeAnother(2, 1);
+            newTemplate = template.MakeAnother(1, 0);
         }
 
         _cards[_cards.IndexOf(template)] = newTemplate;
@@ -126,13 +120,13 @@ public class Deck : ISerialize
 
     public static bool fromCollection(Collection collection, List<CardTemplate> cards, out Deck? deck)
     {
-        if (cards.Count > collection.CanUse) { deck = null; return false; }
+        if (cards.Count > collection.CanUse) { deck = null; Console.WriteLine("Limit tul"); return false; }
 
         List<Card> cardsCompiled = new List<Card>();
         foreach (CardTemplate card in cards)
         {
             if (collection.Cards.Contains(card)) cardsCompiled.Add(Card.fromTemplate(card));
-            else { deck = null; return false; }
+            else { deck = null; Console.WriteLine("Valami fost akartal hasznalni!"); return false; }
         }
 
         deck = new Deck(cardsCompiled, collection);

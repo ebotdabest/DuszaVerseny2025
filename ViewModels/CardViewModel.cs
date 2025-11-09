@@ -1,34 +1,36 @@
 using DuszaVerseny2025.Engine.Cards;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 namespace DuszaVerseny2025.ViewModels
 {
     public class CardViewModel : INotifyPropertyChanged
     {
         public CardTemplate Template { get; }
+
         private bool _isSelected;
         private int _order;
-        private int _currentHealth;
-        private int _currentDamage;
 
-        public int CurrentHealth
+        private bool _isInteractable;
+        public bool IsInteractable
         {
-            get => _currentHealth;
+            get => _isInteractable;
             set
             {
-                _currentHealth = value;
-                OnPropertyChanged();
+                if (_isInteractable == value) return;
+                _isInteractable = value;
+                OnPropertyChanged(nameof(IsInteractable));
             }
         }
 
-        public int CurrentDamage
+        private int _originalIndex = -1;
+        public int OriginalIndex
         {
-            get => _currentDamage;
+            get => _originalIndex;
             set
             {
-                _currentDamage = value;
-                OnPropertyChanged();
+                if (_originalIndex == value) return;
+                _originalIndex = value;
+                OnPropertyChanged(nameof(OriginalIndex));
             }
         }
 
@@ -41,27 +43,6 @@ namespace DuszaVerseny2025.ViewModels
                 OnPropertyChanged(nameof(IsSelected));
             }
         }
-
-        public bool IsInteractable
-        {
-            get => _isInteractable;
-            set
-            {
-                if (_isInteractable != value)
-                {
-                    _isInteractable = value;
-                    OnPropertyChanged();
-                }
-            }
-        }
-        private bool _isInteractable = true;
-
-        public int OriginalIndex
-        {
-            get => _originalIndex;
-            set { _originalIndex = value; OnPropertyChanged(); }
-        }
-        private int _originalIndex = -1;
 
         public int Order
         {
@@ -76,13 +57,10 @@ namespace DuszaVerseny2025.ViewModels
         public CardViewModel(CardTemplate template)
         {
             Template = template;
-            CurrentHealth = template.health;
-            CurrentDamage = template.damage;
-            OriginalIndex = -1;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

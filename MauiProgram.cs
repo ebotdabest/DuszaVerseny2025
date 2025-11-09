@@ -1,6 +1,6 @@
 ﻿using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
-
+using DuszaVerseny2025.Engine.Utils;
 using Microsoft.Extensions.Logging;
 
 using Microsoft.Maui;
@@ -68,17 +68,70 @@ class TestMode
         }
 	}
 
-	void Fight(string[] args, List<DungeonTemplate> dungeons, List<CardTemplate> cards,PlayerCollection playerInventory, Deck currentDeck)
+	void Fight(string[] args, List<DungeonTemplate> dungeons, List<CardTemplate> cards,PlayerCollection playerInventory, Deck currentDeck, string path)
 	{
 		// Lowk össze kell rakni a fullos motort csak ide, mert ez nem data amit passzívan lehet kezelni
 
+		StringBuilder builder = new StringBuilder();
 		GameEngine engine = new GameEngine(cards, dungeons, playerInventory);
 		Dungeon dungeon = engine.GameWorld.generateDungeon(engine.GameWorld.Dungeons.Where(d => d.name == args[0]).First());
+		//harc kezdodik;Teszt1a Kazamata
+		builder.AppendLine($"harc kezdodik;{dungeon.Name}");
+		builder.AppendLine();
+
 		string lastCard = "";
 		bool didWin = engine.GameWorld.FightDungeon(dungeon, currentDeck, ref lastCard, (ev) =>
 		{
-			
+			int round = (int)ev.values["round"];
+			if (ev.event_name == "game:select")
+			{
+				Card card = (Card)ev.values["card"];
+
+				builder.AppendLine($"{round}.kor;kazamata;kijatszik;{card.Name};{card.Damage};{card.Health};{Utils.GetTypeName(card.Type)}");
+			}
+			if (ev.event_name == "player:select")
+			{
+				Card card = (Card)ev.values["card"];
+
+				builder.AppendLine($"{round}.kor;jatekos;kijatszik;{card.Name};{card.Damage};{card.Health};{Utils.GetTypeName(card.Type)}");
+			}
+			if (ev.event_name == "game:attack")
+			{
+				Card enemy = (Card)ev.values["enemy"];
+				Card player = (Card)ev.values["card"];
+				int damage = (int)ev.values["damage"];
+
+				builder.AppendLine($"{round}.kor;kazamata;tamad;{enemy.Name};{damage};{player.Name};{player.Health}");
+			}
+
+			if (ev.event_name == "player:attack")
+			{
+				Card card = (Card)ev.values["card"];
+				Card enemy = (Card)ev.values["enemy"];
+				int damage = (int)ev.values["damage"];
+				builder.AppendLine($"{round}.kor;jatekos;tamad;{card.Name};{damage};{enemy.Name};{enemy.Health}");
+			}
+
+
+			if (ev.event_name == "result")
+			{
+				string result = (string)ev.values["result"];
+				builder.AppendLine(result);
+			}
+
+			if (ev.event_name == "round_over")
+			{
+				builder.AppendLine();
+			}
 		});
+		if (didWin)
+        {
+			Console.WriteLine(lastCard);
+			dungeon.Reward.Grant(playerInventory,
+			playerInventory.Cards.Where(c => c.name == lastCard).First());
+        }
+
+		File.WriteAllText(Path.Combine(path, args[1]), builder.ToString());
 	}
 	
 	void Export(string diff, string[] args, PlayerCollection playerInventory, Deck playerDeck, string path, List<CardTemplate> cards,
@@ -88,8 +141,11 @@ class TestMode
 		{
 			StringBuilder builder = new StringBuilder();
 			builder.Append(playerInventory.Export());
-			builder.AppendLine();
-			builder.Append(playerDeck.Export());
+			if (playerDeck != null)
+            {
+				builder.AppendLine();
+				builder.Append(playerDeck.Export());
+            }
 			File.WriteAllText(Path.Combine(path, args[0]), builder.ToString());
 		}
 		else if (diff == "vilag")
@@ -139,7 +195,7 @@ class TestMode
 				break;
 
 			case "harc":
-				Fight(args, dungeons, templates, playerInventory, playerDeck);
+				Fight(args, dungeons, templates, playerInventory, playerDeck, path);
 				break;
 
 			case "export":
@@ -175,8 +231,9 @@ public static class MauiProgram
 
 	public static MauiApp CreateMauiApp()
 	{
-		string[] args = Environment.GetCommandLineArgs();		
+		string[] args = Environment.GetCommandLineArgs();
 		AllocConsole();
+		if (args.Length < 2) Environment.Exit(1);
 		if (args[1] != "--ui")
 		{
 			TestMode tm = new TestMode();
@@ -189,12 +246,13 @@ public static class MauiProgram
 				Console.WriteLine(e.StackTrace);
 			}
 			finally
-            {
+			{
 				Console.ReadLine();
-            }
+			}
 			FreeConsole();
 			Environment.Exit(0);
-        }
+		}
+		
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()

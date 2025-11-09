@@ -2,8 +2,9 @@
 <ContentPage x:Class="DuszaVerseny2025.GamePage"
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="DuszaVerseny2025"
-             BackgroundColor="White">
+             xmlns:local="clr-namespace:DuszaVerseny2025"
+             xmlns:views ="clr-namespace:DuszaVerseny2025.Views"
+             BackgroundColor="#0f0f0f">
     <Grid RowDefinitions="Auto, 150, *, 150, Auto"
           ColumnDefinitions="*, 250">
         <Label Grid.Row="0"
@@ -15,63 +16,21 @@
                FontAttributes="Bold"
                HorizontalOptions="Center"
                Margin="0,20,0,10"/>
-        
-        <Border Grid.Row="1"
+
+        <Grid Grid.Row="1"
                 Grid.Column="0"
-                BackgroundColor="LightGray"
-                Stroke="Black"
-                StrokeThickness="2"
-                StrokeShape="RoundRectangle 50"
                 Margin="10">
-            <VerticalStackLayout Spacing="10"
-                                 HorizontalOptions="Center"
-                                 VerticalOptions="Center">
+            <Border BackgroundColor="LightGray"
+                    Stroke="Black"
+                    StrokeThickness="2"
+                    StrokeShape="RoundRectangle 50"/>
 
-                <Border x:Name="BossFrame"
-                        BackgroundColor="#2c3e50"
-                        Stroke="Red"
-                        StrokeThickness="3"
-                        Padding="10"
-                        Margin="2"
-                        HorizontalOptions="Center"
-                        IsVisible="{Binding HasBoss}">
-                    <Grid>
-                        <BoxView Color="{Binding Boss.Template.ElementColor}" CornerRadius="8"/>
-                        <Label Text="{Binding Boss.Template.Name}"
-                               FontSize="18"
-                               TextColor="White"
-                               FontAttributes="Bold"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"/>
-                    </Grid>
-                </Border>
-
-                <CollectionView ItemsSource="{Binding EnemyRegularCards}"
-                                HeightRequest="100"
-                                ItemsLayout="HorizontalList"
-                                HorizontalOptions="Center">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border BackgroundColor="#2c3e50"
-                                    Stroke="Orange"
-                                    StrokeThickness="2"
-                                    Padding="6"
-                                    Margin="2">
-                                <Grid>
-                                    <BoxView Color="{Binding Template.ElementColor}" CornerRadius="8"/>
-                                    <Label Text="{Binding Template.Name}"
-                                           FontSize="14"
-                                           TextColor="White"
-                                           FontAttributes="Bold"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center"/>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
-        </Border>
+                <HorizontalStackLayout x:Name="EnemyDeckHolder"
+                                       Spacing="10"
+                                       Padding="10"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"/>
+        </Grid>
 
         <Border Grid.Row="2"
                 Grid.Column="0"
@@ -83,6 +42,8 @@
             <Grid RowDefinitions="*, Auto, *"
                   ColumnDefinitions="*">
 
+                <Button Text="Start game!" Clicked="StartButton_clicked" IsVisible="{Binding ShowStart}" />
+
                 <Border Grid.Row="0"
                         HorizontalOptions="Center"
                         VerticalOptions="End"
@@ -91,15 +52,14 @@
                         StrokeThickness="2"
                         Padding="8"
                         Margin="0,0,0,10"
-                        IsVisible="{Binding CurrentEnemyFighter, Converter={StaticResource NotNullConverter}}">
+                        IsVisible="{Binding ShowEnemy}">
                     <Grid>
-                        <BoxView Color="{Binding CurrentEnemyFighter.Template.ElementColor}" CornerRadius="8"/>
-                        <Label Text="{Binding CurrentEnemyFighter.Template.Name}"
-                               FontSize="16"
-                               TextColor="White"
-                               FontAttributes="Bold"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"/>
+                        <views:GameCard
+                            CardName="{Binding EnemyName}"
+                            CardHealth="{Binding EnemyHealth}"
+                            CardDamage="{Binding EnemyDamage}"
+                            IsBoss="False"
+                            />
                     </Grid>
                 </Border>
 
@@ -111,20 +71,19 @@
                         StrokeThickness="2"
                         Padding="8"
                         Margin="0,10,0,0"
-                        IsVisible="{Binding CurrentPlayerFighter, Converter={StaticResource NotNullConverter}}">
+                        IsVisible="{Binding ShowCurrent}">
                     <Grid>
-                        <BoxView Color="{Binding CurrentPlayerFighter.Template.ElementColor}" CornerRadius="8"/>
-                        <Label Text="{Binding CurrentPlayerFighter.Template.Name}"
-                               FontSize="16"
-                               TextColor="White"
-                               FontAttributes="Bold"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center"/>
+                        <views:GameCard
+                            CardName="{Binding CurrentName}"
+                            CardHealth="{Binding CurrentHealth}"
+                            CardDamage="{Binding CurrentDamage}"
+                            IsBoss="False"
+                            />
                     </Grid>
                 </Border>
             </Grid>
         </Border>
-
+        
         <Border Grid.Row="3"
                 Grid.Column="0"
                 BackgroundColor="LightGray"
@@ -132,37 +91,9 @@
                 StrokeThickness="2"
                 StrokeShape="RoundRectangle 50"
                 Margin="10">
-            <VerticalStackLayout HorizontalOptions="Center"
-                                 VerticalOptions="Center">
-                <Label Text="Your Team:"
-                       FontSize="18"
-                       TextColor="Gold"
-                       HorizontalOptions="Center" />
-                <CollectionView ItemsSource="{Binding SelectedCards}"
-                                HeightRequest="100"
-                                ItemsLayout="HorizontalList"
-                                HorizontalOptions="Center">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border BackgroundColor="#2c3e50"
-                                    Stroke="Orange"
-                                    StrokeThickness="2"
-                                    Padding="6"
-                                    Margin="2">
-                                <Grid>
-                                    <BoxView Color="{Binding Template.ElementColor}" CornerRadius="8"/>
-                                    <Label Text="{Binding Template.Name}"
-                                           FontSize="14"
-                                           TextColor="White"
-                                           FontAttributes="Bold"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center"/>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </VerticalStackLayout>
+            <HorizontalStackLayout HorizontalOptions="Center"
+                                 VerticalOptions="Center"
+                                 x:Name="PlayerDeckHolder"/>
         </Border>
 
         <Border Grid.Row="1"
@@ -188,7 +119,8 @@
                                     <Label Text="{Binding HistoryText}"
                                            FontSize="12"
                                            FontFamily="RetroByte"
-                                           LineBreakMode="WordWrap"/>
+                                           LineBreakMode="WordWrap"
+                                           TextColor="Black"/>
                                 </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>

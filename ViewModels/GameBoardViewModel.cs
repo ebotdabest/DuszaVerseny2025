@@ -4,44 +4,100 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using DuszaVerseny2025.ViewModels;
 using System.Collections.Generic;
+using Microsoft.Maui.Controls;
 
 namespace DuszaVerseny2025;
 
-public class GameBoardViewModel : INotifyPropertyChanged
+public class GameBoardViewModel : INotifyPropertyChanged, IQueryAttributable
 {
-        public List<CardViewModel> SelectedCards { get; }
+        private List<CardViewModel> _selectedCards = new();
+        public List<CardViewModel> SelectedCards
+        {
+                get => _selectedCards;
+                set
+                {
+                        if (_selectedCards != value)
+                        {
+                                _selectedCards = value ?? new List<CardViewModel>();
+                                OnPropertyChanged();
+                        }
+                }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string? name = null) =>
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        private string topLabelText = "Osi Szenteleky";
+        private string topLabelText;
+        private string enemyName;
+        private string enemyHealth;
+        private string enemyDamage;
+        private string currentName;
+        private string currentHealth;
+        private string currentDamage;
+        private bool showEnemy;
+        private bool showCurrent;
+
+        private bool showStartButton = true;
+
+        public bool ShowStart
+        {
+                get => showStartButton;
+                set { if (showStartButton != value) { showStartButton = value; OnPropertyChanged(); } }
+        }
+
+
         public string TopLabelText
         {
                 get => topLabelText;
                 set { if (topLabelText != value) { topLabelText = value; OnPropertyChanged(); } }
         }
 
-        private string player1Text = "Player";
-        public string Player1Text
+        public string EnemyName
         {
-                get => player1Text;
-                set { if (player1Text != value) { player1Text = value; OnPropertyChanged(); } }
+                get => enemyName;
+                set { if (enemyName != value) { enemyName = value; OnPropertyChanged(); } }
+        }
+        public string EnemyHealth
+        {
+                get => enemyHealth;
+                set { if (enemyHealth != value) { enemyHealth = value; OnPropertyChanged(); } }
         }
 
-        private string player2Text = "Kazamata";
-        public string Player2Text
+        public string EnemyDamage
         {
-                get => player2Text;
-                set { if (player2Text != value) { player2Text = value; OnPropertyChanged(); } }
+                get => enemyDamage;
+                set { if (enemyDamage != value) { enemyDamage = value; OnPropertyChanged(); } }
         }
 
-        private string kazamataText = "Kazamata";
-        public string KazamataText
+        public bool ShowEnemy
         {
-                get => kazamataText;
-                set { if (kazamataText != value) { kazamataText = value; OnPropertyChanged(); } }
+                get => showEnemy;
+                set { if (showEnemy != value) { showEnemy = value; OnPropertyChanged(); } }
         }
+
+        public string CurrentName
+        {
+                get => currentName;
+                set { if (currentName != value) { currentName = value; OnPropertyChanged(); } }
+        }
+        public string CurrentHealth
+        {
+                get => currentHealth;
+                set { if (currentHealth != value) { currentHealth = value; OnPropertyChanged(); } }
+        }
+        public string CurrentDamage
+        {
+                get => currentDamage;
+                set { if (currentDamage != value) { currentDamage = value; OnPropertyChanged(); } }
+        }
+        public bool ShowCurrent
+        {
+                get => showCurrent;
+                set { if (showCurrent != value) { showCurrent = value; OnPropertyChanged(); } }
+        }
+
+
 
         private string roundText = "1. kor";
         public string RoundText
@@ -64,24 +120,18 @@ public class GameBoardViewModel : INotifyPropertyChanged
                 set { if (historyItems != value) { historyItems = value; OnPropertyChanged(); } }
         }
 
-        public GameBoardViewModel(List<CardViewModel> selectedCards)
+        public GameBoardViewModel(List<CardViewModel>? selectedCards = null)
         {
-            SelectedCards = selectedCards ?? new List<CardViewModel>();
+                SelectedCards = selectedCards ?? new List<CardViewModel>();
         }
-        public void LoadInitialData()
+
+        public void ApplyQueryAttributes(IDictionary<string, object> query)
         {
-            Cards.Clear();
-            HistoryItems.Clear();
-
-            Cards.Add(new CardItem { CardText = "Kazamata for Kirese" });
-            Cards.Add(new CardItem { CardText = "Osszes Okiw an ele 4" });
-
-            HistoryItems.Add(new HistoryItem { HistoryText = "1. Kor: Jatekos at ossz Oki wan" });
-            HistoryItems.Add(new HistoryItem { HistoryText = "Kira sebbez: 2, Oki wan ele: 4" });
-            HistoryItems.Add(new HistoryItem { HistoryText = "1. Kor Vege" });
-            HistoryItems.Add(new HistoryItem { HistoryText = "Nyeremeny: Obiwan -1 szezes" });
-
-            RoundText = "3. kor";
+                if (query.TryGetValue("SelectedCards", out var cardsObj) &&
+                    cardsObj is List<CardViewModel> cards)
+                {
+                        SelectedCards = cards;
+                }
         }
 
         public void AddCard(string text) => Cards.Add(new CardItem { CardText = text });
@@ -89,7 +139,7 @@ public class GameBoardViewModel : INotifyPropertyChanged
         public void UpdateRound(int roundNumber) => RoundText = $"{roundNumber}. kor";
 
         public void AddHistoryEntry(string entry) => HistoryItems.Add(new HistoryItem { HistoryText = entry });
-        }
+}
 
 public class CardItem : INotifyPropertyChanged
 {

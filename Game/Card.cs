@@ -1,6 +1,7 @@
 namespace DuszaVerseny2025.Engine.Cards;
 
 using DuszaVerseny2025.Engine.Serializer;
+using DuszaVerseny2025.Engine.Utils;
 
 public record CardTemplate(int damage, int health, string name, CardTemplate.Type type) : ISerialize
 {
@@ -40,7 +41,7 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
 
     public CardTemplate MakeAnother(int dmgMult, int hpMult)
     {
-        return new CardTemplate(damage * dmgMult, health * hpMult, name, type, bossName, bossProficiency);
+        return new CardTemplate(damage + dmgMult, health + hpMult, name, type, bossName, bossProficiency);
     }
 
     public string Export()
@@ -131,18 +132,23 @@ public class Card
         return new BossCard(this);
     }
 
-    public bool Attack(Card otherCard)
+    public void Attack(Card target, out int damageDealt)
     {
-        // TODO: Implement damage multiplication
-        return otherCard.TakeDamage(_damage);
-    }
+        if (this.Health <= 0 || target.Health <= 0)
+        {
+            damageDealt = 0;
+            return;
+        }
 
-    public bool TakeDamage(int amount)
-    {
-        if (_health - amount <= 0) return true;
+        int baseDamage = this.Damage;
+        CardTemplate.Type attType = this.Type; 
+        CardTemplate.Type defType = target.Type;
 
-        _health -= amount;
-        return false;
+        int effectiveDamage = Utils.CalculateDamage(baseDamage, attType, defType);
+        damageDealt = effectiveDamage; 
+
+        target._health -= effectiveDamage;
+        if (target.Health < 0) target._health = 0;
     }
 }
 

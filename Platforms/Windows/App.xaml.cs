@@ -21,8 +21,20 @@ public partial class App : MauiWinUIApplication
 
 
 	protected override MauiApp CreateMauiApp()
-    {
+	{
 		return MauiProgram.CreateMauiApp();
+	}
+
+    protected override void OnLaunched(LaunchActivatedEventArgs args)
+	{
+		try
+        {
+        	base.OnLaunched(args);
+            
+        }catch (Exception e)
+        {
+            System.Console.WriteLine(e.StackTrace);
+        }
     }
 }
 
