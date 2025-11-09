@@ -1,4 +1,4 @@
-﻿﻿using DuszaVerseny2025.Engine;
+﻿using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Utils;
 using Microsoft.Extensions.Logging;
@@ -120,7 +120,7 @@ class TestMode
 				builder.AppendLine(result);
 			}
 
-			if (ev.event_name == "round_over")
+			if (ev.event_name == "round")
 			{
 				builder.AppendLine();
 			}
@@ -224,11 +224,6 @@ class TestMode
 
 public static class MauiProgram
 {
-	[DllImport("kernel32.dll", SetLastError = true)]
-	static extern bool AllocConsole();
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	static extern bool FreeConsole();
 	public static List<CardTemplate> deckBuilder = new List<CardTemplate>();
 
 	static CardTemplate findTemplate(List<CardTemplate> templates, string name)
@@ -265,7 +260,7 @@ public static class MauiProgram
 
 		var templates = CreateCards();
 
-		var smallCollection = new Collection(new List<CardTemplate> { findTemplate(templates, "selia") });
+		var smallCollection = new Collection(new List<CardTemplate> { findTemplate(templates, "nerum") });
 		var smallReward = new DungeonTemplate.AttributeReward(Card.Attribute.Health);
 		var smallDungeon = new DungeonTemplate(DungeonTemplate.DungeonType.Small, "Barlangi Portya", smallCollection, smallReward);
 		dungeons.Add(smallDungeon);
@@ -303,20 +298,11 @@ public static class MauiProgram
 	public static MauiApp CreateMauiApp()
 	{
 		string[] args = Environment.GetCommandLineArgs();
-		// AllocConsole();
 		if (args.Length < 2) Environment.Exit(1);
 		if (args[1] != "--ui")
 		{
 			TestMode tm = new TestMode();
-			try
-			{
-				tm.DoTest(args[1]);
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(e.StackTrace);
-			}
-			// FreeConsole();
+			tm.DoTest(args[1]);
 			Environment.Exit(0);
 		}
 		SetupEngine();

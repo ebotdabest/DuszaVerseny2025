@@ -19,12 +19,13 @@
                 Text="{Binding Title, Source={RelativeSource AncestorType={x:Type views:DungeonCard}}}"
                 Clicked="OnDungeonButtonClicked"
                 FontFamily="RetroByte"
-                FontSize="16"
+                FontSize="32"
                 TextColor="White"
                 BackgroundColor="#111111"
                 CornerRadius="10"
                 HeightRequest="128"
-                HorizontalOptions="FillAndExpand"/>
+                HorizontalOptions="FillAndExpand"
+                Loaded="HandleHoverSoItLooksNice"/>
 
         <Border Grid.Column="1"
                WidthRequest="96"

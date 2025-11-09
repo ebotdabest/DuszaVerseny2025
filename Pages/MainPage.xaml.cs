@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.ViewModels;
@@ -6,6 +6,7 @@ using DuszaVerseny2025.Pages;
 using System.Linq;
 using System.Threading.Tasks;
 using DuszaVerseny2025.Views;
+using Microsoft.Maui.Platform;
 
 namespace DuszaVerseny2025
 {
@@ -124,7 +125,7 @@ namespace DuszaVerseny2025
             int index = 0;
             foreach (var template in MauiProgram.engine.CardTemplates)
             {
-
+                if (template.IsBoss) continue;
                 CardViewModel vm;
                 if (MauiProgram.engine.PlayerInventory.Has(template))
                 {

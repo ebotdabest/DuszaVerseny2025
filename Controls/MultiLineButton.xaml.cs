@@ -20,7 +20,6 @@ namespace DuszaVerseny2025.Controls
                         set => SetValue(TextProperty, value);
                 }
 
-                // Command
                 public static readonly BindableProperty CommandProperty =
                     BindableProperty.Create(nameof(Command), typeof(ICommand), typeof(MultiLineButton), null);
 

@@ -1,4 +1,5 @@
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Platform;
 
 namespace DuszaVerseny2025.Views
 {
@@ -45,7 +46,7 @@ namespace DuszaVerseny2025.Views
         public bool ShowCard
         {
             get => (bool)GetValue(ShowCardProperty);
-            set=> SetValue(ShowCardProperty, value);
+            set => SetValue(ShowCardProperty, value);
         }
 
         public Command OnClick
@@ -62,6 +63,24 @@ namespace DuszaVerseny2025.Views
         private void OnDungeonButtonClicked(object sender, EventArgs e)
         {
             OnClick?.Execute(null);
+        }
+
+        private void HandleHoverSoItLooksNice(object sender, EventArgs e)
+        {
+            var mauiButton = (Button)sender;
+            Color original = mauiButton.BackgroundColor;
+            var nativeButton = mauiButton.ToPlatform(mauiButton.Handler.MauiContext);
+            if (nativeButton == null) return;
+
+            nativeButton.PointerEntered += (s, args) =>
+            {
+                mauiButton.BackgroundColor = Colors.DarkCyan;
+            };
+
+            nativeButton.PointerExited += (s, args) =>
+            {
+                mauiButton.BackgroundColor = original;
+            };
         }
     }
 }

@@ -32,18 +32,12 @@ namespace DuszaVerseny2025
             BindingContext = _viewModel;
         }
 
-        private async void AddHistoryView(string text)
+        private async Task AddHistoryView(string text)
         {
-            var historyView = new HistoryText(text);
-            HistoryContainer.Children.Add(historyView);
-
-            Device.BeginInvokeOnMainThread(async () =>
+            await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Task.Delay(100);
-                double contentHeight = HistoryContainer.Height;
-                double viewportHeight = ScrollViewParent.Height;
-                double yOffset = Math.Max(0, contentHeight - viewportHeight);
-                await ScrollViewParent.ScrollToAsync(0, yOffset, true);
+                var historyView = new HistoryText(text);
+                HistoryContainer.Children.Add(historyView);
             });
         }
 
@@ -147,29 +141,11 @@ namespace DuszaVerseny2025
             if (result.Success)
             {
                 StringBuilder rewardBuilder = new StringBuilder();
-                string rewardText = "";
-                if (dungeon.Reward.GetType() == typeof(DungeonTemplate.AttributeReward))
-                {
-                    var reward = (DungeonTemplate.AttributeReward)dungeon.Reward;
-                    rewardBuilder.Append("A ");
-                    rewardBuilder.Append(result.lastCard);
-                    rewardBuilder.Append(" kártyád kap +");
-                    rewardBuilder.Append(reward.attribute == Card.Attribute.Damage ? 1 : 2);
-                    rewardBuilder.Append(" ");
-                    rewardBuilder.Append(reward.attribute == Card.Attribute.Damage ? "Sebzést" : "Életerőt");
-                    rewardText = rewardBuilder.ToString();
-                }
-                else if (dungeon.Reward.GetType() == typeof(DungeonTemplate.CardReward))
-                {
-                    var reward = (DungeonTemplate.CardReward)dungeon.Reward;
-                    rewardBuilder.Append("Megkapod a ");
-                    rewardText = rewardBuilder.ToString();
-                }
 
+                string rewardText = dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory, MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == result.lastCard).First());
                 _viewModel.EndText = "Nyertél!";
                 _viewModel.EndColor = Colors.Lime;
                 _viewModel.EndReward = rewardText;
-                dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory, MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == result.lastCard).First());
 
                 AddHistoryView($"Játékos nyert! {rewardText}");
             }
@@ -249,14 +225,25 @@ namespace DuszaVerseny2025
 
         private async Task OnFightEvent(World.FightEvent ev)
         {
+            if (ev.event_name == "round")
+            {
+                int round = (int)ev.values["round"];
+                AddHistoryView($"{round}. Kör");
+                return;
+            }
+            else if (ev.event_name == "round_over")
+            {
+                int round = (int)ev.values["round"];
+                AddHistoryView($"{round}. kör vége");
+                return;
+            }
+
             if (ev.event_name.Contains("select")) await Task.Delay(500);
             else await Task.Delay(400);
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
                 var round = ev.values["round"];
-                string historyText = $"{round}. kör";
-                AddHistoryView(historyText);
-                historyText = null;
+                string historyText = "";
                 _viewModel.RoundText = $"{round}. kör";
                 if (ev.event_name == "game:select")
                 {
@@ -336,6 +323,7 @@ namespace DuszaVerseny2025
                         _viewModel.ShowEnemy = false;
                     }
                 }
+
                 if (!string.IsNullOrEmpty(historyText))
                 {
                     AddHistoryView(historyText);

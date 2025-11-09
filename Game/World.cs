@@ -47,17 +47,19 @@ namespace DuszaVerseny2025.Engine
             int currentPlayerIndex = 0, currentEnemyIndex = 0;
 
             int round = 1;
-
             Card initialEnemy = dungeonDeck.Cards[currentEnemyIndex];
             Card initialPlayer = playerDeck.Cards[currentPlayerIndex];
+            await callback(FightEvent.makeEvent("round", ("round", round)));
+
             await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", initialEnemy))).ConfigureAwait(false);
             await callback(FightEvent.makeEvent("player:select", ("round", round), ("card", initialPlayer))).ConfigureAwait(false);
             await callback(FightEvent.makeEvent("round_over", ("round", round)));
-            round++;
 
             bool playerLost = false;
             while (currentPlayerIndex < playerDeck.Size && currentEnemyIndex < dungeonDeck.Size)
             {
+                round++;
+                await callback(FightEvent.makeEvent("round", ("round", round)));
                 Card currentPlayerCard = playerDeck.Cards[currentPlayerIndex];
                 Card currentEnemyCard = dungeonDeck.Cards[currentEnemyIndex];
 
@@ -100,9 +102,7 @@ namespace DuszaVerseny2025.Engine
                     currentPlayerCard.Attack(currentEnemyCard, out damageDealt);
                     await callback(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
                 }
-
                 await callback(FightEvent.makeEvent("round_over", ("round", round)));
-                round++;
             }
 
             System.Console.WriteLine(playerLost);
@@ -181,10 +181,11 @@ namespace DuszaVerseny2025.Engine
 
             Card initialEnemy = dungeonDeck.Cards[currentEnemyIndex];
             Card initialPlayer = playerDeck.Cards[currentPlayerIndex];
+
             callback.Invoke(FightEvent.makeEvent("game:select", ("round", round), ("card", initialEnemy)));
             callback.Invoke(FightEvent.makeEvent("player:select", ("round", round), ("card", initialPlayer)));
-            callback.Invoke(FightEvent.makeEvent("round_over", ("round", round)));
             round++;
+            callback.Invoke(FightEvent.makeEvent("round", ("round", round)));
 
             bool playerLost = false;
             while (currentPlayerIndex < playerDeck.Size && currentEnemyIndex < dungeonDeck.Size)
@@ -230,7 +231,7 @@ namespace DuszaVerseny2025.Engine
                     callback.Invoke(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
                 }
 
-                callback.Invoke(FightEvent.makeEvent("round_over", ("round", round)));
+                callback.Invoke(FightEvent.makeEvent("round", ("round", round)));
                 round++;
             }
 
@@ -306,7 +307,7 @@ namespace DuszaVerseny2025.Engine
 
         public interface DungeonReward : ISerialize
         {
-            public void Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard);
+            public string Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard);
         }
 
         public class AttributeReward : DungeonReward
@@ -327,16 +328,26 @@ namespace DuszaVerseny2025.Engine
                 }}";
             }
 
-            public void Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
+            public string Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
             {
+                StringBuilder rewardBuilder = new StringBuilder();
                 System.Console.WriteLine($"Upgrading {lastPlayedCard.name}'s {Export()}");
                 playerCollection.Upgrade(lastPlayedCard.name, attribute);
+                rewardBuilder.Append("A ");
+                rewardBuilder.Append(lastPlayedCard.name);
+                rewardBuilder.Append(" kártyád kap +");
+                rewardBuilder.Append(attribute == Card.Attribute.Damage ? 1 : 2);
+                rewardBuilder.Append(" ");
+                rewardBuilder.Append(attribute == Card.Attribute.Damage ? "Sebzést" : "Életerőt");
+                return rewardBuilder.ToString();
             }
         }
 
         public class CardReward : DungeonReward
         {
             CardTemplate[] rewards;
+
+
             public CardReward(CardTemplate[] rewards)
             {
                 this.rewards = rewards;
@@ -347,7 +358,7 @@ namespace DuszaVerseny2025.Engine
                 return "";
             }
 
-            public void Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
+            public string Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
             {
                 string[] names = new string[playerCollection.Size];
                 for (int i = 0; i < playerCollection.Size; i++) names[i] = playerCollection.Cards[i].Name;
@@ -357,9 +368,11 @@ namespace DuszaVerseny2025.Engine
                     if (!names.Contains(reward.Name))
                     {
                         playerCollection.AddToCollection(reward);
-                        return;
+                        return $"Megkaptad a {reward.Name} kártyát!";
                     }
                 }
+
+                return "Nincs olyan kártya amit kaphatnál!";
             }
         }
 
@@ -416,7 +429,7 @@ namespace DuszaVerseny2025.Engine
             else if (type == DungeonType.Big)
             {
                 var boss = cards.Where(t => t.bossName == args[3]).First();
-                return new DungeonTemplate(type, args[1], dungeonCards, boss, new CardReward(cards.ToArray()));
+                return new DungeonTemplate(type, args[1], dungeonCards, boss, new CardReward(dungeonTemplates.ToArray()));
             }
             return null;
         }

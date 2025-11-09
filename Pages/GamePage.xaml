@@ -88,18 +88,18 @@
                         ZIndex="5">
 
                         <VerticalStackLayout Spacing="6"
-                                            HorizontalOptions="Center"
-                                            VerticalOptions="Center">
+                                             HorizontalOptions="Center"
+                                             VerticalOptions="Center">
                             <Label Text="{Binding EndText}"
-                                TextColor="{Binding EndColor}"
-                                HorizontalOptions="Center"
-                                FontSize="48"
-                                FontFamily="RetroByte"/>
+                                   TextColor="{Binding EndColor}"
+                                   HorizontalOptions="Center"
+                                   FontSize="48"
+                                   FontFamily="RetroByte"/>
                             <Label Text="{Binding EndReward}"
-                                TextColor="#FFFFE600"
-                                HorizontalOptions="Center"
-                                FontSize="24"
-                                FontFamily="RetroByte"/>
+                                   TextColor="#FFFFE600"
+                                   HorizontalOptions="Center"
+                                   FontSize="24"
+                                   FontFamily="RetroByte"/>
                             <Button Text="Vissza"
                                     Clicked="BackButton_Clicked"
                                     BackgroundColor="Gray"
@@ -110,8 +110,7 @@
                                     FontFamily="RetroByte"
                                     HorizontalOptions="Center"
                                     x:Name="BackButton"
-                                    Loaded="HandleHoverSoItLooksNice"
-                                    />
+                                    Loaded="HandleHoverSoItLooksNice"/>
                         </VerticalStackLayout>
                     </Border>
                 </Grid>
@@ -148,18 +147,27 @@
                 Stroke="Black"
                 StrokeThickness="1"
                 Margin="10">
-            <VerticalStackLayout Margin="10">
+            <Grid RowDefinitions="Auto,*"
+                  Margin="10">
+
                 <Label Text="Események ▼"
                        FontSize="16"
                        FontFamily="RetroByte"
-                       FontAttributes="Bold"/>
-                <ScrollView x:Name="ScrollViewParent" VerticalOptions="FillAndExpand">
-                    <VerticalStackLayout x:Name="HistoryContainer" Spacing="10">
-                    </VerticalStackLayout>
-                </ScrollView>
-            </VerticalStackLayout>
-        </Border>
+                       FontAttributes="Bold"
+                       VerticalOptions="Start"
+                       TextColor="White"/>
 
+                <ScrollView Grid.Row="1"
+                            x:Name="ScrollViewParent"
+                            VerticalOptions="FillAndExpand"
+                            VerticalScrollBarVisibility="Always">
+                    <VerticalStackLayout x:Name="HistoryContainer"
+                                         Spacing="10"
+                                         VerticalOptions="Start"/>
+                </ScrollView>
+
+            </Grid>
+        </Border>
         <Label Grid.Row="4"
                Grid.Column="0"
                Grid.ColumnSpan="2"
