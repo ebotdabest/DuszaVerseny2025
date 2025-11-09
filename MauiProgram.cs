@@ -76,7 +76,7 @@ class TestMode
 		StringBuilder builder = new StringBuilder();
 		GameEngine engine = new GameEngine(cards, dungeons, playerInventory);
 		Dungeon dungeon = engine.GameWorld.generateDungeon(engine.GameWorld.Dungeons.Where(d => d.name == args[0]).First());
-		//harc kezdodik;Teszt1a Kazamata
+
 		builder.AppendLine($"harc kezdodik;{dungeon.Name}");
 		builder.AppendLine();
 
@@ -245,7 +245,7 @@ public static class MauiProgram
 		var selia = new CardTemplate(2, 6, "Selia", CardTemplate.Type.Water);
 		templates.Add(new CardTemplate(2, 6, "Arin", CardTemplate.Type.Earth));
 		templates.Add(new CardTemplate(2, 4, "Liora", CardTemplate.Type.Air));
-		templates.Add(new CardTemplate(500, 500, "Nerum", CardTemplate.Type.Fire));
+		templates.Add(new CardTemplate(3, 3, "Nerum", CardTemplate.Type.Fire));
 		templates.Add(selia);
 		templates.Add(torak);
 		templates.Add(new CardTemplate(2, 5, "Emera", CardTemplate.Type.Air));
@@ -296,9 +296,6 @@ public static class MauiProgram
 		var inventory = new PlayerCollection();
 		inventory.AddToCollection(findTemplate(templates, "arin"));
 		inventory.AddToCollection(findTemplate(templates, "liora"));
-		inventory.AddToCollection(findTemplate(templates, "nerum"));
-		inventory.AddToCollection(findTemplate(templates, "emera"));
-		inventory.AddToCollection(findTemplate(templates, "vorn"));
 
 		engine = new GameEngine(templates, dungeons, inventory);
 	}

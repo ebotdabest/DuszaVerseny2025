@@ -226,6 +226,7 @@ namespace DuszaVerseny2025.Engine
                 {
                     int damageDealt;
                     currentPlayerCard.Attack(currentEnemyCard, out damageDealt);
+                    callback.Invoke(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
                 }
 
                 callback.Invoke(FightEvent.makeEvent("round_over", ("round", round)));
