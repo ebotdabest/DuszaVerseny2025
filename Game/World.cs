@@ -1,3 +1,4 @@
+
 using System.Text;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Serializer;
@@ -226,6 +227,7 @@ namespace DuszaVerseny2025.Engine
                 {
                     int damageDealt;
                     currentPlayerCard.Attack(currentEnemyCard, out damageDealt);
+                    callback.Invoke(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
                 }
 
                 callback.Invoke(FightEvent.makeEvent("round_over", ("round", round)));
@@ -389,19 +391,25 @@ namespace DuszaVerseny2025.Engine
                 "nagy" => DungeonType.Big,
                 _ => DungeonType.Unknown
             };
-            Card.Attribute reward = args[3] switch
-            {
-                "eletero" => Card.Attribute.Health,
-                "sebzes" => Card.Attribute.Damage,
-                _ => Card.Attribute.None
-            };
 
             if (type == DungeonType.Small)
             {
+                var reward = args[3] switch
+                {
+                    "eletero" => Card.Attribute.Health,
+                    "sebzes" => Card.Attribute.Damage,
+                    _ => Card.Attribute.None
+                };
                 return new DungeonTemplate(type, args[1], dungeonCards, new AttributeReward(reward));
             }
             else if (type == DungeonType.Medium)
             {
+                var reward = args[4] switch
+                {
+                    "eletero" => Card.Attribute.Health,
+                    "sebzes" => Card.Attribute.Damage,
+                    _ => Card.Attribute.None
+                };
                 var boss = cards.Where(t => t.bossName == args[3]).First();
                 return new DungeonTemplate(type, args[1], dungeonCards, boss, new AttributeReward(reward));
             }
@@ -439,6 +447,7 @@ namespace DuszaVerseny2025.Engine
                 dungeonBuilder.Append(";");
                 dungeonBuilder.Append(bossTemplate.Name);
             }
+            System.Console.WriteLine($"reward: {reward}");
             dungeonBuilder.Append(reward.Export());
 
             return dungeonBuilder.ToString();

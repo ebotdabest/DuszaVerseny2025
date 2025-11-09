@@ -11,6 +11,7 @@
                Grid.Column="0"
                Grid.ColumnSpan="2"
                Text="{Binding TopLabelText}"
+               TextColor="White"
                FontSize="18"
                FontFamily="RetroByte"
                FontAttributes="Bold"
@@ -152,8 +153,9 @@
                        FontSize="16"
                        FontFamily="RetroByte"
                        FontAttributes="Bold"/>
-                <ScrollView HeightRequest="500">
-                    <VerticalStackLayout x:Name="HistoryContainer"/>
+                <ScrollView x:Name="ScrollViewParent" VerticalOptions="FillAndExpand">
+                    <VerticalStackLayout x:Name="HistoryContainer" Spacing="10">
+                    </VerticalStackLayout>
                 </ScrollView>
             </VerticalStackLayout>
         </Border>

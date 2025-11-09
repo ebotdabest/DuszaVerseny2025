@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+﻿﻿using System.Collections.ObjectModel;
 using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.ViewModels;
@@ -25,7 +25,6 @@ namespace DuszaVerseny2025
 
             MessagingCenter.Subscribe<CardView, CardViewModel>(this, "CardTapped", OnCardTapped);
             MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) => RefreshAvailableCards());
-
         }
 
         protected override void OnAppearing()

@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="DuszaVerseny2025.HistoryText">
-        <Label Text="{Binding HistoryText}"
-               FontSize="16"
-               FontFamily="RetroByte"
-               HorizontalOptions="Center"
-               VerticalOptions="Center"/>
-</ContentPage>
+    <Label Text="{Binding HistoryTextValue}"
+           FontSize="16"
+           FontFamily="RetroByte"
+           HorizontalOptions="Center"
+           VerticalOptions="Center"
+           Margin="0,10,0,0"/>
+</ContentView>

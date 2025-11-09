@@ -19,7 +19,6 @@ namespace DuszaVerseny2025
 
         public Deck currentDeck { get; set; }
         public Dungeon dungeon { get; set; }
-        public List<string> HistoryItems { get; set; } = new List<string>();
 
         Card currentCard;
         Card enemyCard;
@@ -31,35 +30,21 @@ namespace DuszaVerseny2025
             InitializeComponent();
             _viewModel = new GameBoardViewModel();
             BindingContext = _viewModel;
-            HistoryItems = new List<string>();
         }
 
-        private async void OnNextRoundClicked(object sender, EventArgs e)
+        private async void AddHistoryView(string text)
         {
-            await SimulateGameTurnAsync();
-        }
+            var historyView = new HistoryText(text);
+            HistoryContainer.Children.Add(historyView);
 
-        private async Task SimulateGameTurnAsync()
-        {
-            if (int.TryParse(_viewModel.RoundText?.Split('.')[0], out int currentRound))
+            Device.BeginInvokeOnMainThread(async () =>
             {
-                currentRound++;
-                _viewModel.UpdateRound(currentRound);
-                _viewModel.AddHistoryEntry($"{currentRound}. Kor: Player action - Kira damaged.");
-                _viewModel.AddCard($"Card {currentRound}: Event text");
-                RepositionDynamicCards();
-
-                await DisplayAlert("Turn Advanced", $"Round {currentRound}!", "OK");
-            }
-        }
-
-        private void RepositionDynamicCards()
-        {
-            var currentItems = _viewModel.Cards.ToList();
-            _viewModel.Cards = new ObservableCollection<CardItem>(currentItems);
-
-            Random rand = new Random();
-            Debug.WriteLine($"Repositioned cards. Random: X={rand.NextDouble():F2}, Y={rand.NextDouble():F2}");
+                await Task.Delay(100);
+                double contentHeight = HistoryContainer.Height;
+                double viewportHeight = ScrollViewParent.Height;
+                double yOffset = Math.Max(0, contentHeight - viewportHeight);
+                await ScrollViewParent.ScrollToAsync(0, yOffset, true);
+            });
         }
 
         void RenderEnemyCards()
@@ -133,6 +118,8 @@ namespace DuszaVerseny2025
             dungeonDeck = dungeon.compileDeck();
             RenderEnemyCards();
             RenderPlayerCards();
+
+            HistoryContainer.Children.Clear();
         }
 
 
@@ -160,6 +147,7 @@ namespace DuszaVerseny2025
             if (result.Success)
             {
                 StringBuilder rewardBuilder = new StringBuilder();
+                string rewardText = "";
                 if (dungeon.Reward.GetType() == typeof(DungeonTemplate.AttributeReward))
                 {
                     var reward = (DungeonTemplate.AttributeReward)dungeon.Reward;
@@ -169,22 +157,28 @@ namespace DuszaVerseny2025
                     rewardBuilder.Append(reward.attribute == Card.Attribute.Damage ? 1 : 2);
                     rewardBuilder.Append(" ");
                     rewardBuilder.Append(reward.attribute == Card.Attribute.Damage ? "Sebzést" : "Életerőt");
+                    rewardText = rewardBuilder.ToString();
                 }
                 else if (dungeon.Reward.GetType() == typeof(DungeonTemplate.CardReward))
                 {
                     var reward = (DungeonTemplate.CardReward)dungeon.Reward;
                     rewardBuilder.Append("Megkapod a ");
+                    rewardText = rewardBuilder.ToString();
                 }
 
                 _viewModel.EndText = "Nyertél!";
                 _viewModel.EndColor = Colors.Lime;
-                _viewModel.EndReward = rewardBuilder.ToString();
+                _viewModel.EndReward = rewardText;
                 dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory, MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == result.lastCard).First());
+
+                AddHistoryView($"Játékos nyert! {rewardText}");
             }
             else
             {
                 _viewModel.EndText = "Vesztettél!";
                 _viewModel.EndColor = Colors.Red;
+
+                AddHistoryView("Játékos vesztett!");
             }
             _viewModel.ShowEnd = true;
         }
@@ -260,7 +254,10 @@ namespace DuszaVerseny2025
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
                 var round = ev.values["round"];
-                _viewModel.RoundText = $"{round}. kor";
+                string historyText = $"{round}. kör";
+                AddHistoryView(historyText);
+                historyText = null;
+                _viewModel.RoundText = $"{round}. kör";
                 if (ev.event_name == "game:select")
                 {
                     enemyCard = (Card)ev.values["card"];
@@ -277,6 +274,7 @@ namespace DuszaVerseny2025
                     _viewModel.EnemyDamage = enemyCard.Damage.ToString();
                     ArenaEnemyCard.ElementColor = enemyCard.Template.ElementColor;
                     RenderEnemyCards();
+                    historyText = $"Kazamata kijátszotta: {enemyCard.Name}";
                     await Task.WhenAll(
                         ArenaEnemyCard.FadeTo(1, 500, Easing.CubicInOut),
                         ArenaEnemyCard.ScaleTo(1, 500, Easing.BounceOut),
@@ -297,6 +295,7 @@ namespace DuszaVerseny2025
                     _viewModel.CurrentDamage = currentCard.Damage.ToString();
                     ArenaPlayerCard.ElementColor = currentCard.Template.ElementColor;
                     RenderPlayerCards();
+                    historyText = $"Játékos kijátszotta: {currentCard.Name}";
                     await Task.WhenAll(
                         ArenaPlayerCard.FadeTo(1, 500, Easing.CubicInOut),
                         ArenaPlayerCard.ScaleTo(1, 500, Easing.BounceOut),
@@ -310,10 +309,12 @@ namespace DuszaVerseny2025
                     _viewModel.CurrentHealth = targetCard.Health.ToString();
                     _viewModel.CurrentDamage = targetCard.Damage.ToString();
 
+                    historyText = $"Kazamata({enemyCard.Name}) támad: {damage} a {targetCard.Name}(Játékos), élete maradt: {targetCard.Health.ToString()}";
                     await EnemyAttackAnimation(damage);
 
                     if (int.Parse(_viewModel.CurrentHealth) <= 0)
                     {
+                        historyText += $"{currentCard.Name}(Játékos) kártya legyőzve!";
                         await ShakeAndFade(ArenaPlayerCard);
                         _viewModel.ShowCurrent = false;
                     }
@@ -325,13 +326,19 @@ namespace DuszaVerseny2025
                     _viewModel.EnemyHealth = targetCard.Health.ToString();
                     _viewModel.EnemyDamage = targetCard.Damage.ToString();
 
+                    historyText = $"Játékos({currentCard.Name}) támad: {damage} a {targetCard.Name}(Kazamata), élete maradt: {targetCard.Health.ToString()}";
                     await PlayerAttackAnimation(damage);
 
                     if (int.Parse(_viewModel.EnemyHealth) <= 0)
                     {
+                        historyText += $"{targetCard.Name}(Kazamata) legyőzve!";
                         await ShakeAndFade(ArenaEnemyCard);
                         _viewModel.ShowEnemy = false;
                     }
+                }
+                if (!string.IsNullOrEmpty(historyText))
+                {
+                    AddHistoryView(historyText);
                 }
             });
         }
