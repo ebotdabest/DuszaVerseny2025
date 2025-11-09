@@ -25,7 +25,6 @@ namespace DuszaVerseny2025
 
             MessagingCenter.Subscribe<CardView, CardViewModel>(this, "CardTapped", OnCardTapped);
             MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) => RefreshAvailableCards());
-
         }
 
         protected override void OnAppearing()

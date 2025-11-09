@@ -303,7 +303,7 @@ public static class MauiProgram
 	public static MauiApp CreateMauiApp()
 	{
 		string[] args = Environment.GetCommandLineArgs();
-		AllocConsole();
+		// AllocConsole();
 		if (args.Length < 2) Environment.Exit(1);
 		if (args[1] != "--ui")
 		{
@@ -316,11 +316,7 @@ public static class MauiProgram
 			{
 				Console.WriteLine(e.StackTrace);
 			}
-			finally
-			{
-				Console.ReadLine();
-			}
-			FreeConsole();
+			// FreeConsole();
 			Environment.Exit(0);
 		}
 		SetupEngine();
