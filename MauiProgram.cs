@@ -250,7 +250,7 @@ public static class MauiProgram
 		templates.Add(new CardTemplate(3, 5, "Thalen", CardTemplate.Type.Air));
 		templates.Add(new CardTemplate(2, 6, "Isara", CardTemplate.Type.Water));
 		templates.Add(selia.ToBoss("Priestess Selia", Card.Attribute.Health));
-		templates.Add(torak.ToBoss("Lord Torak", Card.Attribute.Health));
+		templates.Add(torak.ToBoss("Lord Torak", Card.Attribute.Damage));
 		return templates;
 	}
 
@@ -274,7 +274,7 @@ public static class MauiProgram
 		var mediumReward = new DungeonTemplate.AttributeReward(Card.Attribute.Damage);
 		var mediumDungeon = new DungeonTemplate(
 			DungeonTemplate.DungeonType.Medium,
-			"Osi Szentely", mediumCollection, findTemplate(templates, "lord torak"), mediumReward);
+			"Ősi Szentély", mediumCollection, findTemplate(templates, "lord torak"), mediumReward);
 		dungeons.Add(mediumDungeon);
 
 		var bigCollection = new Collection(new List<CardTemplate> {
