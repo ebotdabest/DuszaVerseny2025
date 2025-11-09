@@ -4,17 +4,19 @@ using System.Collections.ObjectModel;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Views;
 using System.Threading.Tasks;
+using Microsoft.Maui.Platform;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Input;
+using System.Text;
 
 namespace DuszaVerseny2025
 {
-    [QueryProperty(nameof(engine), "GameEngine")]
     [QueryProperty(nameof(currentDeck), "Deck")]
     [QueryProperty(nameof(dungeon), "Dungeon")]
     public partial class GamePage : ContentPage
     {
         private readonly GameBoardViewModel _viewModel;
 
-        public GameEngine engine { get; set; }
         public Deck currentDeck { get; set; }
         public Dungeon dungeon { get; set; }
         public List<string> HistoryItems { get; set; } = new List<string>();
@@ -71,6 +73,7 @@ namespace DuszaVerseny2025
 
         void RenderEnemyNormalCards()
         {
+            if (enemyCard != null && enemyCard.Template.IsBoss) return;
             foreach (var card in dungeonDeck.Cards.Reverse())
             {
                 if (enemyCard != null && card.Name == enemyCard.Name) break;
@@ -90,6 +93,7 @@ namespace DuszaVerseny2025
         void RenderBossCard()
         {
             var boss = dungeon.boss;
+            if (enemyCard != null && enemyCard.Template.IsBoss) return;
 
             var card = new GameCard()
             {
@@ -131,19 +135,122 @@ namespace DuszaVerseny2025
             RenderPlayerCards();
         }
 
+
+        private void HandleHoverSoItLooksNice(object sender, EventArgs e)
+        {
+            var mauiButton = (Button)sender;
+            Color original = mauiButton.BackgroundColor;
+            var nativeButton = mauiButton.ToPlatform(mauiButton.Handler.MauiContext);
+            if (nativeButton == null) return;
+
+            nativeButton.PointerEntered += (s, args) =>
+            {
+                mauiButton.BackgroundColor = Colors.DarkGray;
+            };
+
+            nativeButton.PointerExited += (s, args) =>
+            {
+                mauiButton.BackgroundColor = original;
+            };
+        }
+
         private async Task PlayGame()
         {
-            var result = await engine.GameWorld.FightDungeonButFancy(dungeon, currentDeck, OnFightEvent);
+            var result = await MauiProgram.engine.GameWorld.FightDungeonButFancy(dungeon, currentDeck, OnFightEvent);
             if (result.Success)
             {
-                System.Console.WriteLine("Player won!");
-                // TODO: Handle victory
+                StringBuilder rewardBuilder = new StringBuilder();
+                if (dungeon.Reward.GetType() == typeof(DungeonTemplate.AttributeReward))
+                {
+                    var reward = (DungeonTemplate.AttributeReward)dungeon.Reward;
+                    rewardBuilder.Append("A ");
+                    rewardBuilder.Append(result.lastCard);
+                    rewardBuilder.Append(" kártyád kap +");
+                    rewardBuilder.Append(reward.attribute == Card.Attribute.Damage ? 1 : 2);
+                    rewardBuilder.Append(" ");
+                    rewardBuilder.Append(reward.attribute == Card.Attribute.Damage ? "Sebzést" : "Életerőt");
+                }
+                else if (dungeon.Reward.GetType() == typeof(DungeonTemplate.CardReward))
+                {
+                    var reward = (DungeonTemplate.CardReward)dungeon.Reward;
+                    rewardBuilder.Append("Megkapod a ");
+                }
+
+                _viewModel.EndText = "Nyertél!";
+                _viewModel.EndColor = Colors.Lime;
+                _viewModel.EndReward = rewardBuilder.ToString();
+                dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory, MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == result.lastCard).First());
             }
             else
             {
-                System.Console.WriteLine("Player lost");
-                // TODO: Handle loss
+                _viewModel.EndText = "Vesztettél!";
+                _viewModel.EndColor = Colors.Red;
             }
+            _viewModel.ShowEnd = true;
+        }
+
+        async Task ShowDamageLabel(int damage)
+        {
+            DamagePopupLabel.Text = $"-{damage}";
+            DamagePopupLabel.IsVisible = true;
+            DamagePopupLabel.Scale = 0.3f;
+            DamagePopupLabel.Opacity = 1;
+            DamagePopupLabel.TranslationY = 0;
+            await Task.WhenAll(
+                DamagePopupLabel.ScaleTo(1.4f, 400, Easing.BounceOut),
+
+                DamagePopupLabel.FadeTo(0, 500, Easing.CubicOut),
+                DamagePopupLabel.TranslateTo(0, -90, 600, Easing.CubicOut)
+            );
+            DamagePopupLabel.IsVisible = false;
+            DamagePopupLabel.Scale = 1;
+            DamagePopupLabel.TranslationY = 0;
+        }
+
+        async Task EnemyAttackAnimation(int damage)
+        {
+            ArenaPlayerCard.ZIndex = 1;
+            ArenaEnemyCard.ZIndex = 2;
+            ArenaEnemyCard.Scale = 1;
+            ArenaEnemyCard.Rotation = 0;
+            ArenaEnemyCard.TranslationX = 0;
+
+            await Task.WhenAll(
+                ArenaEnemyCard.TranslateTo(0, 75, 220, Easing.SpringOut),
+                ArenaEnemyCard.ScaleTo(1.2f, 220, Easing.SpringOut),
+                ArenaEnemyCard.RotateTo(-5, 220, Easing.SpringOut)
+            );
+
+            await ShowDamageLabel(damage);
+
+            await Task.WhenAll(
+                ArenaEnemyCard.TranslateTo(0, 0, 250, Easing.SpringIn),
+                ArenaEnemyCard.ScaleTo(1f, 250, Easing.SpringIn),
+                ArenaEnemyCard.RotateTo(0, 250, Easing.SpringIn)
+            );
+        }
+
+        async Task PlayerAttackAnimation(int damage)
+        {
+            ArenaPlayerCard.ZIndex = 2;
+            ArenaEnemyCard.ZIndex = 1;
+            ArenaPlayerCard.Scale = 1;
+            ArenaPlayerCard.Rotation = 0;
+            ArenaPlayerCard.TranslationX = 0;
+
+            await Task.WhenAll(
+                ArenaPlayerCard.TranslateTo(0, -75, 220, Easing.SpringOut),
+                ArenaPlayerCard.ScaleTo(1f, 220, Easing.SpringOut),
+                ArenaPlayerCard.RotateTo(5, 220, Easing.SpringOut)
+            );
+
+            await ShowDamageLabel(damage);
+
+            await Task.WhenAll(
+                ArenaPlayerCard.TranslateTo(0, 0, 250, Easing.SpringIn),
+                ArenaPlayerCard.ScaleTo(1f, 250, Easing.SpringIn),
+                ArenaPlayerCard.RotateTo(0, 250, Easing.SpringIn)
+            );
         }
 
         private async Task OnFightEvent(World.FightEvent ev)
@@ -152,6 +259,8 @@ namespace DuszaVerseny2025
             else await Task.Delay(400);
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
+                var round = ev.values["round"];
+                _viewModel.RoundText = $"{round}. kor";
                 if (ev.event_name == "game:select")
                 {
                     enemyCard = (Card)ev.values["card"];
@@ -159,7 +268,7 @@ namespace DuszaVerseny2025
                     ArenaEnemyCard.IsBoss = isBoss;
                     ArenaEnemyCard.Opacity = 0;
                     ArenaEnemyCard.Scale = 0.8f;
-                    ArenaEnemyCard.TranslationY = 150;
+                    ArenaEnemyCard.TranslationY = 0;
                     ArenaEnemyCard.Rotation = 0;
                     ArenaEnemyCard.TranslationX = 0;
                     _viewModel.ShowEnemy = true;
@@ -179,7 +288,7 @@ namespace DuszaVerseny2025
                     currentCard = (Card)ev.values["card"];
                     ArenaPlayerCard.Opacity = 0;
                     ArenaPlayerCard.Scale = 0.8f;
-                    ArenaPlayerCard.TranslationY = -150;
+                    ArenaPlayerCard.TranslationY = 0;
                     ArenaPlayerCard.Rotation = 0;
                     ArenaPlayerCard.TranslationX = 0;
                     _viewModel.ShowCurrent = true;
@@ -201,34 +310,7 @@ namespace DuszaVerseny2025
                     _viewModel.CurrentHealth = targetCard.Health.ToString();
                     _viewModel.CurrentDamage = targetCard.Damage.ToString();
 
-                    ArenaEnemyCard.Scale = 1;
-                    ArenaEnemyCard.Rotation = 0;
-                    ArenaEnemyCard.TranslationX = 0;
-                    await Task.WhenAll(
-                        ArenaEnemyCard.TranslateTo(0, 75, 220, Easing.SpringOut),
-                        ArenaEnemyCard.ScaleTo(1.2f, 220, Easing.SpringOut),
-                        ArenaEnemyCard.RotateTo(-5, 220, Easing.SpringOut)
-                    );
-
-                    DamagePopupLabel.Text = $"-{damage}";
-                    DamagePopupLabel.IsVisible = true;
-                    DamagePopupLabel.Scale = 0.3f;
-                    DamagePopupLabel.Opacity = 1;
-                    DamagePopupLabel.TranslationY = 0;
-                    await Task.WhenAll(
-                        DamagePopupLabel.ScaleTo(1.4f, 180, Easing.BounceOut),
-                        DamagePopupLabel.FadeTo(0, 350, Easing.CubicOut),
-                        DamagePopupLabel.TranslateTo(0, -90, 350, Easing.CubicOut)
-                    );
-                    DamagePopupLabel.IsVisible = false;
-                    DamagePopupLabel.Scale = 1;
-                    DamagePopupLabel.TranslationY = 0;
-
-                    await Task.WhenAll(
-                        ArenaEnemyCard.TranslateTo(0, 0, 250, Easing.SpringIn),
-                        ArenaEnemyCard.ScaleTo(1f, 250, Easing.SpringIn),
-                        ArenaEnemyCard.RotateTo(0, 250, Easing.SpringIn)
-                    );
+                    await EnemyAttackAnimation(damage);
 
                     if (int.Parse(_viewModel.CurrentHealth) <= 0)
                     {
@@ -243,34 +325,7 @@ namespace DuszaVerseny2025
                     _viewModel.EnemyHealth = targetCard.Health.ToString();
                     _viewModel.EnemyDamage = targetCard.Damage.ToString();
 
-                    ArenaPlayerCard.Scale = 1;
-                    ArenaPlayerCard.Rotation = 0;
-                    ArenaPlayerCard.TranslationX = 0;
-                    await Task.WhenAll(
-                        ArenaPlayerCard.TranslateTo(0, -75, 220, Easing.SpringOut),
-                        ArenaPlayerCard.ScaleTo(1.2f, 220, Easing.SpringOut),
-                        ArenaPlayerCard.RotateTo(5, 220, Easing.SpringOut)
-                    );
-
-                    DamagePopupLabel.Text = $"-{damage}";
-                    DamagePopupLabel.IsVisible = true;
-                    DamagePopupLabel.Scale = 0.3f;
-                    DamagePopupLabel.Opacity = 1;
-                    DamagePopupLabel.TranslationY = 0;
-                    await Task.WhenAll(
-                        DamagePopupLabel.ScaleTo(1.4f, 180, Easing.BounceOut),
-                        DamagePopupLabel.FadeTo(0, 350, Easing.CubicOut),
-                        DamagePopupLabel.TranslateTo(0, -90, 350, Easing.CubicOut)
-                    );
-                    DamagePopupLabel.IsVisible = false;
-                    DamagePopupLabel.Scale = 1;
-                    DamagePopupLabel.TranslationY = 0;
-
-                    await Task.WhenAll(
-                        ArenaPlayerCard.TranslateTo(0, 0, 250, Easing.SpringIn),
-                        ArenaPlayerCard.ScaleTo(1f, 250, Easing.SpringIn),
-                        ArenaPlayerCard.RotateTo(0, 250, Easing.SpringIn)
-                    );
+                    await PlayerAttackAnimation(damage);
 
                     if (int.Parse(_viewModel.EnemyHealth) <= 0)
                     {
@@ -315,6 +370,14 @@ namespace DuszaVerseny2025
         {
             _viewModel.ShowStart = false;
             PlayGame();
+        }
+
+        private void BackButton_Clicked(object sender, EventArgs e)
+        {
+            Device.BeginInvokeOnMainThread(async () =>
+            {
+                await Shell.Current.GoToAsync("..");
+            });
         }
     }
 }

@@ -10,7 +10,7 @@ namespace DuszaVerseny2025.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is not CardViewModel vm) return Color.FromArgb("#16213e");
-            var engine = MainPage.Current?.engine;
+            var engine = MauiProgram.engine;
             if (engine == null) return Color.FromArgb("#16213e");
 
             bool isOwned = engine.PlayerInventory.Has(vm.Template);

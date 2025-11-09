@@ -5,7 +5,7 @@ namespace DuszaVerseny2025.ViewModels
 {
     public class CardViewModel : INotifyPropertyChanged
     {
-        public CardTemplate Template { get; }
+        public CardTemplate Template { get; set; }
 
         private bool _isSelected;
         private int _order;

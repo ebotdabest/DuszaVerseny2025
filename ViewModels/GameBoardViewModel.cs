@@ -39,6 +39,12 @@ public class GameBoardViewModel : INotifyPropertyChanged, IQueryAttributable
         private bool showCurrent;
 
         private bool showStartButton = true;
+        private bool showEnd = false;
+        private string endText = "";
+        private Color endColor = Color.FromRgba(0, 0, 0, 0);
+
+        private string reward = "";
+
 
         public bool ShowStart
         {
@@ -95,6 +101,28 @@ public class GameBoardViewModel : INotifyPropertyChanged, IQueryAttributable
         {
                 get => showCurrent;
                 set { if (showCurrent != value) { showCurrent = value; OnPropertyChanged(); } }
+        }
+
+        public bool ShowEnd
+        {
+                get => showEnd;
+                set { if (showEnd != value) { showEnd = value; OnPropertyChanged(); } }
+        }
+        public string EndText
+        {
+                get => endText;
+                set { if (endText != value) { endText = value; OnPropertyChanged(); } }
+        }
+        public Color EndColor
+        {
+                get => endColor;
+                set { if (endColor != value) { endColor = value; OnPropertyChanged(); } }
+        }
+
+        public string EndReward
+        {
+                get => reward;
+                set { if (reward != value) { reward = value; OnPropertyChanged(); } }
         }
 
 

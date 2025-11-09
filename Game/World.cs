@@ -309,7 +309,7 @@ namespace DuszaVerseny2025.Engine
 
         public class AttributeReward : DungeonReward
         {
-            Card.Attribute attribute;
+            public Card.Attribute attribute;
             public AttributeReward(Card.Attribute attribute)
             {
                 this.attribute = attribute;
@@ -354,7 +354,6 @@ namespace DuszaVerseny2025.Engine
                 {
                     if (!names.Contains(reward.Name))
                     {
-                        Console.WriteLine($"Granting: {reward.name}");
                         playerCollection.AddToCollection(reward);
                         return;
                     }

@@ -56,7 +56,7 @@ public class Collection
 
     public bool Has(CardTemplate template)
     {
-        return _cards.Contains(template);
+        return Has(template.Name);
     }
 
     public bool Has(string name)

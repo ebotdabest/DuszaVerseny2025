@@ -7,7 +7,7 @@ namespace DuszaVerseny2025.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string name && MainPage.Current?.engine?.PlayerInventory?.Has(name) == true)
+            if (value is string name && MauiProgram.engine?.PlayerInventory?.Has(name) == true)
                 return Color.FromArgb("#16213e");
             return Colors.Gray;
         }
