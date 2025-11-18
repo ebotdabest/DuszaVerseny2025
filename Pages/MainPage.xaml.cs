@@ -1,12 +1,9 @@
 ﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
-using DuszaVerseny2025.ViewModels;
-using DuszaVerseny2025.Pages;
-using System.Linq;
-using System.Threading.Tasks;
-using DuszaVerseny2025.Views;
-using Microsoft.Maui.Platform;
 
 namespace DuszaVerseny2025
 {
@@ -14,203 +11,255 @@ namespace DuszaVerseny2025
     {
         public static MainPage Current { get; private set; }
 
-        public ObservableCollection<CardViewModel> AvailableCards { get; } = new();
-        public ObservableCollection<CardViewModel> SelectedCards { get; } = new();
-
-        public Command DungeonButtonCommand { get; }
         public MainPage()
         {
             InitializeComponent();
             Current = this;
-            BindingContext = this;
 
-            MessagingCenter.Subscribe<CardView, CardViewModel>(this, "CardTapped", OnCardTapped);
-            MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) => RefreshAvailableCards());
+            hybridWebView.SetInvokeJavaScriptTarget(this);
+
+            MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) =>
+            {
+                // Refresh the UI after dungeon completion
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await SendGameStateToJS();
+                });
+            });
         }
 
-        protected override void OnAppearing()
+        protected override async void OnAppearing()
         {
             base.OnAppearing();
-            RefreshAvailableCards();
-            UpdateSelectionLabel();
-            ShowDungeons(MauiProgram.engine.GameWorld.Dungeons);
+            Debug.WriteLine("=== MainPage OnAppearing ===");
+            Debug.WriteLine($"HybridWebView is null: {hybridWebView == null}");
+            Debug.WriteLine($"Engine is null: {MauiProgram.engine == null}");
+
+            if (MauiProgram.engine != null)
+            {
+                Debug.WriteLine($"Card templates count: {MauiProgram.engine.CardTemplates.Count}");
+                Debug.WriteLine($"Dungeons count: {MauiProgram.engine.GameWorld.Dungeons.Length}");
+                Debug.WriteLine($"Player inventory count: {MauiProgram.engine.PlayerInventory.Cards.Length}");
+            }
+
+            // Give the WebView time to initialize
+            Debug.WriteLine("Waiting 500ms for WebView to initialize...");
+            await Task.Delay(500);
+
+            Debug.WriteLine("Calling SendGameStateToJS...");
+            await SendGameStateToJS();
+            Debug.WriteLine("=== MainPage OnAppearing END ===");
         }
 
-        void ShowDungeons(DungeonTemplate[] dungeons)
+        private async void OnHybridWebViewRawMessageReceived(object sender, HybridWebViewRawMessageReceivedEventArgs e)
         {
-            DungeonContainer.Children.Clear();
-            foreach (var dungeon in dungeons)
+            Debug.WriteLine($"Raw message received: {e.Message}");
+        }
+
+        // Send complete game state to JavaScript
+        private async Task SendGameStateToJS()
+        {
+            try
             {
-                DungeonCard card;
-                if (dungeon.bossTemplate == null)
-                {
-                    card = new DungeonCard()
+                Debug.WriteLine("=== SendGameStateToJS START ===");
+
+                var availableCards = MauiProgram.engine.CardTemplates
+                    .Where(t => !t.IsBoss)
+                    .Select((t, index) => new CardData
                     {
-                        Title = dungeon.name,
-                        OnClick = new Command(async () => await OnDungeonSelected(dungeon))
-                    };
+                        Index = index,
+                        Name = t.name,
+                        Attack = t.damage,
+                        Health = t.health,
+                        ElementColor = t.ElementColor?.ToHex() ?? "#1a1a2e",
+                        IsOwned = MauiProgram.engine.PlayerInventory.Has(t),
+                        IsSelected = MauiProgram.deckBuilder.Any(d => d.name == t.name)
+                    }).ToList();
+
+                Debug.WriteLine($"Cards to send: {availableCards.Count}");
+                foreach (var card in availableCards)
+                {
+                    Debug.WriteLine($"  - {card.Name}: Attack={card.Attack}, Health={card.Health}, Owned={card.IsOwned}, Selected={card.IsSelected}");
+                }
+
+                var dungeons = MauiProgram.engine.GameWorld.Dungeons
+                    .Select(d => new DungeonData
+                    {
+                        Name = d.name,
+                        HasBoss = d.bossTemplate != null,
+                        BossName = d.bossTemplate?.name,
+                        BossHealth = d.bossTemplate?.health ?? 0,
+                        BossDamage = d.bossTemplate?.damage ?? 0
+                    }).ToList();
+
+                Debug.WriteLine($"Dungeons to send: {dungeons.Count}");
+                foreach (var dungeon in dungeons)
+                {
+                    Debug.WriteLine($"  - {dungeon.Name}: HasBoss={dungeon.HasBoss}");
+                }
+
+                var gameState = new GameStateData
+                {
+                    AvailableCards = availableCards,
+                    Dungeons = dungeons,
+                    MaxDeckSize = (int)MauiProgram.engine.PlayerInventory.CanUse,
+                    CurrentDeckSize = MauiProgram.deckBuilder.Count
+                };
+
+                string json = JsonSerializer.Serialize(gameState, CardGameJSContext.Default.GameStateData);
+                Debug.WriteLine($"JSON length: {json.Length} characters");
+                Debug.WriteLine($"JSON preview: {json.Substring(0, Math.Min(200, json.Length))}...");
+
+                await hybridWebView.EvaluateJavaScriptAsync($"window.updateGameState({json})");
+                Debug.WriteLine("JavaScript call completed successfully");
+                Debug.WriteLine("=== SendGameStateToJS END ===");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ERROR in SendGameStateToJS: {ex.Message}");
+                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+        }
+
+        // Called from JavaScript when a card is clicked
+        public async Task<string> OnCardTapped(int cardIndex)
+        {
+            try
+            {
+                var template = MauiProgram.engine.CardTemplates.Where(t => !t.IsBoss).ElementAt(cardIndex);
+
+                if (!MauiProgram.engine.PlayerInventory.Has(template))
+                {
+                    return JsonSerializer.Serialize(new { success = false, message = "Kártya nincs a birtokodban!" });
+                }
+
+                bool isSelected = MauiProgram.deckBuilder.Any(t => t.name == template.name);
+
+                if (isSelected)
+                {
+                    // Deselect card
+                    var toRemove = MauiProgram.deckBuilder.FirstOrDefault(t => t.name == template.name);
+                    if (toRemove != null)
+                    {
+                        MauiProgram.deckBuilder.Remove(toRemove);
+                    }
                 }
                 else
                 {
-                    card = new DungeonCard()
+                    // Select card
+                    if (MauiProgram.deckBuilder.Count >= MauiProgram.engine.PlayerInventory.CanUse)
                     {
-                        Title = dungeon.name,
-                        ShowCard = true,
-                        BossDamage = dungeon.bossTemplate.damage.ToString(),
-                        BossHealth = dungeon.bossTemplate.health.ToString(),
-                        BossName = dungeon.bossTemplate.name,
-                        OnClick = new Command(async () => await OnDungeonSelected(dungeon))
-                    };
-                }
-                DungeonContainer.Children.Add(card);
-            }
-        }
+                        return JsonSerializer.Serialize(new
+                        {
+                            success = false,
+                            message = $"Max {MauiProgram.engine.PlayerInventory.CanUse} kártya!"
+                        });
+                    }
 
-        async Task OnDungeonSelected(DungeonTemplate dungeonTemplate)
-        {
-            var dungeon = MauiProgram.engine.GameWorld.generateDungeon(dungeonTemplate);
-            if (MauiProgram.deckBuilder.Count == 0)
-            {
-                await DisplayAlert("Hiba", "Legyen nálad legalább 1 kártya!", "Ok");
-                return;
-            }
+                    var ownedCard = MauiProgram.engine.PlayerInventory.Cards
+                        .FirstOrDefault(t => t.name == template.name);
 
-            Deck deck;
-            System.Console.WriteLine("Cards you bitch!!!");
-            foreach (var t in MauiProgram.deckBuilder)
-            {
-                System.Console.WriteLine(t);
-            }
-            Deck.fromCollection(MauiProgram.engine.PlayerInventory, MauiProgram.deckBuilder, out deck);
-
-            var parameters = new Dictionary<string, object>
-            {
-                ["Deck"] = deck,
-                ["Dungeon"] = dungeon
-            };
-            await Shell.Current.GoToAsync(nameof(GamePage), parameters);
-
-        }
-
-        void RefreshIfDeck()
-        {
-            if (MauiProgram.deckBuilder.Count <= 0) return;
-
-            List<CardTemplate> refreshedDeckBuilder = new List<CardTemplate>();
-            SelectedCards.Clear();
-            foreach (var card in MauiProgram.deckBuilder)
-            {
-                var template = card;
-                if (!MauiProgram.engine.PlayerInventory.Cards.Any(t => t == card))
-                {
-                    template = MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == card.name).First();
-                }
-                refreshedDeckBuilder.Add(template);
-
-                var vm = AvailableCards.Where(vm => vm.Template.name == card.name).First();
-                int originalIndex = AvailableCards.IndexOf(vm);
-                AvailableCards.Remove(vm);
-                vm.OriginalIndex = ++originalIndex;
-                vm.IsSelected = true;
-                vm.Template = template;
-                SelectedCards.Add(vm);
-            }
-            MauiProgram.deckBuilder = refreshedDeckBuilder;
-            ReorderSelectedCards();
-        }
-
-        private void RefreshAvailableCards()
-        {
-            AvailableCards.Clear();
-            int index = 0;
-            foreach (var template in MauiProgram.engine.CardTemplates)
-            {
-                if (template.IsBoss) continue;
-                CardViewModel vm;
-                if (MauiProgram.engine.PlayerInventory.Has(template))
-                {
-                    var ply = MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == template.name).First();
-                    vm = new CardViewModel(ply)
+                    if (ownedCard != null)
                     {
-                        IsInteractable = true,
-                        OriginalIndex = index++
-                    };
+                        MauiProgram.deckBuilder.Add(ownedCard);
+                    }
                 }
-                else
+
+                await SendGameStateToJS();
+                return JsonSerializer.Serialize(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in OnCardTapped: {ex.Message}");
+                return JsonSerializer.Serialize(new { success = false, message = "Hiba történt!" });
+            }
+        }
+
+        // Called from JavaScript when a dungeon is selected
+        public async Task<string> OnDungeonSelected(string dungeonName)
+        {
+            try
+            {
+                var dungeonTemplate = MauiProgram.engine.GameWorld.Dungeons
+                    .FirstOrDefault(d => d.name == dungeonName);
+
+                if (dungeonTemplate == null)
                 {
-                    vm = new CardViewModel(template)
+                    return JsonSerializer.Serialize(new { success = false, message = "Dungeon nem található!" });
+                }
+
+                if (MauiProgram.deckBuilder.Count == 0)
+                {
+                    return JsonSerializer.Serialize(new
                     {
-                        IsInteractable = false,
-                        OriginalIndex = index++
-                    };
+                        success = false,
+                        message = "Legyen nálad legalább 1 kártya!"
+                    });
                 }
-                AvailableCards.Add(vm);
-            }
-            RefreshIfDeck();
-        }
-        private async void OnCardTapped(CardView sender, CardViewModel vm)
-        {
-            if (!vm.IsInteractable) return;
 
-            if (vm.IsSelected)
-            {
-                vm.IsSelected = false;
-                vm.Order = 0;
-                SelectedCards.Remove(vm);
+                var dungeon = MauiProgram.engine.GameWorld.generateDungeon(dungeonTemplate);
 
-                MauiProgram.deckBuilder.Remove(vm.Template);
-                if (vm.OriginalIndex >= 0 && vm.OriginalIndex <= AvailableCards.Count)
+                Deck deck;
+                Deck.fromCollection(MauiProgram.engine.PlayerInventory, MauiProgram.deckBuilder, out deck);
+
+                var parameters = new Dictionary<string, object>
                 {
-                    AvailableCards.Insert(vm.OriginalIndex, vm);
-                }
-                else
+                    ["Deck"] = deck,
+                    ["Dungeon"] = dungeon
+                };
+
+                await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    AvailableCards.Add(vm);
-                }
+                    await Shell.Current.GoToAsync(nameof(GamePage), parameters);
+                });
+
+                return JsonSerializer.Serialize(new { success = true });
             }
-            else
+            catch (Exception ex)
             {
-                if (SelectedCards.Count >= MauiProgram.engine.PlayerInventory.CanUse)
-                {
-                    await DisplayAlert("Limit", $"Max {MauiProgram.engine.PlayerInventory.CanUse} kártya!", "OK");
-                    return;
-                }
-
-                int originalIndex = AvailableCards.IndexOf(vm);
-                AvailableCards.Remove(vm);
-                vm.OriginalIndex = originalIndex;
-
-                SelectedCards.Add(vm);
-                MauiProgram.deckBuilder.Add(vm.Template);
-                vm.IsSelected = true;
-            }
-
-            ReorderSelectedCards();
-            UpdateSelectionLabel();
-        }
-
-        private void ReorderSelectedCards()
-        {
-            for (int i = 0; i < SelectedCards.Count; i++)
-            {
-                SelectedCards[i].Order = i + 1;
+                Debug.WriteLine($"Error in OnDungeonSelected: {ex.Message}");
+                return JsonSerializer.Serialize(new { success = false, message = "Hiba történt!" });
             }
         }
+    }
 
-        private void UpdateSelectionLabel()
-        {
-            SelectionLabel.Text = $"Kiválásztva: {MauiProgram.deckBuilder.Count} / {MauiProgram.engine.PlayerInventory.CanUse}";
-        }
+    // Data transfer classes
+    public class GameStateData
+    {
+        public List<CardData> AvailableCards { get; set; }
+        public List<DungeonData> Dungeons { get; set; }
+        public int MaxDeckSize { get; set; }
+        public int CurrentDeckSize { get; set; }
+    }
 
-        private void OnUnlockNext(object sender, EventArgs e)
-        {
-            var locked = MauiProgram.engine.CardTemplates.FirstOrDefault(t => !MauiProgram.engine.PlayerInventory.Has(t));
-            if (locked != null)
-            {
-                MauiProgram.engine.PlayerInventory.AddToCollection(locked);
-                RefreshAvailableCards();
-                ReorderSelectedCards();
-            }
-        }
+    public class CardData
+    {
+        public int Index { get; set; }
+        public string Name { get; set; }
+        public int Attack { get; set; }
+        public int Health { get; set; }
+        public string ElementColor { get; set; }
+        public bool IsOwned { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
+    public class DungeonData
+    {
+        public string Name { get; set; }
+        public bool HasBoss { get; set; }
+        public string BossName { get; set; }
+        public int BossHealth { get; set; }
+        public int BossDamage { get; set; }
+    }
+
+    // JSON serialization context
+    [JsonSourceGenerationOptions(WriteIndented = false)]
+    [JsonSerializable(typeof(GameStateData))]
+    [JsonSerializable(typeof(CardData))]
+    [JsonSerializable(typeof(DungeonData))]
+    [JsonSerializable(typeof(string))]
+    [JsonSerializable(typeof(int))]
+    internal partial class CardGameJSContext : JsonSerializerContext
+    {
     }
 }

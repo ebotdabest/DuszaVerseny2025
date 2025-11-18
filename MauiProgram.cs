@@ -71,8 +71,6 @@ class TestMode
 
 	void Fight(string[] args, List<DungeonTemplate> dungeons, List<CardTemplate> cards, PlayerCollection playerInventory, Deck currentDeck, string path)
 	{
-		// Lowk össze kell rakni a fullos motort csak ide, mert ez nem data amit passzívan lehet kezelni
-
 		StringBuilder builder = new StringBuilder();
 		GameEngine engine = new GameEngine(cards, dungeons, playerInventory);
 		Dungeon dungeon = engine.GameWorld.generateDungeon(engine.GameWorld.Dungeons.Where(d => d.name == args[0]).First());
@@ -316,6 +314,7 @@ public static class MauiProgram
 			});
 
 #if DEBUG
+		builder.Services.AddHybridWebViewDeveloperTools();
 		builder.Logging.AddDebug();
 #endif
 

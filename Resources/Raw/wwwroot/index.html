@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>DAMAREEN</title>
+        <link rel="icon" href="data:,">
+        <link rel="stylesheet" href="styles/app.css">
+        <script src="scripts/HybridWebView.js"></script>
+</head>
+
+<body>
+        <div class="container">
+                <!-- Header -->
+                <header class="game-header">
+                        <h1 class="game-title">DAMAREEN</h1>
+                        <div class="game-subtitle">♔</div>
+                </header>
+
+                <!-- Main Content -->
+                <div class="main-content">
+                        <!-- Left Panel: Card Collection & Deck -->
+                        <div class="left-panel">
+                                <!-- Collection Section -->
+                                <div class="section">
+                                        <h2 class="section-title">Gyűjtemény</h2>
+                                        <div id="cardCollection" class="card-grid"></div>
+                                </div>
+
+                                <!-- Selection Counter -->
+                                <div class="selection-counter" id="selectionCounter">
+                                        Kiválasztva: 0 / 0
+                                </div>
+
+                                <!-- Deck Section -->
+                                <div class="section deck-section">
+                                        <h2 class="section-title">Pakli</h2>
+                                        <div id="selectedDeck" class="deck-container"></div>
+                                </div>
+                        </div>
+
+                        <!-- Right Panel: Dungeons -->
+                        <div class="right-panel">
+                                <div id="dungeonList" class="dungeon-list"></div>
+                        </div>
+                </div>
+        </div>
+
+        <!-- Alert Modal -->
+        <div id="alertModal" class="modal">
+                <div class="modal-content">
+                        <p id="alertMessage"></p>
+                        <button onclick="closeAlert()" class="modal-btn">OK</button>
+                </div>
+        </div>
+
+        <!-- Debug Console -->
+        <div id="debugConsole" class="debug-console">
+                <div class="debug-header">
+                        <span>🐛 Debug</span>
+                        <button onclick="clearConsole()" class="debug-clear">Clear</button>
+                        <button onclick="testConnection()" class="debug-clear">Test C#</button>
+                        <button onclick="toggleConsole()" class="debug-toggle">◀</button>
+                </div>
+                <div id="debugOutput" class="debug-output"></div>
+        </div>
+
+        <script src="scripts/app.js"></script>
+</body>
+
+</html>
