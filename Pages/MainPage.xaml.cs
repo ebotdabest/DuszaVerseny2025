@@ -32,28 +32,69 @@ namespace DuszaVerseny2025
         {
             base.OnAppearing();
             Debug.WriteLine("=== MainPage OnAppearing ===");
-            Debug.WriteLine($"HybridWebView is null: {hybridWebView == null}");
-            Debug.WriteLine($"Engine is null: {MauiProgram.engine == null}");
-
-            if (MauiProgram.engine != null)
-            {
-                Debug.WriteLine($"Card templates count: {MauiProgram.engine.CardTemplates.Count}");
-                Debug.WriteLine($"Dungeons count: {MauiProgram.engine.GameWorld.Dungeons.Length}");
-                Debug.WriteLine($"Player inventory count: {MauiProgram.engine.PlayerInventory.Cards.Length}");
-            }
 
             // Give the WebView time to initialize
-            Debug.WriteLine("Waiting 500ms for WebView to initialize...");
-            await Task.Delay(500);
+            Debug.WriteLine("Waiting for WebView to initialize...");
+            await Task.Delay(1000);
 
-            Debug.WriteLine("Calling SendGameStateToJS...");
-            await SendGameStateToJS();
+            // Try to establish connection with retries
+            bool connected = false;
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    Debug.WriteLine($"Connection attempt {i + 1}...");
+                    await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Connection established', 'success')");
+                    connected = true;
+                    Debug.WriteLine($"Connection attempt {i + 1} SUCCESS");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Connection attempt {i + 1} failed: {ex.Message}");
+                    await Task.Delay(500);
+                }
+            }
+
+            Debug.WriteLine($"Connection status: {connected}");
+
+            if (connected)
+            {
+                Debug.WriteLine("Attempting to restore logs...");
+                // Restore console logs
+                try {
+                    await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();");
+                    Debug.WriteLine("Logs restored successfully");
+                } catch (Exception ex) {
+                    Debug.WriteLine($"Failed to restore logs: {ex.Message}");
+                }
+
+                Debug.WriteLine("Calling SendGameStateToJS...");
+                try {
+                    await SendGameStateToJS();
+                    Debug.WriteLine("SendGameStateToJS completed");
+                } catch (Exception ex) {
+                    Debug.WriteLine($"SendGameStateToJS FAILED: {ex.Message}");
+                    Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                }
+            }
+            else
+            {
+                Debug.WriteLine("Failed to establish connection with WebView");
+            }
+            
             Debug.WriteLine("=== MainPage OnAppearing END ===");
         }
 
         private async void OnHybridWebViewRawMessageReceived(object sender, HybridWebViewRawMessageReceivedEventArgs e)
         {
             Debug.WriteLine($"Raw message received: {e.Message}");
+            
+            if (e.Message == "RequestGameState")
+            {
+                Debug.WriteLine("Received RequestGameState from JS");
+                await SendGameStateToJS();
+            }
         }
 
         // Send complete game state to JavaScript
@@ -62,6 +103,7 @@ namespace DuszaVerseny2025
             try
             {
                 Debug.WriteLine("=== SendGameStateToJS START ===");
+                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Preparing game state...', 'info')");
 
                 var availableCards = MauiProgram.engine.CardTemplates
                     .Where(t => !t.IsBoss)
@@ -76,12 +118,6 @@ namespace DuszaVerseny2025
                         IsSelected = MauiProgram.deckBuilder.Any(d => d.name == t.name)
                     }).ToList();
 
-                Debug.WriteLine($"Cards to send: {availableCards.Count}");
-                foreach (var card in availableCards)
-                {
-                    Debug.WriteLine($"  - {card.Name}: Attack={card.Attack}, Health={card.Health}, Owned={card.IsOwned}, Selected={card.IsSelected}");
-                }
-
                 var dungeons = MauiProgram.engine.GameWorld.Dungeons
                     .Select(d => new DungeonData
                     {
@@ -92,12 +128,6 @@ namespace DuszaVerseny2025
                         BossDamage = d.bossTemplate?.damage ?? 0
                     }).ToList();
 
-                Debug.WriteLine($"Dungeons to send: {dungeons.Count}");
-                foreach (var dungeon in dungeons)
-                {
-                    Debug.WriteLine($"  - {dungeon.Name}: HasBoss={dungeon.HasBoss}");
-                }
-
                 var gameState = new GameStateData
                 {
                     AvailableCards = availableCards,
@@ -107,17 +137,20 @@ namespace DuszaVerseny2025
                 };
 
                 string json = JsonSerializer.Serialize(gameState, CardGameJSContext.Default.GameStateData);
-                Debug.WriteLine($"JSON length: {json.Length} characters");
-                Debug.WriteLine($"JSON preview: {json.Substring(0, Math.Min(200, json.Length))}...");
+                Debug.WriteLine($"JSON length: {json.Length}");
 
                 await hybridWebView.EvaluateJavaScriptAsync($"window.updateGameState({json})");
+                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Game state sent successfully', 'success')");
+                
                 Debug.WriteLine("JavaScript call completed successfully");
                 Debug.WriteLine("=== SendGameStateToJS END ===");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"ERROR in SendGameStateToJS: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                try {
+                    await hybridWebView.EvaluateJavaScriptAsync($"window.debugLog('[C#] Error sending state: {ex.Message}', 'error')");
+                } catch {}
             }
         }
 

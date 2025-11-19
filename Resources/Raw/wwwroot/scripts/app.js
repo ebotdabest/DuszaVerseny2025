@@ -1,68 +1,18 @@
 // Game state
 let gameState = null;
 
-// Debug console functions
-function debugLog(message, type = 'info') {
-        const output = document.getElementById('debugOutput');
-        if (!output) {
-                console.error('Debug output element not found!');
-                return;
-        }
-
-        const line = document.createElement('div');
-        line.className = `debug-line ${type}`;
-        const timestamp = new Date().toLocaleTimeString();
-        line.textContent = `[${timestamp}] ${message}`;
-        output.appendChild(line);
-        output.scrollTop = output.scrollHeight;
-
-        // Also log to browser console
-        console.log(`[${type.toUpperCase()}] ${message}`);
-}
-
-function toggleConsole() {
-        const console = document.getElementById('debugConsole');
-        if (console) {
-                console.classList.toggle('minimized');
-                debugLog('Console toggled', 'info');
-        }
-}
-
-function clearConsole() {
-        const output = document.getElementById('debugOutput');
-        if (output) {
-                output.innerHTML = '';
-                debugLog('Console cleared', 'info');
-        }
-}
-
-// Test connection to C#
-async function testConnection() {
-        debugLog('Testing connection to C#...', 'info');
-        try {
-                if (!window.HybridWebView) {
-                        debugLog('HybridWebView not available!', 'error');
-                        return;
-                }
-
-                debugLog('Calling OnCardTapped with index 0...', 'info');
-                const result = await window.HybridWebView.InvokeDotNet('OnCardTapped', [0]);
-                debugLog(`C# responded: ${result}`, 'success');
-        } catch (error) {
-                debugLog(`Connection test failed: ${error.message}`, 'error');
-                console.error(error);
-        }
-}
+// Debug console functions are now in console.js
+// We use the global debugLog function
 
 // Update game state from C#
 window.updateGameState = function (state) {
+        debugLog('=== updateGameState CALLED ===', 'info');
         debugLog('Received game state from C#', 'info');
-        debugLog(`State: ${JSON.stringify(state, null, 2)}`, 'info');
 
         gameState = state;
 
-        debugLog(`Cards count: ${state.AvailableCards?.length || 0}`, 'info');
-        debugLog(`Dungeons count: ${state.Dungeons?.length || 0}`, 'info');
+        debugLog(`Cards received: ${state.AvailableCards?.length || 0}`, 'info');
+        debugLog(`Dungeons received: ${state.Dungeons?.length || 0}`, 'info');
         debugLog(`Deck size: ${state.CurrentDeckSize}/${state.MaxDeckSize}`, 'info');
 
         renderUI();
@@ -98,7 +48,7 @@ function renderCards() {
 
         gameState.AvailableCards.forEach((card, index) => {
                 if (card.IsSelected) {
-                        debugLog(`Skipping selected card: ${card.Name}`, 'info');
+                        // debugLog(`Skipping selected card: ${card.Name}`, 'info');
                         return; // Skip selected cards in collection
                 }
 
@@ -125,14 +75,11 @@ function renderDeck() {
 
 // Create a card element
 function createCardElement(card, index, order = null) {
-        debugLog(`Creating card element: ${card.Name} (index: ${index}, order: ${order})`, 'info');
-
         const cardEl = document.createElement('div');
         cardEl.className = 'card';
 
         if (!card.IsOwned) {
                 cardEl.classList.add('locked');
-                debugLog(`Card ${card.Name} is locked`, 'warn');
         }
 
         if (card.IsSelected) {
@@ -217,7 +164,6 @@ function renderDungeons() {
         debugLog(`Rendering ${gameState.Dungeons.length} dungeons`, 'info');
 
         gameState.Dungeons.forEach(dungeon => {
-                debugLog(`Creating dungeon: ${dungeon.Name}`, 'info');
                 const dungeonEl = createDungeonElement(dungeon);
                 container.appendChild(dungeonEl);
         });
@@ -310,14 +256,24 @@ function closeAlert() {
         modal.classList.remove('show');
 }
 
+// Request game state from C#
+function requestGameState() {
+        debugLog('Requesting game state from C#...', 'info');
+        if (window.HybridWebView) {
+                window.HybridWebView.SendRawMessage('RequestGameState');
+        }
+}
+
 // Initialize
 window.addEventListener('DOMContentLoaded', function () {
-        debugLog('=== APP STARTING ===', 'info');
+        debugLog('=== MAIN PAGE LOADED ===', 'info');
         debugLog('DOM Content Loaded', 'success');
 
         // Check if HybridWebView is available
         if (window.HybridWebView) {
                 debugLog('HybridWebView API is available', 'success');
+                // Request game state immediately
+                requestGameState();
         } else {
                 debugLog('HybridWebView API is NOT available!', 'error');
         }
@@ -326,12 +282,18 @@ window.addEventListener('DOMContentLoaded', function () {
         const cardCollection = document.getElementById('cardCollection');
         const selectedDeck = document.getElementById('selectedDeck');
         const dungeonList = document.getElementById('dungeonList');
-        const debugOutput = document.getElementById('debugOutput');
 
         debugLog(`Card collection element: ${cardCollection ? 'FOUND' : 'NOT FOUND'}`, cardCollection ? 'success' : 'error');
         debugLog(`Selected deck element: ${selectedDeck ? 'FOUND' : 'NOT FOUND'}`, selectedDeck ? 'success' : 'error');
         debugLog(`Dungeon list element: ${dungeonList ? 'FOUND' : 'NOT FOUND'}`, dungeonList ? 'success' : 'error');
-        debugLog(`Debug output element: ${debugOutput ? 'FOUND' : 'NOT FOUND'}`, debugOutput ? 'success' : 'error');
 
         debugLog('Waiting for game state from C#...', 'warn');
+});
+
+// Listen for visibility changes (when navigating back)
+document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+                debugLog('Page became visible, requesting game state...', 'info');
+                requestGameState();
+        }
 });

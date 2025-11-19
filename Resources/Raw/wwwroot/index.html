@@ -7,6 +7,7 @@
         <title>DAMAREEN</title>
         <link rel="icon" href="data:,">
         <link rel="stylesheet" href="styles/app.css">
+        <link rel="stylesheet" href="styles/console.css">
         <script src="scripts/HybridWebView.js"></script>
 </head>
 
@@ -55,17 +56,7 @@
                 </div>
         </div>
 
-        <!-- Debug Console -->
-        <div id="debugConsole" class="debug-console">
-                <div class="debug-header">
-                        <span>🐛 Debug</span>
-                        <button onclick="clearConsole()" class="debug-clear">Clear</button>
-                        <button onclick="testConnection()" class="debug-clear">Test C#</button>
-                        <button onclick="toggleConsole()" class="debug-toggle">◀</button>
-                </div>
-                <div id="debugOutput" class="debug-output"></div>
-        </div>
-
+        <script src="scripts/console.js"></script>
         <script src="scripts/app.js"></script>
 </body>
 
