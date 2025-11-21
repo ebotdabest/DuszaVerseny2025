@@ -34,19 +34,15 @@ namespace DuszaVerseny2025
             Debug.WriteLine("=== MainPage OnAppearing ===");
 
             // Give the WebView time to initialize
-            Debug.WriteLine("Waiting for WebView to initialize...");
             await Task.Delay(1000);
 
-            // Try to establish connection with retries
             bool connected = false;
             for (int i = 0; i < 3; i++)
             {
                 try
                 {
-                    Debug.WriteLine($"Connection attempt {i + 1}...");
                     await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Connection established', 'success')");
                     connected = true;
-                    Debug.WriteLine($"Connection attempt {i + 1} SUCCESS");
                     break;
                 }
                 catch (Exception ex)
@@ -56,40 +52,30 @@ namespace DuszaVerseny2025
                 }
             }
 
-            Debug.WriteLine($"Connection status: {connected}");
-
             if (connected)
             {
-                Debug.WriteLine("Attempting to restore logs...");
-                // Restore console logs
-                try {
-                    await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();");
-                    Debug.WriteLine("Logs restored successfully");
-                } catch (Exception ex) {
-                    Debug.WriteLine($"Failed to restore logs: {ex.Message}");
-                }
+                // Restore logs
+                try { await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();"); }
+                catch (Exception ex) { Debug.WriteLine($"Failed to restore logs: {ex.Message}"); }
 
-                Debug.WriteLine("Calling SendGameStateToJS...");
-                try {
-                    await SendGameStateToJS();
-                    Debug.WriteLine("SendGameStateToJS completed");
-                } catch (Exception ex) {
-                    Debug.WriteLine($"SendGameStateToJS FAILED: {ex.Message}");
-                    Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                // Request game state from JS on page load
+                try
+                {
+                    await hybridWebView.EvaluateJavaScriptAsync("if(window.requestGameState) window.requestGameState();");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to trigger requestGameState: {ex.Message}");
                 }
             }
-            else
-            {
-                Debug.WriteLine("Failed to establish connection with WebView");
-            }
-            
+
             Debug.WriteLine("=== MainPage OnAppearing END ===");
         }
 
         private async void OnHybridWebViewRawMessageReceived(object sender, HybridWebViewRawMessageReceivedEventArgs e)
         {
             Debug.WriteLine($"Raw message received: {e.Message}");
-            
+
             if (e.Message == "RequestGameState")
             {
                 Debug.WriteLine("Received RequestGameState from JS");
@@ -255,8 +241,6 @@ namespace DuszaVerseny2025
             }
         }
     }
-
-    // Data transfer classes
     public class GameStateData
     {
         public List<CardData> AvailableCards { get; set; }

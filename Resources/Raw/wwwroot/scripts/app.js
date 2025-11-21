@@ -103,7 +103,6 @@ function createCardElement(card, index, order = null) {
                 cardEl.appendChild(orderEl);
         }
 
-        // Card name
         const nameEl = document.createElement('div');
         nameEl.className = 'card-name';
         nameEl.textContent = card.Name;
@@ -297,3 +296,31 @@ document.addEventListener('visibilitychange', function () {
                 requestGameState();
         }
 });
+
+// Main Menu Functions
+function newGame() {
+        debugLog('New Game clicked', 'info');
+        document.getElementById('main-menu').style.display = 'none';
+}
+
+function loadGame() {
+        debugLog('Load Game clicked', 'info');
+}
+
+function editor() {
+        debugLog('Editor clicked', 'info');
+}
+
+function exit() {
+        debugLog('Exit clicked', 'info');
+        if (window.HybridWebView) {
+                window.HybridWebView.InvokeDotNet('Exit');
+        } else {
+                console.log('Exit requested (HybridWebView not available)');
+        }
+}
+
+function showMainMenu() {
+        debugLog('Showing Main Menu', 'info');
+        document.getElementById('main-menu').style.display = 'flex';
+}

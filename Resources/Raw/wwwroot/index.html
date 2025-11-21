@@ -15,9 +15,17 @@
         <div class="container">
                 <!-- Header -->
                 <header class="game-header">
+                        <button id="btnBackToMenu" onclick="showMainMenu()" title="Vissza a menübe">☰</button>
                         <h1 class="game-title">DAMAREEN</h1>
                         <div class="game-subtitle">♔</div>
                 </header>
+
+                <div id="main-menu">
+                        <button id="btnNewGame" onclick="newGame()">Új játék</button>
+                        <button id="btnLoadGame" onclick="loadGame()">Betöltés</button>
+                        <button id="btnEditor" onclick="editor()">Világszerkesztő</button>
+                        <button id="btnExit" onclick="exit()">Kilépés</button>
+                </div>
 
                 <!-- Main Content -->
                 <div class="main-content">

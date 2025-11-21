@@ -171,6 +171,42 @@ function updateRoundText(round) {
 
 function showDamageLabel(damage, isPlayer) {
         const label = document.getElementById('damagePopupLabel');
+        if (!label) return;
+
+        // Reset and show
+        label.textContent = `-${damage}`;
+        label.style.display = 'block';
+        label.style.opacity = '1';
+        label.style.transform = 'scale(0.3)';
+        label.style.transition = 'none';
+
+        // Force reflow
+        void label.offsetWidth;
+
+        // Start animation
+        label.style.transition = 'transform 0.4s ease-out, opacity 0.5s ease-out';
+        label.style.transform = 'scale(1.4) translateY(-90px)';
+        label.style.opacity = '0';
+
+        // Hide after animation completes
+        setTimeout(() => {
+                label.style.display = 'none';
+                label.style.transform = 'scale(1) translateY(0)';
+                label.style.opacity = '1';
+        }, 550); // Slightly longer than animation duration
+}
+
+function showEndScreen(result, rewardText = "") {
+        gameState.showEnd = true;
+        document.getElementById('endScreen').style.display = 'flex';
+}
+
+function updateRoundText(round) {
+        document.getElementById('roundText').textContent = `${round}. kör`;
+}
+
+function showDamageLabel(damage, isPlayer) {
+        const label = document.getElementById('damagePopupLabel');
         label.textContent = `-${damage}`;
         label.style.opacity = '1';
         label.style.transform = 'scale(0.3)';
