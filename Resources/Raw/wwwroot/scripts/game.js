@@ -9,7 +9,6 @@ let gameState = {
         showEnemy: false,
         showEnd: false
 };
-
 document.addEventListener('DOMContentLoaded', function () {
         debugLog('=== GAME PAGE LOADED ===', 'info');
 
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (parts.length >= 2) {
                         const type = parts[0];
                         const data = parts.slice(1).join('|');
-
                         switch (type) {
                                 case 'initializeGame':
                                         const initData = JSON.parse(data);
@@ -87,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function () {
 function renderEnemyCards() {
         const container = document.getElementById('enemyDeck');
         container.innerHTML = '';
-
         if (gameState.dungeon.HasBoss) {
                 renderBossCard();
         }
@@ -96,7 +93,6 @@ function renderEnemyCards() {
 
 function renderBossCard() {
         if (gameState.enemyCard && gameState.enemyCard.IsBoss) return;
-
         const boss = gameState.dungeon.boss;
         const cardElement = createCardElement(boss, true, true);
         document.getElementById('enemyDeck').appendChild(cardElement);
@@ -130,7 +126,6 @@ function createCardElement(card, isBoss, isEnemy) {
         cardDiv.className = `card ${isBoss ? 'boss' : ''}`;
 
         const placeholderClass = isEnemy ? 'enemy-placeholder' : 'player-placeholder';
-
         cardDiv.innerHTML = `
         <div class="card-inner">
             <div class="card-name">${card.Name}</div>
@@ -169,64 +164,30 @@ function updateRoundText(round) {
         document.getElementById('roundText').textContent = `${round}. kör`;
 }
 
+// FIX: Megbízható, CSS alapú damage popup animáció
 function showDamageLabel(damage, isPlayer) {
         const label = document.getElementById('damagePopupLabel');
         if (!label) return;
 
-        // Reset and show
+        // Használjuk a támadó színét a sebzéshez (pl. kazamata támad = piros, játékos támad = arany)
+        label.style.color = isPlayer ? 'var(--accent-red)' : 'var(--accent-gold)';
         label.textContent = `-${damage}`;
-        label.style.display = 'block';
-        label.style.opacity = '1';
-        label.style.transform = 'scale(0.3)';
-        label.style.transition = 'none';
 
-        // Force reflow
+        // 1. Reseteljük az animációt és biztosítsuk a láthatóságot
+        label.classList.remove('animate-damage-popup');
+        label.style.display = 'block';
+
+        // 2. Trigger reflow - kötelező, hogy az eltávolított class újra indulhasson
         void label.offsetWidth;
 
-        // Start animation
-        label.style.transition = 'transform 0.4s ease-out, opacity 0.5s ease-out';
-        label.style.transform = 'scale(1.4) translateY(-90px)';
-        label.style.opacity = '0';
+        // 3. Start animation (1s duration from CSS)
+        label.classList.add('animate-damage-popup');
 
-        // Hide after animation completes
+        // 4. Eltüntetés és reset az animáció befejezése után (1000ms a CSS-ből)
         setTimeout(() => {
                 label.style.display = 'none';
-                label.style.transform = 'scale(1) translateY(0)';
-                label.style.opacity = '1';
-        }, 550); // Slightly longer than animation duration
-}
-
-function showEndScreen(result, rewardText = "") {
-        gameState.showEnd = true;
-        document.getElementById('endScreen').style.display = 'flex';
-}
-
-function updateRoundText(round) {
-        document.getElementById('roundText').textContent = `${round}. kör`;
-}
-
-function showDamageLabel(damage, isPlayer) {
-        const label = document.getElementById('damagePopupLabel');
-        label.textContent = `-${damage}`;
-        label.style.opacity = '1';
-        label.style.transform = 'scale(0.3)';
-        label.style.transition = 'none';
-        label.style.display = 'block';
-
-        void label.offsetWidth;
-
-        label.style.transition = 'transform 0.4s ease-out, opacity 0.5s ease-out, transform 0.6s ease-out';
-        label.style.transform = 'scale(1.4) translateY(-90px)';
-        label.style.opacity = '0';
-
-        label.addEventListener('transitionend', function handler(e) {
-                if (e.propertyName === 'opacity') {
-                        label.style.display = 'none';
-                        label.style.opacity = '1';
-                        label.style.transform = 'scale(1) translateY(0)';
-                        label.removeEventListener('transitionend', handler);
-                }
-        });
+                label.classList.remove('animate-damage-popup');
+        }, 1000);
 }
 
 function showEndScreen(result, rewardText = "") {
@@ -234,11 +195,11 @@ function showEndScreen(result, rewardText = "") {
         document.getElementById('endScreen').style.display = 'flex';
         if (result.Success) {
                 document.getElementById('endText').textContent = 'Nyertél!';
-                document.getElementById('endText').style.color = 'lime';
+                document.getElementById('endText').style.color = ''; // CSS gradient handles color
                 document.getElementById('endReward').textContent = rewardText;
         } else {
                 document.getElementById('endText').textContent = 'Vesztettél!';
-                document.getElementById('endText').style.color = 'red';
+                document.getElementById('endText').style.color = 'var(--accent-red)'; // Fallback/consistency
         }
 }
 
@@ -247,13 +208,16 @@ function navigateBack() {
         window.HybridWebView.SendRawMessage('navigateBack');
 }
 
+// FIX: Frissített animáció időzítés 500ms -> 600ms
 function triggerAnimation(elementId, animationClass) {
         const el = document.getElementById(elementId);
+        const duration = 600; // Új, lassabb animáció időtartam
         if (el) {
                 el.classList.remove(animationClass);
                 void el.offsetWidth; // Trigger reflow
                 el.classList.add(animationClass);
-                setTimeout(() => el.classList.remove(animationClass), 500);
+                // Ensure the class is removed after the animation duration
+                setTimeout(() => el.classList.remove(animationClass), duration);
         }
 }
 
@@ -262,7 +226,8 @@ function updateArenaCard(elementId, card, isBoss, isEnemy) {
         arenaCard.style.display = 'flex';
 
         // Update stats
-        const healthEl = isEnemy ? document.getElementById('enemyHealth') : document.getElementById('playerHealth');
+        const healthEl = isEnemy ?
+                document.getElementById('enemyHealth') : document.getElementById('playerHealth');
         const damageEl = isEnemy ? document.getElementById('enemyDamage') : document.getElementById('playerDamage');
 
         if (healthEl) healthEl.textContent = card.Health;
@@ -270,11 +235,9 @@ function updateArenaCard(elementId, card, isBoss, isEnemy) {
 
         // Update name
         arenaCard.querySelector('.card-name').textContent = card.Name;
-
         // Update classes
         if (isBoss) arenaCard.classList.add('boss');
         else arenaCard.classList.remove('boss');
-
         // Update color
         if (card.ElementColor) {
                 arenaCard.style.background = `linear-gradient(135deg, ${card.ElementColor} 0%, #222 100%)`;
@@ -304,7 +267,6 @@ function handleFightEvent(event) {
                 renderEnemyCards();
         } else if (event.event_name === "player:select") {
                 gameState.currentCard = event.values.card;
-
                 updateArenaCard('arenaPlayerCard', gameState.currentCard, false, false);
                 triggerAnimation('arenaPlayerCard', 'drawCard');
 
@@ -319,7 +281,7 @@ function handleFightEvent(event) {
 
                 triggerAnimation('arenaEnemyCard', 'attacking');
                 triggerAnimation('arenaPlayerCard', 'damaged');
-                showDamageLabel(damage, true);
+                showDamageLabel(damage, true); // isPlayer = true, mert a játékost sebezte
 
                 if (targetCard.Health <= 0) {
                         setTimeout(() => {
@@ -336,7 +298,7 @@ function handleFightEvent(event) {
 
                 triggerAnimation('arenaPlayerCard', 'attacking');
                 triggerAnimation('arenaEnemyCard', 'damaged');
-                showDamageLabel(damage, false);
+                showDamageLabel(damage, false); // isPlayer = false, mert az ellenséget sebezte
 
                 if (targetCard.Health <= 0) {
                         setTimeout(() => {

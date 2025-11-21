@@ -1,9 +1,17 @@
 :root {
+    /* Updated to match the Main Menu design */
+    --bg-void: #050505;
     --bg-dark: #121212;
     --bg-panel: #1e1e1e;
     --bg-card: #2d2d2d;
-    --accent-primary: #ff4081;
-    --accent-secondary: #00e676;
+
+    /* Main Menu Accents */
+    --accent-red: #ff2a6d;
+    /* Primary Action/Danger */
+    --accent-gold: #ffc107;
+    /* Secondary Positive/Highlight */
+    --glow-red: 0 0 15px rgba(255, 42, 109, 0.5);
+
     --text-primary: #ffffff;
     --text-secondary: #b0b0b0;
     --border-color: #333;
@@ -24,13 +32,19 @@ body {
     user-select: none;
 }
 
+/* Background updated for fantasy vibe (static texture, removed bright gradient) */
 .game-background {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at center, #2a2a2a 0%, #121212 100%);
+    /* Richer, darker texture inspired by the Main Menu background */
+    background: var(--bg-void);
+    background-image:
+        radial-gradient(circle at 50% 50%, rgba(255, 42, 109, 0.05) 0%, rgba(0, 0, 0, 0) 70%),
+        repeating-linear-gradient(0deg, transparent, rgba(255, 255, 255, 0.01) 1px, transparent 2px);
+    background-size: 100% 100%, 100% 40px;
     z-index: -2;
 }
 
@@ -60,18 +74,23 @@ body {
     align-items: center;
     padding: 10px 20px;
     background: rgba(30, 30, 30, 0.8);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--accent-red);
+    /* Highlight border */
     border-radius: 8px;
     margin-bottom: 10px;
     backdrop-filter: blur(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    /* Stronger shadow */
 }
 
 .dungeon-title {
     font-family: 'Cinzel', serif;
     font-size: 24px;
     font-weight: bold;
-    color: var(--accent-primary);
-    text-shadow: 0 0 10px rgba(255, 64, 129, 0.3);
+    color: var(--accent-red);
+    /* Use new red accent */
+    text-shadow: var(--glow-red);
+    /* Use new glow */
 }
 
 .round-counter {
@@ -112,6 +131,8 @@ body {
     flex-direction: column;
     align-items: center;
     position: relative;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    /* Inner shadow for depth */
 }
 
 .zone-label {
@@ -119,7 +140,8 @@ body {
     top: 5px;
     left: 10px;
     font-size: 12px;
-    color: var(--text-secondary);
+    color: var(--accent-gold);
+    /* Highlight label */
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -140,9 +162,13 @@ body {
     justify-content: center;
     align-items: center;
     gap: 40px;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.4);
+    /* Darker background */
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     position: relative;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7) inset;
+    /* Strong inner shadow */
 }
 
 /* Deck Containers */
@@ -184,19 +210,21 @@ body {
 
 .card:hover {
     transform: translateY(-10px) scale(1.05);
-    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6);
-    border-color: var(--text-primary);
+    /* Border and shadow updated for premium feel */
+    box-shadow: 0 10px 30px rgba(255, 42, 109, 0.3);
+    border-color: var(--accent-red);
     z-index: 10;
 }
 
 .card::before {
+    /* Glint/Shine effect */
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0) 60%);
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0) 60%);
     background-size: 200% 200%;
     opacity: 0;
     transition: opacity 0.3s;
@@ -219,8 +247,10 @@ body {
 }
 
 .card.boss {
-    border-color: #ff5252;
-    box-shadow: 0 0 20px rgba(255, 82, 82, 0.4);
+    border-color: var(--accent-red);
+    /* Use new red accent */
+    box-shadow: 0 0 25px rgba(255, 42, 109, 0.6);
+    /* Stronger glow */
 }
 
 .card-inner {
@@ -229,7 +259,8 @@ body {
     height: 100%;
     padding: 8px;
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.4);
+    /* Darker inner background */
 }
 
 .card-name {
@@ -240,7 +271,8 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #fff;
+    color: var(--accent-gold);
+    /* Highlight name */
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     background: rgba(0, 0, 0, 0.5);
     padding: 2px 4px;
@@ -293,13 +325,15 @@ body {
 }
 
 .stat.damage {
-    color: #ff5252;
-    text-shadow: 0 0 5px rgba(255, 82, 82, 0.5);
+    color: var(--accent-red);
+    /* Use new red accent */
+    text-shadow: 0 0 5px rgba(255, 42, 109, 0.5);
 }
 
 .stat.health {
-    color: #69f0ae;
-    text-shadow: 0 0 5px rgba(105, 240, 174, 0.5);
+    color: var(--accent-gold);
+    /* Use gold for health/positive stat */
+    text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
 }
 
 /* Arena Cards */
@@ -308,74 +342,136 @@ body {
     height: 210px;
     transform: scale(1.1);
     z-index: 10;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
-.arena-card.attacking {
-    animation: attackLunge 0.4s ease-in-out;
+/* ÚJ, KÖZÉP FELÉ TÖRTŐ TÁMADÁS ANIMÁCIÓK */
+/* A Player Card (bal oldali) jobbra támad */
+.arena-card.player.attacking {
+    animation: playerAttackLunge 0.6s ease-in-out forwards;
 }
 
-.arena-card.damaged {
-    animation: damageShake 0.4s ease-in-out;
-}
-
-@keyframes attackLunge {
+@keyframes playerAttackLunge {
     0% {
-        transform: scale(1.1) translateY(0);
+        transform: scale(1.1) translate(0, 0);
     }
 
-    50% {
-        transform: scale(1.2) translateY(-30px);
+    30% {
+        transform: scale(1.2) translate(30px, -10px);
+        /* Jobbra és felfelé mozdul, nagyobb lesz */
+    }
+
+    60% {
+        transform: scale(1.2) translate(30px, -10px);
     }
 
     100% {
-        transform: scale(1.1) translateY(0);
+        transform: scale(1.1) translate(0, 0);
     }
 }
 
-@keyframes damageShake {
+/* Az Enemy Card (jobb oldali) balra támad */
+.arena-card.enemy.attacking {
+    animation: enemyAttackLunge 0.6s ease-in-out forwards;
+}
+
+@keyframes enemyAttackLunge {
     0% {
-        transform: scale(1.1) translateX(0);
+        transform: scale(1.1) translate(0, 0);
     }
 
-    25% {
-        transform: scale(1.1) translateX(-10px) rotate(-5deg);
+    30% {
+        transform: scale(1.2) translate(-30px, -10px);
+        /* Balra és felfelé mozdul, nagyobb lesz */
     }
 
-    50% {
-        transform: scale(1.1) translateX(10px) rotate(5deg);
-    }
-
-    75% {
-        transform: scale(1.1) translateX(-5px) rotate(-2deg);
+    60% {
+        transform: scale(1.2) translate(-30px, -10px);
     }
 
     100% {
-        transform: scale(1.1) translateX(0);
+        transform: scale(1.1) translate(0, 0);
     }
 }
+
+
+/* ÚJ, HÁTRALÖKÉS (KNOCKBACK) ANIMÁCIÓK */
+/* A Player Card (bal oldali) balra lökődik */
+.arena-card.player.damaged {
+    animation: playerKnockback 0.6s ease-out;
+}
+
+@keyframes playerKnockback {
+
+    0%,
+    100% {
+        transform: scale(1.1) translateX(0);
+    }
+
+    20% {
+        transform: scale(1.05) translateX(-20px) rotate(-1deg);
+        /* Balra lökődik (távolodik a támadótól) */
+    }
+
+    40% {
+        transform: scale(1.1) translateX(-10px) rotate(0);
+    }
+}
+
+/* Az Enemy Card (jobb oldali) jobbra lökődik */
+.arena-card.enemy.damaged {
+    animation: enemyKnockback 0.6s ease-out;
+}
+
+@keyframes enemyKnockback {
+
+    0%,
+    100% {
+        transform: scale(1.1) translateX(0);
+    }
+
+    20% {
+        transform: scale(1.05) translateX(20px) rotate(1deg);
+        /* Jobbra lökődik (távolodik a támadótól) */
+    }
+
+    40% {
+        transform: scale(1.1) translateX(10px) rotate(0);
+    }
+}
+
+/* VÉGE ANIMÁCIÓK */
+
 
 .vs-divider {
     font-family: 'Cinzel', serif;
     font-size: 48px;
     font-weight: bold;
-    background: linear-gradient(to bottom, #fff, #888);
+    /* Updated gradient to use accents */
+    background: linear-gradient(to bottom, var(--accent-red), var(--accent-gold));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-style: italic;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+    filter: drop-shadow(0 0 10px rgba(255, 42, 109, 0.5));
 }
 
-/* Damage Popup */
+/* Damage Popup - PREPARED FOR JS CLASS CONTROL */
 .damage-popup {
     position: absolute;
     font-size: 64px;
     font-weight: bold;
-    color: #ff1744;
-    text-shadow: 3px 3px 0 #000, 0 0 20px rgba(255, 23, 68, 0.8);
+    color: var(--accent-red);
+    text-shadow: 3px 3px 0 #000, 0 0 20px rgba(255, 42, 109, 0.8);
     pointer-events: none;
     z-index: 100;
     display: none;
+    /* Alapértelmezett állapot, amiből az animáció indul */
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+}
+
+/* A JS hozzáadja ezt az osztályt a sebzés megjelenítéséhez */
+.damage-popup.animate-damage-popup {
     animation: popupFloat 1s ease-out forwards;
 }
 
@@ -405,18 +501,22 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+    /* Outer shadow for prominence */
 }
 
 .panel-title {
     padding: 12px;
-    background: linear-gradient(to right, rgba(30, 30, 30, 0.9), rgba(50, 50, 50, 0.9));
+    /* Updated background with accent */
+    background: linear-gradient(to right, rgba(255, 42, 109, 0.1), rgba(50, 50, 50, 0.9));
     font-weight: bold;
     text-align: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--accent-red);
+    /* Accent border */
     letter-spacing: 1px;
     text-transform: uppercase;
     font-size: 14px;
+    color: var(--accent-gold);
 }
 
 .history-content {
@@ -465,7 +565,8 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
+    /* Darker overlay */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -475,17 +576,20 @@ body {
 
 .modal-content {
     background: linear-gradient(135deg, #222, #1a1a1a);
+    text-align: center;
     padding: 50px;
     border-radius: 16px;
-    border: 1px solid var(--border-color);
-    text-align: center;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.5);
+    border: 2px solid var(--accent-red);
+    /* Accent border */
+    box-shadow: 0 0 50px rgba(255, 42, 109, 0.4), inset 0 0 20px rgba(0, 0, 0, 0.5);
+    /* Accent shadow */
     max-width: 450px;
     width: 90%;
 }
 
 .game-title {
     font-family: 'Cinzel', serif;
+    text-align: center;
     font-size: 36px;
     margin-bottom: 40px;
     color: var(--text-primary);
@@ -496,18 +600,21 @@ body {
     font-family: 'Cinzel', serif;
     font-size: 56px;
     margin-bottom: 20px;
-    background: linear-gradient(to bottom, #fff, #aaa);
+    text-align: center;
+    /* Updated gradient to use accents */
+    background: linear-gradient(to bottom, var(--accent-gold), #aaa);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+    filter: drop-shadow(0 0 10px rgba(255, 193, 7, 0.5));
 }
 
 .end-reward {
     font-size: 20px;
-    color: #ffd700;
+    color: var(--accent-gold);
+    /* Use gold for reward text */
     margin-bottom: 40px;
     min-height: 24px;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
 }
 
 /* Buttons */
@@ -527,9 +634,9 @@ button {
 }
 
 .btn-primary {
-    background: var(--accent-primary);
+    background: var(--accent-red);
     color: white;
-    box-shadow: 0 4px 15px rgba(255, 64, 129, 0.4);
+    box-shadow: 0 4px 15px rgba(255, 42, 109, 0.4);
 }
 
 .btn-primary::after {
@@ -550,20 +657,22 @@ button {
 .btn-primary:hover {
     background: #ff6096;
     transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(255, 64, 129, 0.6);
+    box-shadow: 0 8px 25px rgba(255, 42, 109, 0.6);
 }
 
 .btn-secondary {
     background: transparent;
-    border: 2px solid var(--text-secondary);
-    color: var(--text-secondary);
+    border: 2px solid var(--accent-gold);
+    /* Use gold for secondary button */
+    color: var(--accent-gold);
 }
 
 .btn-secondary:hover {
     border-color: var(--text-primary);
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    background: rgba(255, 193, 7, 0.1);
+    /* Gold hover effect */
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.3);
 }
 
 /* Scrollbar */

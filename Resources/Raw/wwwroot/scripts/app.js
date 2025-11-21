@@ -1,326 +1,456 @@
-// Game state
+// app.js - Fixed & Complete Version
+
 let gameState = null;
 
-// Debug console functions are now in console.js
-// We use the global debugLog function
+// ====================================================================
+// UI RENDERING & NAVIGATION HELPERS
+// ====================================================================
 
-// Update game state from C#
+function hideGameViewElements() {
+        const headerBtn = document.getElementById('headerBackButton');
+        const content = document.getElementById('mainGameContent');
+        if (headerBtn) headerBtn.style.display = 'none';
+        if (content) content.style.display = 'none';
+}
+
+function showGameViewElements() {
+        const headerBtn = document.getElementById('headerBackButton');
+        const content = document.getElementById('mainGameContent');
+        if (headerBtn) headerBtn.style.display = 'flex'; // Use flex to center '◄'
+        if (content) content.style.display = 'flex';
+}
+
 window.updateGameState = function (state) {
-        debugLog('=== updateGameState CALLED ===', 'info');
-        debugLog('Received game state from C#', 'info');
-
+        debugLog('=== updateGameState received ===', 'info');
         gameState = state;
-
-        debugLog(`Cards received: ${state.AvailableCards?.length || 0}`, 'info');
-        debugLog(`Dungeons received: ${state.Dungeons?.length || 0}`, 'info');
-        debugLog(`Deck size: ${state.CurrentDeckSize}/${state.MaxDeckSize}`, 'info');
-
         renderUI();
 };
 
-// Render the entire UI
 function renderUI() {
-        if (!gameState) {
-                debugLog('No game state available', 'warn');
-                return;
-        }
-
-        debugLog('Rendering UI...', 'info');
+        if (!gameState) return;
 
         try {
                 renderCards();
                 renderDeck();
                 renderDungeons();
                 updateSelectionCounter();
-                debugLog('UI rendered successfully', 'success');
-        } catch (error) {
-                debugLog(`Error rendering UI: ${error.message}`, 'error');
-                console.error(error);
+        } catch (err) {
+                debugLog(`UI render error: ${err.message}`, 'error');
+                console.error(err);
         }
 }
 
-// Render card collection
 function renderCards() {
         const container = document.getElementById('cardCollection');
+        if (!container) return;
         container.innerHTML = '';
 
-        debugLog(`Rendering ${gameState.AvailableCards.length} cards`, 'info');
-
         gameState.AvailableCards.forEach((card, index) => {
-                if (card.IsSelected) {
-                        // debugLog(`Skipping selected card: ${card.Name}`, 'info');
-                        return; // Skip selected cards in collection
-                }
-
+                if (card.IsSelected) return;
                 const cardEl = createCardElement(card, index);
                 container.appendChild(cardEl);
         });
-
-        debugLog(`Rendered ${container.children.length} cards in collection`, 'success');
 }
 
-// Render selected deck
 function renderDeck() {
         const container = document.getElementById('selectedDeck');
+        if (!container) return;
         container.innerHTML = '';
 
-        const selectedCards = gameState.AvailableCards.filter(c => c.IsSelected);
-        debugLog(`Rendering ${selectedCards.length} cards in deck`, 'info');
+        const selected = gameState.AvailableCards
+                .filter(c => c.IsSelected)
+                .sort((a, b) => a.DeckOrder - b.DeckOrder);
 
-        selectedCards.forEach((card, order) => {
-                const cardEl = createCardElement(card, card.Index, order + 1);
+        selected.forEach((card, i) => {
+                const cardEl = createCardElement(card, card.Index, i + 1);
                 container.appendChild(cardEl);
         });
 }
 
-// Create a card element
 function createCardElement(card, index, order = null) {
-        const cardEl = document.createElement('div');
-        cardEl.className = 'card';
+        const el = document.createElement('div');
+        el.className = 'card';
+        if (!card.IsOwned) el.classList.add('locked');
+        if (card.IsSelected) el.classList.add('selected');
+        el.style.borderColor = card.IsSelected ? '#ffc107' : card.ElementColor;
 
-        if (!card.IsOwned) {
-                cardEl.classList.add('locked');
-        }
+        const bg = document.createElement('div');
+        bg.className = 'card-background';
+        bg.style.backgroundColor = card.ElementColor || '#333';
+        el.appendChild(bg);
 
-        if (card.IsSelected) {
-                cardEl.classList.add('selected');
-        }
-
-        // Border color based on element
-        cardEl.style.borderColor = card.IsSelected ? '#FFD700' : card.ElementColor;
-
-        // Background color
-        const bgEl = document.createElement('div');
-        bgEl.className = 'card-background';
-        bgEl.style.backgroundColor = card.ElementColor;
-        cardEl.appendChild(bgEl);
-
-        // Order badge (if selected)
         if (order !== null) {
-                const orderEl = document.createElement('div');
-                orderEl.className = 'card-order';
-                orderEl.textContent = order;
-                cardEl.appendChild(orderEl);
+                const orderBadge = document.createElement('div');
+                orderBadge.className = 'card-order';
+                orderBadge.textContent = order;
+                el.appendChild(orderBadge);
         }
 
-        const nameEl = document.createElement('div');
-        nameEl.className = 'card-name';
-        nameEl.textContent = card.Name;
-        cardEl.appendChild(nameEl);
+        const name = document.createElement('div');
+        name.className = 'card-name';
+        name.textContent = card.Name;
+        el.appendChild(name);
 
-        // Card stats
-        const statsEl = document.createElement('div');
-        statsEl.className = 'card-stats';
+        const stats = document.createElement('div');
+        stats.className = 'card-stats';
+        stats.innerHTML = `
+        <span style="color:#ff5252">⚔️ ${card.Attack}</span>
+        <span style="color:#05d5fa">❤️ ${card.Health}</span>
+    `;
+        el.appendChild(stats);
 
-        const attackEl = document.createElement('div');
-        attackEl.className = 'card-stat stat-attack';
-        attackEl.innerHTML = `⚔️: ${card.Attack}`;
-        statsEl.appendChild(attackEl);
-
-        const healthEl = document.createElement('div');
-        healthEl.className = 'card-stat stat-health';
-        healthEl.innerHTML = `❤️: ${card.Health}`;
-        statsEl.appendChild(healthEl);
-
-        cardEl.appendChild(statsEl);
-
-        // Click handler
         if (card.IsOwned) {
-                cardEl.onclick = async () => await onCardClick(index);
+                el.onclick = () => onCardClick(index);
         }
 
-        return cardEl;
+        return el;
 }
 
-// Handle card click
-async function onCardClick(cardIndex) {
-        debugLog(`Card clicked: index ${cardIndex}`, 'info');
+async function onCardClick(index) {
+        // Browser Mode Fallback
+        if (!window.HybridWebView) {
+                const card = gameState.AvailableCards[index];
+                if (card) {
+                        card.IsSelected = !card.IsSelected;
+                        if (card.IsSelected) gameState.CurrentDeckSize++;
+                        else gameState.CurrentDeckSize--;
+                        renderUI();
+                }
+                return;
+        }
 
         try {
-                const result = await window.HybridWebView.InvokeDotNet('OnCardTapped', [cardIndex]);
-                debugLog(`C# response: ${result}`, 'info');
-
-                const response = JSON.parse(result);
-
-                if (!response.success && response.message) {
-                        debugLog(`Card click failed: ${response.message}`, 'error');
-                        showAlert(response.message);
-                } else {
-                        debugLog('Card click successful', 'success');
-                }
-        } catch (error) {
-                debugLog(`Error clicking card: ${error.message}`, 'error');
-                console.error('Error clicking card:', error);
-                showAlert('Hiba történt!');
+                const result = await window.HybridWebView.InvokeDotNet('OnCardTapped', [index]);
+                const res = JSON.parse(result);
+                if (!res.success) showAlert(res.message || 'Hiba történt');
+        } catch (err) {
+                debugLog('Card click error: ' + err.message, 'error');
+                showAlert('Hiba történt a kártya kiválasztásakor!');
         }
 }
 
-// Render dungeons
+// --- DUNGEON RENDERING ---
 function renderDungeons() {
         const container = document.getElementById('dungeonList');
+        if (!container) return;
         container.innerHTML = '';
 
-        debugLog(`Rendering ${gameState.Dungeons.length} dungeons`, 'info');
+        if (gameState.Dungeons && gameState.Dungeons.length > 0) {
+                gameState.Dungeons.forEach(d => {
+                        // 1. Wrapper Row
+                        const row = document.createElement('div');
+                        row.className = 'dungeon-row';
 
-        gameState.Dungeons.forEach(dungeon => {
-                const dungeonEl = createDungeonElement(dungeon);
-                container.appendChild(dungeonEl);
-        });
+                        // 2. Left Side: Interactive Button
+                        const btn = document.createElement('div');
+                        btn.className = 'dungeon-btn';
+                        btn.onclick = () => onDungeonClick(d.Name);
+                        btn.innerHTML = `
+                <div class="dungeon-name">${d.Name}</div>
+                <div class="dungeon-lbl">KATTINTS A BELÉPÉSHEZ</div>
+            `;
 
-        debugLog(`Rendered ${container.children.length} dungeons`, 'success');
-}
+                        // 3. Right Side: Static Boss Card
+                        const bossCard = document.createElement('div');
+                        bossCard.className = 'boss-card-preview';
 
-// Create dungeon element
-function createDungeonElement(dungeon) {
-        const dungeonEl = document.createElement('div');
-        dungeonEl.className = 'dungeon-card';
-        dungeonEl.onclick = async () => await onDungeonClick(dungeon.Name);
+                        if (d.HasBoss) {
+                                bossCard.innerHTML = `
+                    <div style="color:red; font-size:10px; position:absolute; top:2px;">BOSS</div>
+                    <div class="boss-skull">💀</div>
+                    <div style="font-size:9px; margin-top:5px; text-align:center; color:#888;">${d.BossName}</div>
+                    <div class="boss-stats-mini">
+                        <span style="color:#ff5252">⚔${d.BossDamage}</span>
+                        <span style="color:#05d5fa">♥${d.BossHealth}</span>
+                    </div>
+                `;
+                                bossCard.style.borderColor = "#ff2a6d";
+                        } else {
+                                bossCard.innerHTML = `<div style="color:#333; font-size:20px;">?</div>`;
+                                bossCard.style.borderColor = "#333";
+                        }
 
-        // Dungeon title
-        const titleEl = document.createElement('div');
-        titleEl.className = 'dungeon-title';
-        titleEl.textContent = dungeon.Name;
-        dungeonEl.appendChild(titleEl);
-
-        // Boss info (if exists)
-        if (dungeon.HasBoss) {
-                const bossEl = document.createElement('div');
-                bossEl.className = 'dungeon-boss';
-
-                const bossNameEl = document.createElement('div');
-                bossNameEl.className = 'boss-name';
-                bossNameEl.textContent = dungeon.BossName;
-                bossEl.appendChild(bossNameEl);
-
-                const bossStatsEl = document.createElement('div');
-                bossStatsEl.className = 'boss-stats';
-
-                const attackEl = document.createElement('div');
-                attackEl.className = 'boss-stat attack';
-                attackEl.innerHTML = `⚔️ ${dungeon.BossDamage}`;
-                bossStatsEl.appendChild(attackEl);
-
-                const healthEl = document.createElement('div');
-                healthEl.className = 'boss-stat health';
-                healthEl.innerHTML = `❤️ ${dungeon.BossHealth}`;
-                bossStatsEl.appendChild(healthEl);
-
-                bossEl.appendChild(bossStatsEl);
-                dungeonEl.appendChild(bossEl);
-        }
-
-        return dungeonEl;
-}
-
-// Handle dungeon click
-async function onDungeonClick(dungeonName) {
-        debugLog(`Dungeon clicked: ${dungeonName}`, 'info');
-
-        try {
-                const result = await window.HybridWebView.InvokeDotNet('OnDungeonSelected', [dungeonName]);
-                debugLog(`C# response: ${result}`, 'info');
-
-                const response = JSON.parse(result);
-
-                if (!response.success && response.message) {
-                        debugLog(`Dungeon selection failed: ${response.message}`, 'error');
-                        showAlert(response.message);
-                } else {
-                        debugLog('Dungeon selection successful', 'success');
-                }
-        } catch (error) {
-                debugLog(`Error selecting dungeon: ${error.message}`, 'error');
-                console.error('Error selecting dungeon:', error);
-                showAlert('Hiba történt!');
-        }
-}
-
-// Update selection counter
-function updateSelectionCounter() {
-        const counter = document.getElementById('selectionCounter');
-        counter.textContent = `Kiválasztva: ${gameState.CurrentDeckSize} / ${gameState.MaxDeckSize}`;
-}
-
-// Show alert modal
-function showAlert(message) {
-        const modal = document.getElementById('alertModal');
-        const messageEl = document.getElementById('alertMessage');
-        messageEl.textContent = message;
-        modal.classList.add('show');
-}
-
-// Close alert modal
-function closeAlert() {
-        const modal = document.getElementById('alertModal');
-        modal.classList.remove('show');
-}
-
-// Request game state from C#
-function requestGameState() {
-        debugLog('Requesting game state from C#...', 'info');
-        if (window.HybridWebView) {
-                window.HybridWebView.SendRawMessage('RequestGameState');
-        }
-}
-
-// Initialize
-window.addEventListener('DOMContentLoaded', function () {
-        debugLog('=== MAIN PAGE LOADED ===', 'info');
-        debugLog('DOM Content Loaded', 'success');
-
-        // Check if HybridWebView is available
-        if (window.HybridWebView) {
-                debugLog('HybridWebView API is available', 'success');
-                // Request game state immediately
-                requestGameState();
+                        row.appendChild(btn);
+                        row.appendChild(bossCard);
+                        container.appendChild(row);
+                });
         } else {
-                debugLog('HybridWebView API is NOT available!', 'error');
+                container.innerHTML = '<div style="color:#666;text-align:center;padding:20px">Nincsenek elérhető kazamaták.</div>';
         }
+}
 
-        // Check if all containers exist
-        const cardCollection = document.getElementById('cardCollection');
-        const selectedDeck = document.getElementById('selectedDeck');
-        const dungeonList = document.getElementById('dungeonList');
+async function onDungeonClick(name) {
+        showLoadingScreen(async () => {
+                if (!window.HybridWebView) {
+                        showAlert(`Belépés a kazamatába: ${name} (Demo)`);
+                        return;
+                }
 
-        debugLog(`Card collection element: ${cardCollection ? 'FOUND' : 'NOT FOUND'}`, cardCollection ? 'success' : 'error');
-        debugLog(`Selected deck element: ${selectedDeck ? 'FOUND' : 'NOT FOUND'}`, selectedDeck ? 'success' : 'error');
-        debugLog(`Dungeon list element: ${dungeonList ? 'FOUND' : 'NOT FOUND'}`, dungeonList ? 'success' : 'error');
+                try {
+                        const result = await window.HybridWebView.InvokeDotNet('OnDungeonSelected', [name]);
+                        const res = JSON.parse(result);
+                        if (!res.success) showAlert(res.message || 'Nem lehet belépni a kazamatába!');
+                } catch (err) {
+                        debugLog('Dungeon error: ' + err.message, 'error');
+                        showAlert('Hiba történt!');
+                }
+        });
+}
 
-        debugLog('Waiting for game state from C#...', 'warn');
-});
+function updateSelectionCounter() {
+        const el = document.getElementById('selectionCounter');
+        if (el) el.textContent = `Kiválasztva: ${gameState.CurrentDeckSize} / ${gameState.MaxDeckSize}`;
+}
 
-// Listen for visibility changes (when navigating back)
-document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'visible') {
-                debugLog('Page became visible, requesting game state...', 'info');
-                requestGameState();
+// ====================================================================
+// MODAL & LOADING SCREEN
+// ====================================================================
+
+function showAlert(message) {
+        document.getElementById('alertMessage').textContent = message;
+        document.getElementById('alertModal').classList.add('show');
+}
+
+function closeAlert() {
+        document.getElementById('alertModal').classList.remove('show');
+}
+
+function showLoadingScreen(callback) {
+        const screen = document.getElementById('loading-screen');
+        screen.classList.add('active');
+        createFallingStars();
+
+        const duration = 1600;
+
+        setTimeout(() => {
+                screen.classList.remove('active');
+                if (callback) callback();
+        }, duration);
+}
+
+function createFallingStars() {
+        const container = document.querySelector('.stars');
+        if (!container) return;
+        container.innerHTML = '';
+
+        for (let i = 0; i < 30; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = '-5%';
+
+                star.style.animationDuration = (1 + Math.random() * 2) + 's';
+                star.style.animationDelay = (Math.random() * 2) + 's';
+
+                container.appendChild(star);
         }
-});
+}
 
-// Main Menu Functions
-function newGame() {
-        debugLog('New Game clicked', 'info');
+// ====================================================================
+// PAGE NAVIGATION
+// ====================================================================
+
+function showMainMenu() {
+        debugLog('→ Back to Main Menu', 'info');
+        document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
+        document.getElementById('main-menu').style.display = 'flex';
+        hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
+}
+
+function hideMainMenu() {
         document.getElementById('main-menu').style.display = 'none';
 }
 
-function loadGame() {
-        debugLog('Load Game clicked', 'info');
+function enterGameMode() {
+        hideMainMenu();
+        document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
+        showGameViewElements(); // Fő játék nézet és fejléc gomb megjelenítése
+        requestGameState();
 }
 
-function editor() {
-        debugLog('Editor clicked', 'info');
-}
+function newGame() { showLoadingScreen(showNewGamePage); }
+function loadGame() { showLoadingScreen(showLoadGamePage); }
+function editor() { showLoadingScreen(showEditorPage); }
 
 function exit() {
-        debugLog('Exit clicked', 'info');
         if (window.HybridWebView) {
                 window.HybridWebView.InvokeDotNet('Exit');
         } else {
-                console.log('Exit requested (HybridWebView not available)');
+                showAlert("Kilépés... (Csak appban működik)");
         }
 }
 
-function showMainMenu() {
-        debugLog('Showing Main Menu', 'info');
-        document.getElementById('main-menu').style.display = 'flex';
+function showNewGamePage() {
+        hideMainMenu();
+        document.getElementById('new-game-page').classList.add('active');
+
+        const select = document.getElementById('worldTemplate');
+        if (select.children.length === 1) {
+                getTemplatesPlaceholder().forEach(t => {
+                        const opt = new Option(t.name, t.id);
+                        select.add(opt);
+                });
+        }
 }
+
+function showLoadGamePage() {
+        hideMainMenu();
+        document.getElementById('load-game-page').classList.add('active');
+
+        const list = document.getElementById('saveList');
+        list.innerHTML = '';
+
+        getSavesPlaceholder().forEach(save => {
+                const item = document.createElement('div');
+                item.className = 'save-item-btn';
+                item.onclick = () => loadSave(save.id);
+
+                item.innerHTML = `
+            <div class="save-name">${save.name}</div>
+            <div class="save-date">${save.date}</div>
+        `;
+                list.appendChild(item);
+        });
+}
+
+function showEditorPage() {
+        hideMainMenu();
+        document.getElementById('editor-page').classList.add('active');
+}
+
+// ====================================================================
+// GAME LOGIC
+// ====================================================================
+
+function startNewGame() {
+        const name = document.getElementById('saveName').value.trim();
+        const template = document.getElementById('worldTemplate').value;
+
+        if (!name) return showAlert('Add meg a mentés nevét!');
+        if (!template) return showAlert('Válassz világ sablont!');
+
+        showLoadingScreen(() => {
+                enterGameMode();
+                showAlert(`Üdvözöllek, ${name}!`);
+        });
+}
+
+function loadSave(id) {
+        showLoadingScreen(() => {
+                enterGameMode();
+                showAlert(`Játék betöltve: ${id}`);
+        });
+}
+
+function switchEditorTab(tabId) {
+        // 1. Remove active from tabs
+        document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
+        // 2. Remove active from sections
+        document.querySelectorAll('.editor-section').forEach(s => s.classList.remove('active'));
+
+        // 3. Find the specific button that was clicked
+        const clickedBtn = document.querySelector(`button[onclick="switchEditorTab('${tabId}')"]`);
+        if (clickedBtn) clickedBtn.classList.add('active');
+
+        // 4. Activate section
+        const section = document.getElementById(`editor-${tabId}`);
+        if (section) section.classList.add('active');
+}
+
+function toggleBossInputs() {
+        document.getElementById('bossInputs').style.display =
+                document.getElementById('isBoss').checked ? 'block' : 'none';
+}
+
+function toggleDungeonInputs() {
+        const show = ['Medium', 'Big'].includes(document.getElementById('dungeonType').value);
+        // Logic placeholder
+}
+
+function createCardPlaceholder() { showAlert('Kártya létrehozva (Demo)'); }
+function createSetPlaceholder() { showAlert('Szett mentve (Demo)'); }
+function createDungeonPlaceholder() { showAlert('Kazamata létrehozva (Demo)'); }
+
+// Data Providers
+function getTemplatesPlaceholder() {
+        return [
+                { id: 'forest', name: 'Sötét Erdő' },
+                { id: 'cave', name: 'Kristálybarlang' },
+                { id: 'volcano', name: 'Lávamezők' }
+        ];
+}
+
+function getSavesPlaceholder() {
+        return [
+                { id: '1', name: 'Hős Útja', date: '2025-11-15 18:22' },
+                { id: '2', name: 'Sárkányölő', date: '2025-11-10 09:11' },
+                { id: '3', name: 'Kezdő Kaland', date: '2025-11-01 14:30' }
+        ];
+}
+
+// ====================================================================
+// INIT & MOCK DATA
+// ====================================================================
+
+function requestGameState() {
+        if (window.HybridWebView) {
+                window.HybridWebView.SendRawMessage('RequestGameState');
+        } else {
+                debugLog('Browser mode: Loading Mock Data', 'warn');
+                loadMockData();
+        }
+}
+
+function loadMockData() {
+        const mockCards = [];
+        const elements = ['Fire', 'Water', 'Earth', 'Air'];
+        const colors = { 'Fire': '#ff5252', 'Water': '#448aff', 'Earth': '#69f0ae', 'Air': '#e040fb' };
+
+        for (let i = 0; i < 20; i++) {
+                const el = elements[i % 4];
+                mockCards.push({
+                        Index: i,
+                        Name: `Kártya ${i + 1}`,
+                        Attack: Math.floor(Math.random() * 10) + 1,
+                        Health: Math.floor(Math.random() * 10) + 1,
+                        Element: el,
+                        ElementColor: colors[el],
+                        IsOwned: i < 15,
+                        IsSelected: false,
+                        DeckOrder: 0
+                });
+        }
+
+        const mockState = {
+                AvailableCards: mockCards,
+                CurrentDeckSize: 0,
+                MaxDeckSize: 5,
+                Dungeons: [
+                        {
+                                Name: 'Goblin Fészek',
+                                HasBoss: false
+                        },
+                        {
+                                Name: 'Sárkány Barlang',
+                                HasBoss: true,
+                                BossName: 'Vörös Sárkány',
+                                BossDamage: 15,
+                                BossHealth: 50
+                        }
+                ]
+        };
+
+        updateGameState(mockState);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+        debugLog('=== DAMAREEN JS LOADED ===', 'success');
+        if (!window.HybridWebView) {
+                debugLog('HybridWebView NOT available – running in browser mode', 'warn');
+        }
+
+        // Inicializáláskor elrejtjük a játék nézet elemeit, mivel a főmenü aktív
+        hideGameViewElements();
+        requestGameState();
+});

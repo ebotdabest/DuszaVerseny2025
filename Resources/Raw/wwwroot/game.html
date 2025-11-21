@@ -25,9 +25,8 @@
         <div class="main-content">
             <div class="play-area">
                 <div class="zone enemy-zone">
-                    <div class="zone-label">Enemy Deck</div>
+                    <div class="zone-label">Ellenfél paklija</div>
                     <div id="enemyDeck" class="deck-container">
-                        <!-- Enemy deck cards will be rendered here by JS -->
                     </div>
                 </div>
 
@@ -56,7 +55,7 @@
                     <div class="battle-card-container">
                         <div id="arenaPlayerCard" class="card arena-card player" style="display: none;">
                             <div class="card-inner">
-                                <div class="card-name">Player</div>
+                                <div class="card-name">Játékos</div>
                                 <div class="card-image-placeholder player-placeholder"></div>
                                 <div class="stats">
                                     <div class="stat damage">
@@ -76,18 +75,16 @@
                 </div>
 
                 <div class="zone player-zone">
-                    <div class="zone-label">Your Deck</div>
+                    <div class="zone-label">Saját pakli</div>
                     <div id="playerDeck" class="deck-container">
-                        <!-- Player deck cards will be rendered here by JS -->
                     </div>
                 </div>
             </div>
 
             <div class="side-panel">
                 <div id="historyPanel" class="history-panel">
-                    <div id="historyTitle" class="panel-title">Battle Log</div>
+                    <div id="historyTitle" class="panel-title">Események</div>
                     <div id="historyContainer" class="history-content">
-                        <!-- History entries will be added here by JS -->
                     </div>
                 </div>
             </div>
@@ -96,8 +93,8 @@
 
     <div id="startOverlay" class="modal-overlay">
         <div class="modal-content start-modal">
-            <h1 class="game-title">Ready for Battle?</h1>
-            <button id="startButton" class="btn-primary">Start Game</button>
+            <h1 class="game-title">Készen állsz?</h1>
+            <button id="startButton" class="btn-primary">Indítás</button>
         </div>
     </div>
 
@@ -105,7 +102,7 @@
         <div class="modal-content end-modal">
             <div id="endText" class="end-title">Victory!</div>
             <div id="endReward" class="end-reward">Reward Text</div>
-            <button id="backButton" class="btn-secondary">Return to Town</button>
+            <button id="backButton" class="btn-secondary">Visszatérés a világodba</button>
         </div>
     </div>
 
