@@ -379,6 +379,133 @@ function saveWorld() {
         showAlert('Világ mentve (Demo)');
 }
 
+// Add this to your scripts/app.js file
+
+function loadWorld() {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'modal-header';
+        header.innerHTML = `
+        <h3>Világ Kiválasztása</h3>
+        <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+    `;
+
+        // List container
+        const listContainer = document.createElement('div');
+        listContainer.className = 'world-list-container';
+        listContainer.id = 'worldList';
+        listContainer.innerHTML = ''; // Clear any existing content
+
+        // Load world templates
+        const worlds = getTemplatesPlaceholder();
+
+        if (!worlds || worlds.length === 0) {
+                listContainer.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Nincs elérhető világ sablon</p>';
+                modalContent.appendChild(header);
+                modalContent.appendChild(listContainer);
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+                return;
+        }
+
+        let i = 0;
+        worlds.forEach(world => {
+                debugLog(world, 'info');
+
+                const item = document.createElement('div');
+                item.className = 'world-item-btn';
+                item.onclick = () => loadWorldTemplate(world.id, modal, world.name);
+
+                item.innerHTML = `
+            <div class="world-name">${world.name}</div>
+            <div class="world-date">${world.id.toUpperCase()}</div>
+        `;
+
+                i++;
+                listContainer.appendChild(item);
+        });
+
+        // Append elements
+        modalContent.appendChild(header);
+        modalContent.appendChild(listContainer);
+        modal.appendChild(modalContent);
+
+        // Add to document
+        document.body.appendChild(modal);
+}
+
+// Helper function to load a specific world template by ID
+function loadWorldTemplate(worldId, modalElement, worldName) {
+        // Close the modal
+        modalElement.remove();
+
+        // Here you would load the specific world template into your editor
+        // For example, populate editor fields with the world's data
+        loadWorldIntoEditor(worldId, worldName);
+
+        // Show success message
+        showAlert(`Világ betöltve: ${worldName}`);
+}
+
+// Function to load world data into editor based on template ID
+function loadWorldIntoEditor(worldId, worldName) {
+        // This function should populate your editor with the specific world template's data
+        // You'll need to implement this based on what data each template should load
+
+        console.log(`Loading world template: ${worldId} (${worldName})`);
+
+        // Example: Set some editor fields based on the template
+        switch (worldId) {
+                case 'forest':
+                        // Load forest-specific data into editor
+                        console.log('Loading Forest template data...');
+                        // Example: document.getElementById('worldName').value = 'Sötét Erdő';
+                        break;
+                case 'cave':
+                        // Load cave-specific data into editor
+                        console.log('Loading Cave template data...');
+                        break;
+                case 'volcano':
+                        // Load volcano-specific data into editor
+                        console.log('Loading Volcano template data...');
+                        break;
+                default:
+                        console.log('Loading generic template data...');
+        }
+
+        // Add your actual editor population logic here
+        // This could involve loading cards, dungeons, sets, etc. specific to the template
+}
+
+// Make sure you have this helper function for debugging
+function debugLog(message, level = 'info') {
+        if (typeof console !== 'undefined') {
+                console[level](message);
+        }
+}
+
+function showAlert(message) {
+        const alertModal = document.createElement('div');
+        alertModal.className = 'alert-modal';
+
+        alertModal.innerHTML = `
+        <div class="alert-content">
+            <div class="alert-message">${message}</div>
+            <button class="alert-btn" onclick="this.closest('.alert-modal').remove()">OK</button>
+        </div>
+    `;
+
+        document.body.appendChild(alertModal);
+}
+
 function toggleBossInputs() {
         document.getElementById('bossInputs').style.display =
                 document.getElementById('isBoss').checked ? 'block' : 'none';
