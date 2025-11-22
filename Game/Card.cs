@@ -3,14 +3,33 @@ namespace DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Serializer;
 using DuszaVerseny2025.Engine.Utils;
 
-public record CardTemplate(int damage, int health, string name, CardTemplate.Type type) : ISerialize
+public class CardTemplate : ISerialize
 {
-    public int Attack => damage;
-    public int Health => health;
-    public string Name => name;
-    public Type ElementType => type;
+    int _damage;
+    int _health;
+    string _name;
+    Type _type;
 
-    public Color ElementColor => type switch
+
+    public CardTemplate(int damage, int health, string name, Type type)
+    {
+        this._damage = damage;
+        this._health = health;
+        this._name = name;
+        this._type = type;
+    }
+
+    public int Attack => _damage;
+    public int Health => _health;
+    public string Name => _name;
+    public Type ElementType => _type;
+
+    // Legacy naming for some reason they kept using theese
+    public int damage => _damage;
+    public int health => _health;
+    public string name => _name;
+
+    public Color ElementColor => _type switch
     {
         Type.Fire => Colors.IndianRed,
         Type.Water => Colors.DodgerBlue,
@@ -41,7 +60,7 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
 
     public CardTemplate MakeAnother(int dmgMult, int hpMult)
     {
-        return new CardTemplate(damage + dmgMult, health + hpMult, name, type, bossName, bossProficiency);
+        return new CardTemplate(damage + dmgMult, health + hpMult, name, ElementType, bossName, bossProficiency);
     }
 
     public string Export()
@@ -50,7 +69,7 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
         {
             true => "vezer",
             false => "kartya"
-        }};{name};{damage};{health};{type switch
+        }};{name};{damage};{health};{ElementType switch
         {
             Type.Air => "levego",
             Type.Earth => "fold",
@@ -75,7 +94,7 @@ public record CardTemplate(int damage, int health, string name, CardTemplate.Typ
     public CardTemplate ToBoss(string name, Card.Attribute prof)
     {
         return new CardTemplate(prof == Card.Attribute.Damage ? damage * 2 : damage,
-                                prof == Card.Attribute.Health ? health * 2 : health, name, type, name, prof);
+                                prof == Card.Attribute.Health ? health * 2 : health, name, ElementType, name, prof);
     }
 }
 
@@ -102,7 +121,7 @@ public class Card
         _health = template.health;
         _maxHealth = template.health;
         _name = template.name;
-        _type = template.type;
+        _type = template.ElementType;
         _template = template;
     }
 
@@ -141,11 +160,11 @@ public class Card
         }
 
         int baseDamage = this.Damage;
-        CardTemplate.Type attType = this.Type; 
+        CardTemplate.Type attType = this.Type;
         CardTemplate.Type defType = target.Type;
 
         int effectiveDamage = Utils.CalculateDamage(baseDamage, attType, defType);
-        damageDealt = effectiveDamage; 
+        damageDealt = effectiveDamage;
 
         target._health -= effectiveDamage;
         if (target.Health < 0) target._health = 0;

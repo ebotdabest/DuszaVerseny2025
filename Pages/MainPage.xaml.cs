@@ -1,9 +1,8 @@
-﻿using System.Collections.ObjectModel;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DuszaVerseny2025.Engine;
-using DuszaVerseny2025.Engine.Cards;
+using System.Threading.Tasks;
+using DuszaVerseny2025.Engine.Save;
 
 namespace DuszaVerseny2025
 {
@@ -26,6 +25,12 @@ namespace DuszaVerseny2025
                     await SendGameStateToJS();
                 });
             });
+        }
+
+        public List<SaveManager.PlayerSave> RequestSaves()
+        {
+            var saves = SaveManager.GetSaves();
+            return saves;
         }
 
         protected override async void OnAppearing()
@@ -81,6 +86,10 @@ namespace DuszaVerseny2025
                 Debug.WriteLine("Received RequestGameState from JS");
                 await SendGameStateToJS();
             }
+            if (e.Message == "ExitProgram")
+            {
+                Environment.Exit(0);
+            }
         }
 
         // Send complete game state to JavaScript
@@ -127,16 +136,18 @@ namespace DuszaVerseny2025
 
                 await hybridWebView.EvaluateJavaScriptAsync($"window.updateGameState({json})");
                 await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Game state sent successfully', 'success')");
-                
+
                 Debug.WriteLine("JavaScript call completed successfully");
                 Debug.WriteLine("=== SendGameStateToJS END ===");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"ERROR in SendGameStateToJS: {ex.Message}");
-                try {
+                try
+                {
                     await hybridWebView.EvaluateJavaScriptAsync($"window.debugLog('[C#] Error sending state: {ex.Message}', 'error')");
-                } catch {}
+                }
+                catch { }
             }
         }
 
@@ -219,7 +230,7 @@ namespace DuszaVerseny2025
                 var dungeon = MauiProgram.engine.GameWorld.generateDungeon(dungeonTemplate);
 
                 Deck deck;
-                Deck.fromCollection(MauiProgram.engine.PlayerInventory, MauiProgram.deckBuilder, out deck);
+                Deck.fromCollection(MauiProgram.engine.PlayerInventory, MauiProgram.engine.currentDeck, out deck);
 
                 var parameters = new Dictionary<string, object>
                 {

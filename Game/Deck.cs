@@ -29,7 +29,7 @@ public class Collection
         _cards = instance.Cards.ToList();
     }
 
-    public CardTemplate[] Cards => _cards.ToArray();
+    public IReadOnlyList<CardTemplate> Cards => _cards;
 
     public CardTemplate this[int i] { get => _cards[i]; }
     public CardTemplate? this[string name] => _cards.Where(c => c.name == name).First();
@@ -75,7 +75,7 @@ public class PlayerCollection : Collection, ISerialize
         foreach (var card in _cards)
         {
             builder.Append($"gyujtemeny;{card.name};{card.damage};{card.health};");
-            builder.Append(Utils.GetTypeName(card.type));
+            builder.Append(Utils.GetTypeName(card.ElementType));
             builder.AppendLine();
         }
 
@@ -137,7 +137,7 @@ public class Deck : ISerialize
     public static Deck makeGameDeck(Collection collection)
     {
         List<Card> cardsCompiled = new List<Card>();
-        Array.ForEach(collection.Cards, card => cardsCompiled.Add(Card.fromTemplate(card)));
+        Array.ForEach(collection.Cards.ToArray(), card => cardsCompiled.Add(Card.fromTemplate(card)));
         return new Deck(cardsCompiled, collection);
     }
 

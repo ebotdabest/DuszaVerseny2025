@@ -252,14 +252,16 @@ function createFallingStars() {
 // ====================================================================
 
 function showMainMenu() {
-        debugLog('→ Back to Main Menu', 'info');
-        document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
-        document.getElementById('main-menu').style.display = 'flex';
-        hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
+        showLoadingScreen(() => {
+            debugLog('→ Back to Main Menu', 'info');
+            document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
+            document.getElementById('main-menu').style.display = 'flex';
+            hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
+        })
 }
 
 function hideMainMenu() {
-        document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'none';
 }
 
 function enterGameMode() {
@@ -275,7 +277,7 @@ function editor() { showLoadingScreen(showEditorPage); }
 
 function exit() {
         if (window.HybridWebView) {
-                window.HybridWebView.InvokeDotNet('Exit');
+                window.HybridWebView.SendRawMessage('ExitProgram');
         } else {
                 showAlert("Kilépés... (Csak appban működik)");
         }
@@ -294,23 +296,38 @@ function showNewGamePage() {
         }
 }
 
-function showLoadGamePage() {
+async function showLoadGamePage() {
         hideMainMenu();
         document.getElementById('load-game-page').classList.add('active');
 
         const list = document.getElementById('saveList');
         list.innerHTML = '';
 
-        getSavesPlaceholder().forEach(save => {
+
+        getSavesPlaceholder().then(saves => {
+            let i = 0;
+            saves.forEach(save => {
+                debugLog(save, 'info');
                 const item = document.createElement('div');
                 item.className = 'save-item-btn';
-                item.onclick = () => loadSave(save.id);
-
+                item.onclick = () => loadSave(i);
+                
+                const date = new Date(save.saveTimestamp * 1000);
+                
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const minute = String(date.getMinutes()).padStart(2, '0');
+                
+                const formatted = `${year}-${month}-${day} ${hour}:${minute}`;
+                
                 item.innerHTML = `
-            <div class="save-name">${save.name}</div>
-            <div class="save-date">${save.date}</div>
-        `;
+                <div class="save-name">${save.saveName}</div>
+                <div class="save-date">${formatted}</div>`;
+                i++;
                 list.appendChild(item);
+            });
         });
 }
 
@@ -338,8 +355,8 @@ function startNewGame() {
 
 function loadSave(id) {
         showLoadingScreen(() => {
-                enterGameMode();
-                showAlert(`Játék betöltve: ${id}`);
+            enterGameMode();
+            showAlert(`Játék betöltve: ${id}`);
         });
 }
 
@@ -374,6 +391,9 @@ function createDungeonPlaceholder() { showAlert('Kazamata létrehozva (Demo)'); 
 
 // Data Providers
 function getTemplatesPlaceholder() {
+    if (window.HybridWebView) {
+        
+    }
         return [
                 { id: 'forest', name: 'Sötét Erdő' },
                 { id: 'cave', name: 'Kristálybarlang' },
@@ -381,12 +401,10 @@ function getTemplatesPlaceholder() {
         ];
 }
 
-function getSavesPlaceholder() {
-        return [
-                { id: '1', name: 'Hős Útja', date: '2025-11-15 18:22' },
-                { id: '2', name: 'Sárkányölő', date: '2025-11-10 09:11' },
-                { id: '3', name: 'Kezdő Kaland', date: '2025-11-01 14:30' }
-        ];
+async function getSavesPlaceholder() {
+        const saves = await window.HybridWebView.InvokeDotNet("RequestSaves");
+
+        return saves;
 }
 
 // ====================================================================

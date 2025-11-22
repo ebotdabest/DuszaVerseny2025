@@ -13,10 +13,11 @@ namespace DuszaVerseny2025.Engine
 
         public DungeonTemplate[] Dungeons => _dungeons.ToArray();
 
-        public World(List<CardTemplate> cards, List<DungeonTemplate> dungeons)
+        public World(List<CardTemplate> cards, List<DungeonTemplate> dungeons, int diff)
         {
             _worldCollection = new Collection(cards);
             _dungeons = dungeons;
+            _difficulty = diff;
         }
 
         public Dungeon generateDungeon(DungeonTemplate dungeon)
@@ -299,6 +300,11 @@ namespace DuszaVerseny2025.Engine
             callback.Invoke(FightEvent.makeEvent("result", ("round", round), ("result", $"jatekos nyert{d.Reward.Export()};{currentCard.Name}")));
             return true;
         }
+
+        int _difficulty;
+        int _baseId;
+        public int Difficulty => _difficulty;
+        public int BaseId => _baseId;
     }
 
     public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Collection collection, CardTemplate? bossTemplate, DungeonTemplate.DungeonReward reward) : ISerialize
