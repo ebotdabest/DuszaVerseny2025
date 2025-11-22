@@ -399,6 +399,13 @@ body {
         box-shadow: var(--glow-red);
 }
 
+#btnSaveWorld:hover {
+        border-color: var(--accent-red);
+        color: white;
+        background: rgba(255, 42, 109, 0.1);
+        box-shadow: var(--glow-red);
+}
+
 /* --- LOADING SCREEN --- */
 .loading-screen {
         position: fixed;

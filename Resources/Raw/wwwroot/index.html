@@ -70,7 +70,6 @@
 
         <div id="new-game-page" class="fake-page">
                 <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
-
                 <h2 class="page-title">Új Játék Indítása</h2>
                 <div class="fake-page-content">
                         <div class="form-group">
@@ -100,16 +99,23 @@
                 <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
         </div>
 
+        <!-- Editor Page (only once, properly structured) -->
         <div id="editor-page" class="fake-page">
+                <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
                 <h2 class="page-title">Világszerkesztő</h2>
+
                 <div class="editor-layout">
                         <div class="editor-sidebar">
                                 <button class="editor-tab active" onclick="switchEditorTab('cards')">Kártyák</button>
                                 <button class="editor-tab" onclick="switchEditorTab('sets')">Szettek</button>
                                 <button class="editor-tab" onclick="switchEditorTab('dungeons')">Kazamaták</button>
                                 <button class="editor-tab" onclick="switchEditorTab('paths')">Útvonalak</button>
+                                <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">Világ
+                                        mentése</button>
                         </div>
+
                         <div class="editor-content">
+                                <!-- Cards Tab -->
                                 <div id="editor-cards" class="editor-section active">
                                         <h3>Kártya Létrehozása</h3>
                                         <div class="form-group">
@@ -127,13 +133,13 @@
                                                 </div>
                                         </div>
                                         <div class="form-group">
-                                                <label>Elem:</label>
-                                                <select id="cardElement">
-                                                        <option value="Fire">Tűz</option>
-                                                        <option value="Water">Víz</option>
-                                                        <option value="Earth">Föld</option>
-                                                        <option value="Air">Levegő</option>
-                                                </select>
+                                                <label>Elem:</ select>
+                                                        <select id="cardElement">
+                                                                <option value="Fire">Tűz</option>
+                                                                <option value="Water">Víz</option>
+                                                                <option value="Earth">Föld</option>
+                                                                <option value="Air">Levegő</option>
+                                                        </select>
                                         </div>
                                         <div class="form-group checkbox-group">
                                                 <input type="checkbox" id="isBoss" class="tech-checkbox"
@@ -158,6 +164,7 @@
                                                 onclick="createCardPlaceholder()">Létrehozás</button>
                                 </div>
 
+                                <!-- Sets Tab -->
                                 <div id="editor-sets" class="editor-section">
                                         <h3>Szett Összeállítása</h3>
                                         <div class="form-group">
@@ -172,6 +179,7 @@
                                                 Mentése</button>
                                 </div>
 
+                                <!-- Dungeons Tab -->
                                 <div id="editor-dungeons" class="editor-section">
                                         <h3>Kazamata Tervezése</h3>
                                         <div class="form-group">
@@ -211,14 +219,16 @@
                                                 Létrehozása</button>
                                 </div>
 
+                                <!-- Paths Tab -->
                                 <div id="editor-paths" class="editor-section">
                                         <h3>Útvonalak</h3>
                                         <p>Térkép útvonalak beállítása (Hamarosan...)</p>
                                 </div>
                         </div>
                 </div>
-                <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
         </div>
+
+        <!-- Scripts at the end of body (best practice) -->
         <script src="scripts/console.js"></script>
         <script src="scripts/app.js"></script>
 </body>

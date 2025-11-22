@@ -253,15 +253,15 @@ function createFallingStars() {
 
 function showMainMenu() {
         showLoadingScreen(() => {
-            debugLog('→ Back to Main Menu', 'info');
-            document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
-            document.getElementById('main-menu').style.display = 'flex';
-            hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
+                debugLog('→ Back to Main Menu', 'info');
+                document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
+                document.getElementById('main-menu').style.display = 'flex';
+                hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
         })
 }
 
 function hideMainMenu() {
-    document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'none';
 }
 
 function enterGameMode() {
@@ -305,29 +305,29 @@ async function showLoadGamePage() {
 
 
         getSavesPlaceholder().then(saves => {
-            let i = 0;
-            saves.forEach(save => {
-                debugLog(save, 'info');
-                const item = document.createElement('div');
-                item.className = 'save-item-btn';
-                item.onclick = () => loadSave(i);
-                
-                const date = new Date(save.saveTimestamp * 1000);
-                
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hour = String(date.getHours()).padStart(2, '0');
-                const minute = String(date.getMinutes()).padStart(2, '0');
-                
-                const formatted = `${year}-${month}-${day} ${hour}:${minute}`;
-                
-                item.innerHTML = `
+                let i = 0;
+                saves.forEach(save => {
+                        debugLog(save, 'info');
+                        const item = document.createElement('div');
+                        item.className = 'save-item-btn';
+                        item.onclick = () => loadSave(i);
+
+                        const date = new Date(save.saveTimestamp * 1000);
+
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const hour = String(date.getHours()).padStart(2, '0');
+                        const minute = String(date.getMinutes()).padStart(2, '0');
+
+                        const formatted = `${year}-${month}-${day} ${hour}:${minute}`;
+
+                        item.innerHTML = `
                 <div class="save-name">${save.saveName}</div>
                 <div class="save-date">${formatted}</div>`;
-                i++;
-                list.appendChild(item);
-            });
+                        i++;
+                        list.appendChild(item);
+                });
         });
 }
 
@@ -355,8 +355,8 @@ function startNewGame() {
 
 function loadSave(id) {
         showLoadingScreen(() => {
-            enterGameMode();
-            showAlert(`Játék betöltve: ${id}`);
+                enterGameMode();
+                showAlert(`Játék betöltve: ${id}`);
         });
 }
 
@@ -375,6 +375,10 @@ function switchEditorTab(tabId) {
         if (section) section.classList.add('active');
 }
 
+function saveWorld() {
+        showAlert('Világ mentve (Demo)');
+}
+
 function toggleBossInputs() {
         document.getElementById('bossInputs').style.display =
                 document.getElementById('isBoss').checked ? 'block' : 'none';
@@ -391,9 +395,9 @@ function createDungeonPlaceholder() { showAlert('Kazamata létrehozva (Demo)'); 
 
 // Data Providers
 function getTemplatesPlaceholder() {
-    if (window.HybridWebView) {
-        
-    }
+        if (window.HybridWebView) {
+
+        }
         return [
                 { id: 'forest', name: 'Sötét Erdő' },
                 { id: 'cave', name: 'Kristálybarlang' },
