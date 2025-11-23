@@ -63,13 +63,13 @@ public class Utils
         return 1.0;
     }
 
-     public static int CalculateDamage(int baseDamage, CardTemplate.Type attacker, CardTemplate.Type taker)
+    public static int CalculateDamage(int baseDamage, CardTemplate.Type attacker, CardTemplate.Type taker)
     {
         double multiplier = GetDamageMultiplier(attacker, taker);
         double adjusted = baseDamage * multiplier;
         if (multiplier == 0.5)
         {
-            return (int) Math.Floor(adjusted);
+            return (int)Math.Floor(adjusted);
         }
         return (int)adjusted;
     }
@@ -82,6 +82,36 @@ public class Utils
             CardTemplate.Type.Earth => "fold",
             CardTemplate.Type.Water => "viz",
             CardTemplate.Type.Fire => "tuz",
+            _ => ""
+        };
+    }
+
+    public static CardTemplate.Type GetNamedType(string type)
+    {
+        return type switch
+        {
+            "levego" => CardTemplate.Type.Air,
+            "fold" => CardTemplate.Type.Earth,
+            "viz" => CardTemplate.Type.Water,
+            "tuz" => CardTemplate.Type.Fire
+        };
+    }
+
+    public static Card.Attribute GetAttributeByName(string attribute)
+    {
+        return attribute switch
+        {
+            "sebzes" => Card.Attribute.Damage,
+            "eletero" => Card.Attribute.Health,
+            _ => Card.Attribute.None
+        };
+    }
+    public static string GetAttributeName(Card.Attribute attribute)
+    {
+        return attribute switch
+        {
+            Card.Attribute.Damage => "sebzes",
+            Card.Attribute.Health => "eletero",
             _ => ""
         };
     }

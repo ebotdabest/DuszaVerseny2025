@@ -84,7 +84,7 @@
                         </div>
                         <div class="form-group">
                                 <label>Nehézség: <span id="difficultyValue">5</span></label>
-                                <input type="range" id="difficulty" min="1" max="10" value="5" class="custom-slider"
+                                <input type="range" id="difficulty" min="0" max="10" value="5" class="custom-slider"
                                         oninput="document.getElementById('difficultyValue').textContent = this.value">
                         </div>
                         <div class="button-row">
@@ -137,10 +137,10 @@
                                         <div class="form-group">
                                                 <label>Elem:</ select>
                                                         <select id="cardElement">
-                                                                <option value="Fire">Tűz</option>
-                                                                <option value="Water">Víz</option>
-                                                                <option value="Earth">Föld</option>
-                                                                <option value="Air">Levegő</option>
+                                                                <option value="tuz">Tűz</option>
+                                                                <option value="viz">Víz</option>
+                                                                <option value="fold">Föld</option>
+                                                                <option value="levego">Levegő</option>
                                                         </select>
                                         </div>
                                         <div class="form-group checkbox-group">
@@ -156,9 +156,8 @@
                                                 <div class="form-group">
                                                         <label>Boss Jártasság:</label>
                                                         <select id="bossProficiency">
-                                                                <option value="None">Nincs</option>
-                                                                <option value="Damage">Sebzés</option>
-                                                                <option value="Health">Életerő</option>
+                                                                <option value="sebzes">Sebzés</option>
+                                                                <option value="eletero">Életerő</option>
                                                         </select>
                                                 </div>
                                         </div>

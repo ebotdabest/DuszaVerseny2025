@@ -1,236 +1,422 @@
-using System.Text;
-using Microsoft.Win32.SafeHandles;
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using DuszaVerseny2025.Engine.Cards;
+using Newtonsoft.Json;
 
-namespace DuszaVerseny2025.Engine.Save;
-
-public class SaveManager
+namespace DuszaVerseny2025.Engine.Save
 {
-    static byte[] HEADER = Encoding.UTF8.GetBytes(['T', 'U', 'F', 'F']);
-    public class PlayerSave
+    public class SaveManager
     {
-        public class PlayerCardOverride
+        private static readonly byte[] HEADER = Encoding.UTF8.GetBytes("TUFF");
+
+
+
+        public class PlayerSave
         {
-            public string cardName { get; set; } = default!;
-            public int healthDiff { get; set; }
-            public int damageDiff { get; set; }
-        }
-        public string[] unlockedCards { get; set; } = default!;
-        public string[] selectedCards { get; set; } = default!;
-        public PlayerCardOverride[] upgradedCards { get; set; } = default!;
-        public int saveBase { get; set; }
-        public int difficulty { get; set; }
-        public string saveName { get; set; } = default!;
-        public long saveTimestamp { get; set; }
-    }
-
-
-    public class WorldSave
-    {
-        public class CardSave
-        {
-            public int damage { get; set; }
-            public int health { get; set; }
-            public string name { get; set; } = default!;
-            public string type { get; set; } = default!;
-        }
-
-        public class BossOverride
-        {
-            public string bossName { get; set; } = default!;
-            public string proficiency { get; set; } = default!;
-            public int cardIndex { get; set; }
-        }
-
-        public string templateName { get; set; } = default!;
-        public CardSave[] cards { get; set; } = default!;
-        public BossOverride[] bosses { get; set; } = default!;
-        public string[] starterDeck { get; set; } = default!;
-    }
-
-    public static PlayerSave LoadPlayerSave(int id)
-    {
-        string exeDir = AppContext.BaseDirectory;
-        string savePath = Path.Combine(exeDir, "saves", $"damareen_world{id}.tuff");
-
-        using (FileStream file = new FileStream(savePath, FileMode.Open))
-        using (BinaryReader br = new BinaryReader(file))
-        {
-            byte[] header = br.ReadBytes(4);
-            if (!header.SequenceEqual(HEADER))
+            public class PlayerCardOverride
             {
-                throw new Exception("This isn't a proper save file!");
+                public string cardName { get; set; } = default!;
+                public int healthDiff { get; set; }
+                public int damageDiff { get; set; }
             }
 
-            byte[] content = br.ReadBytes(((int)file.Length) - 4);
-            for (int i = 0; i < content.Length; i++)
-                content[i] ^= 0x5A;
+            public string[] unlockedCards { get; set; } = Array.Empty<string>();
+            public string[] selectedCards { get; set; } = Array.Empty<string>();
+            public PlayerCardOverride[] upgradedCards { get; set; } = Array.Empty<PlayerCardOverride>();
+            public int saveBase { get; set; }
+            public int difficulty { get; set; }
+            public string saveName { get; set; } = string.Empty;
+            public long saveTimestamp { get; set; }
+            public required int saveId { get; set; }
+        }
 
-            string contentStr = Encoding.UTF8.GetString(content);
-            System.Console.WriteLine(contentStr);
-            PlayerSave save = JsonConvert.DeserializeObject<PlayerSave>(contentStr);
+        public class WorldSave
+        {
+            public class CardSave
+            {
+                public int damage { get; set; }
+                public int health { get; set; }
+                public string name { get; set; } = string.Empty;
+                public string type { get; set; } = string.Empty;
+            }
+
+            public class BossOverride
+            {
+                public string bossName { get; set; } = string.Empty;
+                public string proficiency { get; set; } = string.Empty;
+                public string originalName { get; set; } = string.Empty;
+            }
+
+            public class DungeonSave
+            {
+                public string dungeonName { get; set; } = string.Empty;
+                public string[] cards { get; set; } = Array.Empty<string>();
+                public string reward { get; set; } = string.Empty;
+                public string bossName { get; set; } = string.Empty;
+                public string dungeonSize { get; set; } = string.Empty;
+            }
+
+            public string templateName { get; set; } = string.Empty;
+            public CardSave[] cards { get; set; } = Array.Empty<CardSave>();
+            public BossOverride[] bosses { get; set; } = Array.Empty<BossOverride>();
+            public string[] starterDeck { get; set; } = Array.Empty<string>();
+            public required int worldId { get; set; }
+        }
+
+
+        private static byte[] EncodeContent(string json)
+        {
+            var bytes = Encoding.UTF8.GetBytes(json);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] ^= 0x5A;
+            }
+            return bytes;
+        }
+
+        private static string DecodeContent(byte[] bytes)
+        {
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] ^= 0x5A;
+            }
+            return Encoding.UTF8.GetString(bytes);
+        }
+
+        private static void EnsureHeader(byte[] header, string path)
+        {
+            if (!header.SequenceEqual(HEADER))
+                throw new InvalidOperationException($"File '{path}' does not have a valid TUFF header.");
+        }
+
+
+        public static PlayerSave LoadPlayerSave(int id)
+        {
+            string exeDir = AppContext.BaseDirectory;
+            string savePath = Path.Combine(exeDir, "saves", $"damareen_world{id}.tuff");
+
+            if (!File.Exists(savePath))
+                throw new FileNotFoundException($"Player save file not found: {savePath}", savePath);
+
+            using var file = new FileStream(savePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var br = new BinaryReader(file);
+
+            byte[] header = br.ReadBytes(4);
+            EnsureHeader(header, savePath);
+
+            byte[] content = br.ReadBytes((int)file.Length - 4);
+            string contentStr = DecodeContent(content);
+
+            var save = JsonConvert.DeserializeObject<PlayerSave>(contentStr)
+                       ?? throw new InvalidOperationException($"Failed to deserialize PlayerSave from '{savePath}'.");
+
             return save;
         }
-    }
 
-    public static void SavePlayerSave(int currentId, GameEngine engine, string saveName)
-    {
-        string exeDir = AppContext.BaseDirectory;
-        if (!Directory.Exists(Path.Combine(exeDir, "saves")))
-            Directory.CreateDirectory(Path.Combine(exeDir, "saves"));
-
-        var templates = engine.PlayerInventory.Cards;
-        string[] cardNames = new string[templates.Count];
-
-        int j = 0; Array.ForEach(templates.ToArray(), c => cardNames[j++] = c.Name);
-
-        string[] selectedCardNames = new string[engine.currentDeck.Count];
-        j = 0; engine.currentDeck.ForEach(c => selectedCardNames[j++] = c.Name);
-
-        List<PlayerSave.PlayerCardOverride> overrides = new(); // I'm too lazy to type all ts out
-
-        foreach (CardTemplate t in engine.PlayerInventory.Cards)
+        public static void SavePlayerSave(int currentId, GameEngine engine, string saveName)
         {
-            CardTemplate original = engine.CardTemplates.FirstOrDefault(c => c.Name == t.Name);
+            if (engine == null) throw new ArgumentNullException(nameof(engine));
 
-            if (original.Attack == t.Attack && original.Health == t.Health) continue;
+            string exeDir = AppContext.BaseDirectory;
+            string saveDir = Path.Combine(exeDir, "saves");
+            if (!Directory.Exists(saveDir))
+                Directory.CreateDirectory(saveDir);
 
-            int hpDiff = t.Health - original.Health, dmgDiff = t.Attack - original.Attack;
-            overrides.Add(new PlayerSave.PlayerCardOverride()
+            var templates = engine.PlayerInventory.Cards;
+            string[] cardNames = templates.Select(c => c.Name).ToArray();
+
+            string[] selectedCardNames = engine.currentDeck.Select(c => c.Name).ToArray();
+
+            List<PlayerSave.PlayerCardOverride> overrides = new();
+
+            foreach (CardTemplate t in engine.PlayerInventory.Cards)
             {
-                cardName = t.Name,
-                healthDiff = hpDiff,
-                damageDiff = dmgDiff
-            });
-        }
-
-        long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        PlayerSave save = new PlayerSave
-        {
-            unlockedCards = cardNames,
-            selectedCards = selectedCardNames,
-            upgradedCards = overrides.ToArray(),
-            saveName = saveName,
-            difficulty = engine.GameWorld.Difficulty,
-            saveTimestamp = timestamp,
-            saveBase = engine.GameWorld.BaseId
-        };
-
-        string content = JsonConvert.SerializeObject(save);
-        byte[] bytes = Encoding.UTF8.GetBytes(content);
-        byte[] idk = Encoding.UTF8.GetBytes("TUFF");
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            bytes[i] ^= 0x5A;
-        }
-
-        using (FileStream stream = new FileStream(Path.Combine(exeDir, "saves", "damareen_world" + currentId.ToString() + ".tuff"), FileMode.Create))
-        using (BinaryWriter bw = new BinaryWriter(stream))
-        {
-            bw.Write(idk);
-            bw.Write(bytes);
-        }
-    }
-
-    public static void SaveWorld(int id, GameEngine engine, string templateName)
-    {
-        string worldBase = Path.Combine(AppContext.BaseDirectory, "worlds", $"w{id}");
-        if (!Directory.Exists(worldBase))
-            Directory.CreateDirectory(worldBase);
-
-        WorldSave.CardSave[] cards = new WorldSave.CardSave[engine.CardTemplates.Count];
-        List<WorldSave.BossOverride> bosses = new();
-
-        for (int i = 0; i < engine.CardTemplates.Count; i++)
-        {
-            CardTemplate gameCard = engine.CardTemplates[i];
-            if (!gameCard.IsBoss)
-            {
-                WorldSave.CardSave card = new WorldSave.CardSave
+                CardTemplate? original = engine.CardTemplates.FirstOrDefault(c => c.Name == t.Name);
+                if (original == null)
                 {
-                    name = gameCard.name,
-                    damage = gameCard.damage,
-                    health = gameCard.health,
-                    type = gameCard.Export().Split(";").Last(),
+                    Debug.WriteLine($"Warning: Inventory card '{t.Name}' not found in CardTemplates.");
+                    continue;
+                }
 
-                };
-                cards[i] = card;
+                if (original.Attack == t.Attack && original.Health == t.Health)
+                    continue;
+
+                int hpDiff = t.Health - original.Health;
+                int dmgDiff = t.Attack - original.Attack;
+
+                overrides.Add(new PlayerSave.PlayerCardOverride
+                {
+                    cardName = t.Name,
+                    healthDiff = hpDiff,
+                    damageDiff = dmgDiff
+                });
             }
-            else
+
+            long timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var save = new PlayerSave
             {
-                WorldSave.BossOverride boss = new WorldSave.BossOverride()
+                unlockedCards = cardNames,
+                selectedCards = selectedCardNames,
+                upgradedCards = overrides.ToArray(),
+                saveName = saveName ?? string.Empty,
+                difficulty = engine.GameWorld.Difficulty,
+                saveTimestamp = timestamp,
+                saveBase = engine.GameWorld.BaseId,
+                saveId = currentId
+            };
+
+            string content = JsonConvert.SerializeObject(save);
+            byte[] encoded = EncodeContent(content);
+
+            string savePath = Path.Combine(saveDir, $"damareen_world{currentId}.tuff");
+            using var stream = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            using var bw = new BinaryWriter(stream);
+
+            bw.Write(HEADER);
+            bw.Write(encoded);
+        }
+
+
+        public static void SaveWorld(int id, GameEngine engine, string templateName)
+        {
+            if (engine == null) throw new ArgumentNullException(nameof(engine));
+
+            string worldBase = Path.Combine(AppContext.BaseDirectory, "worlds", $"w{id}");
+            if (!Directory.Exists(worldBase)) Directory.CreateDirectory(worldBase);
+
+            var cards = new List<WorldSave.CardSave>();
+            var bosses = new List<WorldSave.BossOverride>();
+
+            foreach (var card in engine.CardTemplates)
+            {
+                if (card.IsBoss)
                 {
-                    bossName = gameCard.bossName,
-                    proficiency = gameCard.bossProficiency switch
+                    string proficiency = Utils.Utils.GetAttributeName(card.bossProficiency);
+
+                    bosses.Add(new WorldSave.BossOverride
                     {
-                        Card.Attribute.Damage => "sebzes",
-                        Card.Attribute.Health => "eletero",
-                        _ => "idk"
-                    },
-                    cardIndex = i
-                };
-                bosses.Add(boss);
+                        bossName = card.bossName,
+                        proficiency = proficiency,
+                        originalName = card.name
+                    });
+                }
+                else
+                {
+                    string typeString = Utils.Utils.GetTypeName(card.ElementType);
+
+                    cards.Add(new WorldSave.CardSave
+                    {
+                        name = card.name,
+                        damage = card.damage,
+                        health = card.health,
+                        type = typeString
+                    });
+                }
             }
-        }
 
-        string[] initialCards = new string[engine.initialDeck.Count];
-        for (int i = 0; i < engine.initialDeck.Count; i++)
-        {
-            initialCards[i] = engine.initialDeck[i].name;
-        }
+            string[] initialCards = engine.initialDeck.Select(c => c.name).ToArray();
 
-        WorldSave save = new WorldSave
-        {
-            templateName = templateName,
-            cards = cards,
-            bosses = bosses.ToArray(),
-            starterDeck = initialCards
-        };
-
-        string content = JsonConvert.SerializeObject(save);
-        byte[] contentBytes = Encoding.UTF8.GetBytes(content);
-        for (int i = 0; i < contentBytes.Length; i++) contentBytes[i] ^= 0x5A;
-
-        using (FileStream fs = new FileStream(Path.Combine(worldBase, "world.tuff"), FileMode.Create))
-        using (BinaryWriter bw = new BinaryWriter(fs))
-        {
-            bw.Write(Encoding.UTF8.GetBytes("TUFF"));
-            bw.Write(contentBytes);
-        }
-    }
-    public static WorldSave LoadWorld(int id)
-    {
-        using (FileStream fs = new FileStream(Path.Combine(AppContext.BaseDirectory, "worlds", $"w{id}", "world.tuff"), FileMode.Open))
-        using (BinaryReader br = new BinaryReader(fs))
-        {
-            byte[] header = br.ReadBytes(4);
-            if (!header.SequenceEqual(HEADER))
+            var worldSave = new WorldSave
             {
-                // throw new Exception("This isn't a proper tuff file!");
-                System.Console.WriteLine("Meh");
+                templateName = templateName ?? string.Empty,
+                cards = cards.ToArray(),
+                bosses = bosses.ToArray(),
+                starterDeck = initialCards,
+                worldId = id
+            };
+
+
+            int dungeonId = 0;
+            foreach (var dungeon in engine.GameWorld.Dungeons)
+            {
+                string[] dungeonCards = new string[dungeon.collection.Size];
+                for (int i = 0; i < dungeon.collection.Size; i++)
+                    dungeonCards[i] = dungeon.collection[i].name;
+
+                string dungeonSize = dungeon.type switch
+                {
+                    DungeonTemplate.DungeonType.Small => "egyszeru",
+                    DungeonTemplate.DungeonType.Medium => "kis",
+                    DungeonTemplate.DungeonType.Big => "nagy",
+                    _ => throw new InvalidOperationException(
+                        $"Unsupported dungeon type '{dungeon.type}' for dungeon '{dungeon.name}'.")
+                };
+
+                string bossName = dungeon.bossTemplate != null ? dungeon.bossTemplate.bossName : string.Empty;
+                string rewardStr = dungeon.reward.Export();
+
+
+                string rewardTrimmed = rewardStr.Length > 0 ? rewardStr[1..] : string.Empty;
+
+                var dungeonSave = new WorldSave.DungeonSave
+                {
+                    dungeonName = dungeon.name,
+                    dungeonSize = dungeonSize,
+                    bossName = bossName,
+                    reward = rewardTrimmed,
+                    cards = dungeonCards
+                };
+
+                string dungeonContent = JsonConvert.SerializeObject(dungeonSave);
+                byte[] dungeonBytes = EncodeContent(dungeonContent);
+
+                string dungeonPath = Path.Combine(worldBase, $"d{dungeonId++}.tuff");
+                using var dfs = new FileStream(dungeonPath, FileMode.Create, FileAccess.Write, FileShare.None);
+                using var dbw = new BinaryWriter(dfs);
+
+                dbw.Write(HEADER);
+                dbw.Write(dungeonBytes);
             }
 
-            byte[] contentBytes = br.ReadBytes(((int)fs.Length) - 4);
-            for (int i = 0; i < contentBytes.Length; i++)
-                contentBytes[i] ^= 0x5A;
+            string worldContent = JsonConvert.SerializeObject(worldSave);
+            byte[] worldBytes = EncodeContent(worldContent);
 
-            string content = Encoding.UTF8.GetString(contentBytes);
-            System.Console.WriteLine(content);
-
-            return JsonConvert.DeserializeObject<WorldSave>(content);
+            string worldPath = Path.Combine(worldBase, "world.tuff");
+            using (var fs = new FileStream(worldPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var bw = new BinaryWriter(fs))
+            {
+                bw.Write(HEADER);
+                bw.Write(worldBytes);
+            }
         }
-    }
 
-    public static List<PlayerSave> GetSaves()
-    {
-        List<PlayerSave> playerSaves = new List<PlayerSave>();
-        var saves = Path.Combine(AppContext.BaseDirectory, "saves");
-        for (int i = 0; i < Directory.GetFiles(saves).Length; i++)
+        public static (WorldSave, WorldSave.DungeonSave[]) LoadWorld(int id)
         {
-            playerSaves.Add(LoadPlayerSave(i));
+            string worldDir = Path.Combine(AppContext.BaseDirectory, "worlds", $"w{id}");
+            if (!Directory.Exists(worldDir))
+                throw new DirectoryNotFoundException($"World directory not found: {worldDir}");
+
+            string worldPath = Path.Combine(worldDir, "world.tuff");
+            if (!File.Exists(worldPath))
+                throw new FileNotFoundException($"World file not found: {worldPath}", worldPath);
+
+            using (var fs = new FileStream(worldPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var br = new BinaryReader(fs))
+            {
+                byte[] header = br.ReadBytes(4);
+                EnsureHeader(header, worldPath);
+
+                byte[] contentBytes = br.ReadBytes((int)fs.Length - 4);
+                string content = DecodeContent(contentBytes);
+
+                var world = JsonConvert.DeserializeObject<WorldSave>(content)
+                            ?? throw new InvalidOperationException($"Failed to deserialize WorldSave from '{worldPath}'.");
+
+                var dungeonFiles = Directory.GetFiles(worldDir, "d*.tuff")
+                                            .OrderBy(path =>
+                                            {
+                                                var name = Path.GetFileNameWithoutExtension(path);
+                                                var indexStr = name.Substring(1);
+                                                return int.TryParse(indexStr, out var idx) ? idx : int.MaxValue;
+                                            })
+                                            .ToArray();
+
+                var dungeons = new List<WorldSave.DungeonSave>();
+
+                foreach (var dFile in dungeonFiles)
+                {
+                    using var dfs = new FileStream(dFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    using var dbr = new BinaryReader(dfs);
+
+                    byte[] dheader = dbr.ReadBytes(4);
+                    if (!dheader.SequenceEqual(HEADER))
+                    {
+                        Debug.WriteLine($"Warning: Dungeon file '{dFile}' has invalid header, skipping.");
+                        continue;
+                    }
+
+                    byte[] dcontentBytes = dbr.ReadBytes((int)dfs.Length - 4);
+                    string dcontent = DecodeContent(dcontentBytes);
+
+                    var dungeonSave = JsonConvert.DeserializeObject<WorldSave.DungeonSave>(dcontent);
+                    if (dungeonSave == null)
+                    {
+                        Debug.WriteLine($"Warning: Failed to deserialize dungeon file '{dFile}', skipping.");
+                        continue;
+                    }
+
+                    dungeons.Add(dungeonSave);
+                }
+
+                return (world, dungeons.ToArray());
+            }
         }
-        return playerSaves;
+
+        public static List<PlayerSave> GetSaves()
+        {
+            var playerSaves = new List<PlayerSave>();
+            string saveDir = Path.Combine(AppContext.BaseDirectory, "saves");
+
+            if (!Directory.Exists(saveDir))
+                return playerSaves;
+
+            foreach (var file in Directory.GetFiles(saveDir, "damareen_world*.tuff"))
+            {
+                var fileName = Path.GetFileNameWithoutExtension(file);
+                var idStr = fileName.Replace("damareen_world", "");
+                if (!int.TryParse(idStr, out var id))
+                {
+                    Debug.WriteLine($"Warning: Save file with unexpected name: {file}");
+                    continue;
+                }
+
+                try
+                {
+                    playerSaves.Add(LoadPlayerSave(id));
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to load save '{file}': {ex}");
+                }
+            }
+
+            return playerSaves;
+        }
+
+        public class WorldDungeonCombo
+        {
+            public WorldSave world { get; set; } = default!;
+            public WorldSave.DungeonSave[] dungeons { get; set; } = Array.Empty<WorldSave.DungeonSave>();
+        }
+
+        public static WorldDungeonCombo[] GetWorlds()
+        {
+            string worldsDir = Path.Combine(AppContext.BaseDirectory, "worlds");
+            if (!Directory.Exists(worldsDir))
+                return Array.Empty<WorldDungeonCombo>();
+
+            var combos = new List<WorldDungeonCombo>();
+
+            foreach (var dir in Directory.GetDirectories(worldsDir, "w*"))
+            {
+                var dirName = Path.GetFileName(dir);
+                var idStr = dirName.Substring(1);
+                if (!int.TryParse(idStr, out var id))
+                {
+                    Debug.WriteLine($"Warning: World directory with unexpected name: {dir}");
+                    continue;
+                }
+
+                try
+                {
+                    var (world, dungeons) = LoadWorld(id);
+                    combos.Add(new WorldDungeonCombo
+                    {
+                        world = world,
+                        dungeons = dungeons
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to load world '{dir}': {ex}");
+                }
+            }
+
+            return combos.ToArray();
+        }
     }
 }

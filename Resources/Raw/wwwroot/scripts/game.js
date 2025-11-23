@@ -193,6 +193,7 @@ function showDamageLabel(damage, isPlayer) {
 function showEndScreen(result, rewardText = "") {
         gameState.showEnd = true;
         document.getElementById('endScreen').style.display = 'flex';
+        window.HybridWebView.InvokeDotNet("SaveGame");
         if (result.Success) {
                 document.getElementById('endText').textContent = 'Nyertél!';
                 document.getElementById('endText').style.color = ''; // CSS gradient handles color

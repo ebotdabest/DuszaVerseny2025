@@ -30,12 +30,7 @@ class TestMode
             var found_templates = templates.Where(t => t.name == args[1]).ToList();
             if (found_templates.Count == 0) { return; }
             var temp = found_templates[0];
-            templates.Add(temp.ToBoss(args[0], args[2] switch
-            {
-                "sebzes" => Card.Attribute.Damage,
-                "eletero" => Card.Attribute.Health,
-                _ => Card.Attribute.None
-            }));
+            templates.Add(temp.ToBoss(args[0], Utils.GetAttributeByName(args[2])));
         }
         else if (diff == "kazamata")
         {
@@ -227,7 +222,10 @@ public static class MauiProgram
 
     static CardTemplate findTemplate(List<CardTemplate> templates, string name)
     {
-        return templates.Where(t => t.Name.ToLower() == name.ToLower()).First();
+        var lowered = name.ToLower();
+        return templates.First(t =>
+            t.Name.ToLower() == lowered ||
+            t.bossName.ToLower() == lowered);
     }
 
     public static GameEngine engine;
@@ -294,26 +292,42 @@ public static class MauiProgram
         engine = new GameEngine(templates, dungeons, inventory, 0);
         deckBuilder.engine = engine;
     }
+
+    public static int currentSaveId;
+    public static string currentSaveName;
+
     [DllImport("kernel32.dll")] static extern bool AllocConsole();
     [DllImport("kernel32.dll")] static extern bool FreeConsole();
 
     public static MauiApp CreateMauiApp()
     {
         string[] args = Environment.GetCommandLineArgs();
+        AllocConsole();
         if (args.Length < 2) Environment.Exit(1);
         if (args[1] != "--ui")
         {
-            AllocConsole();
             // TestMode tm = new TestMode();
             // tm.DoTest(args[1]);
 
-            var cards = new List<CardTemplate>
-            {
-                new CardTemplate(2,2,"sanyi", CardTemplate.Type.Air),
-                new CardTemplate(4,4,"fos", CardTemplate.Type.Earth)
-            };
-            GameEngine e = new GameEngine(cards, new() { }, new PlayerCollection(), 3);
-            SaveManager.SavePlayerSave(0, e, "My awesome save!");
+            // var cards = new List<CardTemplate>
+            // {
+            //     new CardTemplate(2,2,"sanyi", CardTemplate.Type.Air),
+            //     new CardTemplate(4,4,"fos", CardTemplate.Type.Earth)
+            // };
+
+            // var dungeon = new DungeonTemplate(DungeonTemplate.DungeonType.Small, "Smegma Castle",
+            // new Collection(cards), new DungeonTemplate.AttributeReward(Card.Attribute.Damage));
+            // PlayerCollection pc = new PlayerCollection();
+            // pc.AddToCollection(cards[0]);
+            // GameEngine e = new GameEngine(cards, new() { dungeon }, pc, 3);
+            // e.GameWorld.SetBaseId(1);
+            // SaveManager.SaveWorld(1, e, "Smegma world");
+            // SaveManager.SavePlayerSave(0, e, "My awesome save!");
+
+            SetupEngine();
+            SaveManager.SaveWorld(0, engine, "Az alap világ");
+
+
             Console.ReadLine();
             FreeConsole();
             Environment.Exit(0);

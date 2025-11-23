@@ -301,6 +301,11 @@ namespace DuszaVerseny2025.Engine
             return true;
         }
 
+        public void SetBaseId(int baseId)
+        {
+            _baseId = baseId;
+        }
+
         int _difficulty;
         int _baseId;
         public int Difficulty => _difficulty;
@@ -326,12 +331,7 @@ namespace DuszaVerseny2025.Engine
 
             public string Export()
             {
-                return $";{attribute switch
-                {
-                    Card.Attribute.Health => "eletero",
-                    Card.Attribute.Damage => "sebzes",
-                    _ => ""
-                }}";
+                return $";{Utils.Utils.GetAttributeName(attribute)}";
             }
 
             public string Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
@@ -413,22 +413,14 @@ namespace DuszaVerseny2025.Engine
 
             if (type == DungeonType.Small)
             {
-                var reward = args[3] switch
-                {
-                    "eletero" => Card.Attribute.Health,
-                    "sebzes" => Card.Attribute.Damage,
-                    _ => Card.Attribute.None
-                };
+                var reward = Utils.Utils.GetAttributeByName(args[3]);
+
                 return new DungeonTemplate(type, args[1], dungeonCards, new AttributeReward(reward));
             }
             else if (type == DungeonType.Medium)
             {
-                var reward = args[4] switch
-                {
-                    "eletero" => Card.Attribute.Health,
-                    "sebzes" => Card.Attribute.Damage,
-                    _ => Card.Attribute.None
-                };
+                var reward = Utils.Utils.GetAttributeByName(args[4]);
+
                 var boss = cards.Where(t => t.bossName == args[3]).First();
                 return new DungeonTemplate(type, args[1], dungeonCards, boss, new AttributeReward(reward));
             }

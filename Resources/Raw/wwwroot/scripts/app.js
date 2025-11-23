@@ -252,11 +252,12 @@ function createFallingStars() {
 // ====================================================================
 
 function showMainMenu() {
+    window.HybridWebView.InvokeDotNet("SaveGame");
         showLoadingScreen(() => {
-                debugLog('→ Back to Main Menu', 'info');
-                document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
-                document.getElementById('main-menu').style.display = 'flex';
-                hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
+            debugLog('→ Back to Main Menu', 'info');
+            document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
+            document.getElementById('main-menu').style.display = 'flex';
+            hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
         })
 }
 
@@ -287,11 +288,18 @@ function showNewGamePage() {
         hideMainMenu();
         document.getElementById('new-game-page').classList.add('active');
 
+        document.getElementById('saveName').value = '';
+        document.getElementById('worldTemplate').value = '';
+        document.getElementById('difficulty').value = "5";
+        document.getElementById('difficultyValue').innerText = "5";
+
         const select = document.getElementById('worldTemplate');
         if (select.children.length === 1) {
-                getTemplatesPlaceholder().forEach(t => {
-                        const opt = new Option(t.name, t.id);
+                getTemplatesPlaceholder().then(templates => {
+                    templates.forEach(t => {
+                        const opt = new Option(t.world.templateName, t.world.worldId);
                         select.add(opt);
+                    });
                 });
         }
 }
@@ -303,14 +311,12 @@ async function showLoadGamePage() {
         const list = document.getElementById('saveList');
         list.innerHTML = '';
 
-
         getSavesPlaceholder().then(saves => {
-                let i = 0;
                 saves.forEach(save => {
                         debugLog(save, 'info');
                         const item = document.createElement('div');
                         item.className = 'save-item-btn';
-                        item.onclick = () => loadSave(i);
+                        item.onclick = () => loadSave(save.saveId);
 
                         const date = new Date(save.saveTimestamp * 1000);
 
@@ -325,15 +331,15 @@ async function showLoadGamePage() {
                         item.innerHTML = `
                 <div class="save-name">${save.saveName}</div>
                 <div class="save-date">${formatted}</div>`;
-                        i++;
                         list.appendChild(item);
                 });
         });
 }
 
 function showEditorPage() {
-        hideMainMenu();
-        document.getElementById('editor-page').classList.add('active');
+    hideMainMenu();
+    document.getElementById('editor-page').classList.add('active');
+    initWorldEditor();
 }
 
 // ====================================================================
@@ -348,16 +354,20 @@ function startNewGame() {
         if (!template) return showAlert('Válassz világ sablont!');
 
         showLoadingScreen(() => {
+                window.HybridWebView.InvokeDotNet("MakeNewGame", {"name":name, "template": template});
                 enterGameMode();
                 showAlert(`Üdvözöllek, ${name}!`);
         });
 }
 
 function loadSave(id) {
-        showLoadingScreen(() => {
-                enterGameMode();
-                showAlert(`Játék betöltve: ${id}`);
+    showLoadingScreen(() => {
+        window.HybridWebView.InvokeDotNet("LoadGameById", id).then((save) => {
+            debugLog(save);
+            enterGameMode();
+            showAlert(`Üdv újra, ${save.saveName}`);
         });
+    });
 }
 
 function switchEditorTab(tabId) {
@@ -373,10 +383,14 @@ function switchEditorTab(tabId) {
         // 4. Activate section
         const section = document.getElementById(`editor-${tabId}`);
         if (section) section.classList.add('active');
+
+        if (tabId == 'sets') {
+            // document.getElementById('cardSelectionList')
+        }
 }
 
 function saveWorld() {
-        showAlert('Világ mentve (Demo)');
+    showAlert('Világ mentve (Demo)');
 }
 
 // Add this to your scripts/app.js file
@@ -405,41 +419,41 @@ function loadWorld() {
         listContainer.innerHTML = ''; // Clear any existing content
 
         // Load world templates
-        const worlds = getTemplatesPlaceholder();
-
-        if (!worlds || worlds.length === 0) {
+        getTemplatesPlaceholder().then(worlds => {
+            if (!worlds || worlds.length === 0) {
                 listContainer.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Nincs elérhető világ sablon</p>';
                 modalContent.appendChild(header);
                 modalContent.appendChild(listContainer);
                 modal.appendChild(modalContent);
                 document.body.appendChild(modal);
                 return;
-        }
+            }
 
-        let i = 0;
-        worlds.forEach(world => {
-                debugLog(world, 'info');
+            let i = 0;
+            worlds.forEach(world => {
+                    debugLog(world, 'info');
 
-                const item = document.createElement('div');
-                item.className = 'world-item-btn';
-                item.onclick = () => loadWorldTemplate(world.id, modal, world.name);
+                    const item = document.createElement('div');
+                    item.className = 'world-item-btn';
+                    item.onclick = () => loadWorldTemplate(world.id, modal, world.name);
 
-                item.innerHTML = `
-            <div class="world-name">${world.name}</div>
-            <div class="world-date">${world.id.toUpperCase()}</div>
-        `;
+                    item.innerHTML = `
+                <div class="world-name">${world.name}</div>
+                <div class="world-date"></div>
+            `;
 
-                i++;
-                listContainer.appendChild(item);
+                    i++;
+                    listContainer.appendChild(item);
+            });
+            // Append elements
+            modalContent.appendChild(header);
+            modalContent.appendChild(listContainer);
+            modal.appendChild(modalContent);
+    
+            // Add to document
+            document.body.appendChild(modal);
         });
 
-        // Append elements
-        modalContent.appendChild(header);
-        modalContent.appendChild(listContainer);
-        modal.appendChild(modalContent);
-
-        // Add to document
-        document.body.appendChild(modal);
 }
 
 // Helper function to load a specific world template by ID
@@ -516,26 +530,50 @@ function toggleDungeonInputs() {
         // Logic placeholder
 }
 
-function createCardPlaceholder() { showAlert('Kártya létrehozva (Demo)'); }
+function initWorldEditor() {
+    window.HybridWebView.InvokeDotNet("InitEditor");
+}
+
+function createCardPlaceholder() { 
+    const cardName = document.getElementById('cardName').value;
+    const cardAttack = document.getElementById('cardAttack').value;
+    const cardHealth = document.getElementById('cardHealth').value;
+    const cardElement = document.getElementById('cardElement').value;
+
+    const isBoss = document.getElementById('isBoss').checked;
+    const bossName = document.getElementById('bossName').value;
+    const bossProficiency = document.getElementById('bossProficiency').value;
+    
+    
+
+    window.HybridWebView.InvokeDotNet("CreateCard", {
+        "name": cardName,
+        "attack": parseInt(cardAttack),
+        "health": parseInt(cardHealth),
+        "element":cardElement,
+        "isBoss": isBoss,
+        "bossName": bossName,
+        "bossProficiency": bossProficiency
+    });
+
+}
 function createSetPlaceholder() { showAlert('Szett mentve (Demo)'); }
 function createDungeonPlaceholder() { showAlert('Kazamata létrehozva (Demo)'); }
 
 // Data Providers
-function getTemplatesPlaceholder() {
-        if (window.HybridWebView) {
+async function getTemplatesPlaceholder() {
+    if (window.HybridWebView) {
+        const worlds = await window.HybridWebView.InvokeDotNet("RequestWorlds");
+        debugLog(worlds);
+        return worlds;
+    }
 
-        }
-        return [
-                { id: 'forest', name: 'Sötét Erdő' },
-                { id: 'cave', name: 'Kristálybarlang' },
-                { id: 'volcano', name: 'Lávamezők' }
-        ];
+    return [];
 }
 
 async function getSavesPlaceholder() {
-        const saves = await window.HybridWebView.InvokeDotNet("RequestSaves");
-
-        return saves;
+    const saves = await window.HybridWebView.InvokeDotNet("RequestSaves");
+    return saves;
 }
 
 // ====================================================================
@@ -544,54 +582,12 @@ async function getSavesPlaceholder() {
 
 function requestGameState() {
         if (window.HybridWebView) {
-                window.HybridWebView.SendRawMessage('RequestGameState');
+            window.HybridWebView.SendRawMessage('RequestGameState');
         } else {
-                debugLog('Browser mode: Loading Mock Data', 'warn');
-                loadMockData();
-        }
+            debugLog('Browser mode: Loading Mock Data', 'warn');                    
+        }       
 }
 
-function loadMockData() {
-        const mockCards = [];
-        const elements = ['Fire', 'Water', 'Earth', 'Air'];
-        const colors = { 'Fire': '#ff5252', 'Water': '#448aff', 'Earth': '#69f0ae', 'Air': '#e040fb' };
-
-        for (let i = 0; i < 20; i++) {
-                const el = elements[i % 4];
-                mockCards.push({
-                        Index: i,
-                        Name: `Kártya ${i + 1}`,
-                        Attack: Math.floor(Math.random() * 10) + 1,
-                        Health: Math.floor(Math.random() * 10) + 1,
-                        Element: el,
-                        ElementColor: colors[el],
-                        IsOwned: i < 15,
-                        IsSelected: false,
-                        DeckOrder: 0
-                });
-        }
-
-        const mockState = {
-                AvailableCards: mockCards,
-                CurrentDeckSize: 0,
-                MaxDeckSize: 5,
-                Dungeons: [
-                        {
-                                Name: 'Goblin Fészek',
-                                HasBoss: false
-                        },
-                        {
-                                Name: 'Sárkány Barlang',
-                                HasBoss: true,
-                                BossName: 'Vörös Sárkány',
-                                BossDamage: 15,
-                                BossHealth: 50
-                        }
-                ]
-        };
-
-        updateGameState(mockState);
-}
 
 window.addEventListener('DOMContentLoaded', () => {
         debugLog('=== DAMAREEN JS LOADED ===', 'success');
