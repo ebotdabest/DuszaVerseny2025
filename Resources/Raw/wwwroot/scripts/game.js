@@ -9,6 +9,7 @@ let gameState = {
         showEnemy: false,
         showEnd: false
 };
+
 document.addEventListener('DOMContentLoaded', function () {
         debugLog('=== GAME PAGE LOADED ===', 'info');
 
@@ -127,19 +128,19 @@ function createCardElement(card, isBoss, isEnemy) {
 
         const placeholderClass = isEnemy ? 'enemy-placeholder' : 'player-placeholder';
         cardDiv.innerHTML = `
-        <div class="card-inner">
-            <div class="card-name">${card.Name}</div>
-            <div class="card-image-placeholder ${placeholderClass}"></div>
-            <div class="stats">
-                <div class="stat damage">
-                    <span>⚔️</span> ${card.Damage}
-                </div>
-                <div class="stat health">
-                    <span>❤️</span> ${card.Health}
-                </div>
+    <div class="card-inner">
+        <div class="card-name">${card.Name}</div>
+        <div class="card-image-placeholder ${placeholderClass}"></div>
+        <div class="stats">
+            <div class="stat damage">
+                <span>⚔️</span> ${card.Damage}
+            </div>
+            <div class="stat health">
+                <span>❤️</span> ${card.Health}
             </div>
         </div>
-    `;
+    </div>
+`;
         if (card.ElementColor) {
                 cardDiv.style.background = `linear-gradient(135deg, ${card.ElementColor} 0%, #222 100%)`;
         }
@@ -209,19 +210,6 @@ function navigateBack() {
         window.HybridWebView.SendRawMessage('navigateBack');
 }
 
-// FIX: Frissített animáció időzítés 500ms -> 600ms
-function triggerAnimation(elementId, animationClass) {
-        const el = document.getElementById(elementId);
-        const duration = 600; // Új, lassabb animáció időtartam
-        if (el) {
-                el.classList.remove(animationClass);
-                void el.offsetWidth; // Trigger reflow
-                el.classList.add(animationClass);
-                // Ensure the class is removed after the animation duration
-                setTimeout(() => el.classList.remove(animationClass), duration);
-        }
-}
-
 function updateArenaCard(elementId, card, isBoss, isEnemy) {
         const arenaCard = document.getElementById(elementId);
         arenaCard.style.display = 'flex';
@@ -262,14 +250,14 @@ function handleFightEvent(event) {
                 const isBoss = event.values.isBoss || false;
 
                 updateArenaCard('arenaEnemyCard', gameState.enemyCard, isBoss, true);
-                triggerAnimation('arenaEnemyCard', 'drawCard');
+                if (window.animateDraw) window.animateDraw('arenaEnemyCard');
 
                 addHistoryEntry(`Kazamata kijátszotta: ${gameState.enemyCard.Name}`);
                 renderEnemyCards();
         } else if (event.event_name === "player:select") {
                 gameState.currentCard = event.values.card;
                 updateArenaCard('arenaPlayerCard', gameState.currentCard, false, false);
-                triggerAnimation('arenaPlayerCard', 'drawCard');
+                if (window.animateDraw) window.animateDraw('arenaPlayerCard');
 
                 addHistoryEntry(`Játékos kijátszotta: ${gameState.currentCard.Name}`);
                 renderPlayerCards();
@@ -280,14 +268,18 @@ function handleFightEvent(event) {
                 document.getElementById('playerHealth').textContent = targetCard.Health;
                 addHistoryEntry(`Kazamata(${gameState.enemyCard.Name}) támad: ${damage} a ${targetCard.Name}(Játékos), élete maradt: ${targetCard.Health}`);
 
-                triggerAnimation('arenaEnemyCard', 'attacking');
-                triggerAnimation('arenaPlayerCard', 'damaged');
+                if (window.animateAttack) window.animateAttack('arenaEnemyCard', 'arenaPlayerCard');
+                if (window.animateDamage) setTimeout(() => window.animateDamage('arenaPlayerCard'), 250); // Sync with impact
                 showDamageLabel(damage, true); // isPlayer = true, mert a játékost sebezte
 
                 if (targetCard.Health <= 0) {
-                        setTimeout(() => {
-                                document.getElementById('arenaPlayerCard').style.display = 'none';
-                        }, 500);
+                        if (window.animateDeath) {
+                                setTimeout(() => window.animateDeath('arenaPlayerCard'), 800);
+                        } else {
+                                setTimeout(() => {
+                                        document.getElementById('arenaPlayerCard').style.display = 'none';
+                                }, 500);
+                        }
                         addHistoryEntry(`${gameState.currentCard.Name}(Játékos) kártya legyőzve!`);
                 }
         } else if (event.event_name === "player:attack") {
@@ -297,14 +289,18 @@ function handleFightEvent(event) {
                 document.getElementById('enemyHealth').textContent = targetCard.Health;
                 addHistoryEntry(`Játékos(${gameState.currentCard.Name}) támad: ${damage} a ${targetCard.Name}(Kazamata), élete maradt: ${targetCard.Health}`);
 
-                triggerAnimation('arenaPlayerCard', 'attacking');
-                triggerAnimation('arenaEnemyCard', 'damaged');
+                if (window.animateAttack) window.animateAttack('arenaPlayerCard', 'arenaEnemyCard');
+                if (window.animateDamage) setTimeout(() => window.animateDamage('arenaEnemyCard'), 250); // Sync with impact
                 showDamageLabel(damage, false); // isPlayer = false, mert az ellenséget sebezte
 
                 if (targetCard.Health <= 0) {
-                        setTimeout(() => {
-                                document.getElementById('arenaEnemyCard').style.display = 'none';
-                        }, 500);
+                        if (window.animateDeath) {
+                                setTimeout(() => window.animateDeath('arenaEnemyCard'), 800);
+                        } else {
+                                setTimeout(() => {
+                                        document.getElementById('arenaEnemyCard').style.display = 'none';
+                                }, 500);
+                        }
                         addHistoryEntry(`${targetCard.Name}(Kazamata) legyőzve!`);
                 }
         }

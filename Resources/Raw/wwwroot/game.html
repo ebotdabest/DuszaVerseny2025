@@ -99,14 +99,116 @@
 
     <div id="endScreen" class="modal-overlay" style="display: none;">
         <div class="modal-content end-modal">
-            <div id="endText" class="end-title">Victory!</div>
-            <div id="endReward" class="end-reward">Reward Text</div>
-            <button id="backButton" class="btn-secondary">Visszatérés a világodba</button>
-        </div>
-    </div>
+            <!DOCTYPE html>
+            <html lang="en">
 
-    <script src="scripts/HybridWebView.js"></script>
-    <script src="scripts/game.js"></script>
-</body>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Dungeon Battle</title>
+                <link rel="stylesheet" href="styles/game.css">
+                <link
+                    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap"
+                    rel="stylesheet">
+            </head>
 
-</html>
+            <body>
+                <div class="game-background"></div>
+                <div class="game-overlay"></div>
+
+                <div class="game-container">
+                    <div class="top-bar">
+                        <div id="topLabel" class="dungeon-title">Dungeon Name</div>
+                        <div id="roundText" class="round-counter">Round 1</div>
+                    </div>
+
+                    <div class="main-content">
+                        <div class="play-area">
+                            <div class="zone enemy-zone">
+                                <div class="zone-label">Ellenfél paklija</div>
+                                <div id="enemyDeck" class="deck-container">
+                                </div>
+                            </div>
+
+                            <div id="battleArea" class="battle-zone">
+                                <div class="battle-card-container">
+                                    <div id="arenaEnemyCard" class="card arena-card enemy" style="display: none;">
+                                        <div class="card-inner">
+                                            <div class="card-name">Enemy</div>
+                                            <div class="card-image-placeholder enemy-placeholder"></div>
+                                            <div class="stats">
+                                                <div class="stat damage">
+                                                    <span class="icon">⚔️</span>
+                                                    <span class="value" id="enemyDamage">0</span>
+                                                </div>
+                                                <div class="stat health">
+                                                    <span class="icon">❤️</span>
+                                                    <span class="value" id="enemyHealth">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="vs-divider">VS</div>
+
+                                <div class="battle-card-container">
+                                    <div id="arenaPlayerCard" class="card arena-card player" style="display: none;">
+                                        <div class="card-inner">
+                                            <div class="card-name">Játékos</div>
+                                            <div class="card-image-placeholder player-placeholder"></div>
+                                            <div class="stats">
+                                                <div class="stat damage">
+                                                    <span class="icon">⚔️</span>
+                                                    <span class="value" id="playerDamage">0</span>
+                                                </div>
+                                                <div class="stat health">
+                                                    <span class="icon">❤️</span>
+                                                    <span class="value" id="playerHealth">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="damagePopupLabel" class="damage-popup"></div>
+                            </div>
+
+                            <div class="zone player-zone">
+                                <div class="zone-label">Saját pakli</div>
+                                <div id="playerDeck" class="deck-container">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="side-panel">
+                            <div id="historyPanel" class="history-panel">
+                                <div id="historyTitle" class="panel-title">Események</div>
+                                <div id="historyContainer" class="history-content">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="startOverlay" class="modal-overlay">
+                    <div class="modal-content start-modal">
+                        <h1 class="game-title">Készen állsz?</h1>
+                        <button id="startButton" class="btn-primary">Indítás</button>
+                    </div>
+                </div>
+
+                <div id="endScreen" class="modal-overlay" style="display: none;">
+                    <div class="modal-content end-modal">
+                        <div id="endText" class="end-title">Victory!</div>
+                        <div id="endReward" class="end-reward">Reward Text</div>
+                        <button id="backButton" class="btn-secondary">Visszatérés a világodba</button>
+                    </div>
+                </div>
+
+                <script src="scripts/HybridWebView.js"></script>
+                <script type="module" src="animations/cardAnimations.js"></script>
+                <script src="scripts/game.js"></script>
+            </body>
+
+            </html>
