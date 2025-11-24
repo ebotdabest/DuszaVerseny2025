@@ -946,3 +946,30 @@ input[type=range].custom-slider::-webkit-slider-thumb:hover {
         color: black;
         box-shadow: var(--glow-red);
 }
+
+#worldName {
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 20px;
+        background: #0a0a0a;
+        border: 1px solid #444;
+        border-left: 3px solid var(--accent-red);
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        font-family: var(--font-main);
+        text-align: center;
+        box-sizing: border-box;
+        transition: 0.2s;
+}
+
+#worldName:focus {
+        outline: none;
+        border-color: var(--accent-red);
+        box-shadow: var(--glow-red);
+}
+
+#worldName::placeholder {
+        color: #666;
+        font-weight: normal;
+}

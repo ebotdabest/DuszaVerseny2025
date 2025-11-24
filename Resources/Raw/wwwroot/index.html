@@ -7,15 +7,14 @@
         <title>DAMAREEN</title>
         <link rel="icon" href="data:,">
         <link rel="stylesheet" href="styles/app.css">
-        <link rel="stylesheet" href="styles/console.css">
         <script src="scripts/HybridWebView.js"></script>
 </head>
 
 <body>
         <div class="container">
                 <header class="game-header">
-                        <button class="btnBackToMenu" id="headerBackButton" onclick="showMainMenu()"
-                                title="Menü">☰</button>
+                        <button class="btnBackToMenu" id="headerBackButton" onclick="showMainMenu()" title="Menü"
+                                style="display: none;">☰</button>
                         <h1 class="game-title">DAMAREEN</h1>
                         <div class="game-subtitle">♔</div>
                 </header>
@@ -48,6 +47,7 @@
                 <button id="btnLoadGame" onclick="loadGame()">Betöltés</button>
                 <button id="btnEditor" onclick="editor()">Világszerkesztő</button>
                 <button id="btnExit" onclick="exit()">Kilépés</button>
+                <button id="btnHollowPurple" onclick="activateHollowPurple()">Skill test</button>
         </div>
 
         <div id="alertModal" class="modal">
@@ -117,6 +117,7 @@
                         </div>
 
                         <div class="editor-content">
+                                <input type="text" id="worldName" placeholder="Világ sablon neve">
                                 <!-- Cards Tab -->
                                 <div id="editor-cards" class="editor-section active">
                                         <h3>Kártya Létrehozása</h3>
@@ -230,8 +231,11 @@
         </div>
 
         <!-- Scripts at the end of body (best practice) -->
-        <script src="scripts/console.js"></script>
         <script src="scripts/app.js"></script>
+        <script type="module">
+                import { activateHollowPurple } from './animations/hollowpurple.js';
+                window.activateHollowPurple = activateHollowPurple;
+        </script>
 </body>
 
 </html>

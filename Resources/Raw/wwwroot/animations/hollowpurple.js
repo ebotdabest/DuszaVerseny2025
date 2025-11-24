@@ -343,11 +343,7 @@ fx.registerEffect('shockwave_helix', function (inst) {
     };
 });
 
-function activateHollowPurple() {
-    btn.classList.add('hidden');
-    shrineBtn.classList.add('hidden');
-    title.classList.add('visible');
-
+export function activateHollowPurple() {
     // --- DYNAMIC CHANT ELEMENT SETUP ---
     // Inject CSS if not already present
     if (!document.getElementById('chant-style')) {
@@ -360,18 +356,18 @@ function activateHollowPurple() {
                 left: 50%;
                 transform: translate(-50%, -50%);
                 font-size: 80px;
-                font-weight: bold;
+                    font- weight: bold;
                 color: #fff;
-                text-shadow: 0 0 20px #8b00ff, 0 0 40px #8b00ff, 0 0 80px #fff;
+                text - shadow: 0 0 20px #8b00ff, 0 0 40px #8b00ff, 0 0 80px #fff;
                 opacity: 0;
-                pointer-events: none;
-                z-index: 10001;
-                font-family: 'Arial Black', sans-serif;
-                text-align: center;
-                white-space: nowrap;
+                pointer - events: none;
+                z - index: 10001;
+                font - family: 'Arial Black', sans - serif;
+                text - align: center;
+                white - space: nowrap;
                 transition: opacity 0.5s, transform 0.5s;
             }
-        `;
+            `;
         document.head.appendChild(style);
     }
 
@@ -399,7 +395,7 @@ function activateHollowPurple() {
         if (chantIndex < chantLines.length) {
             chantEl.innerText = chantLines[chantIndex];
             chantEl.style.opacity = 1;
-            chantEl.style.transform = `translate(-50%, -50%) scale(${1 + chantIndex * 0.15})`;
+            chantEl.style.transform = `translate(-50%, - 50%) s cale(${1 + chantIndex * 0.15})`;
 
             // Fade out slightly before next line for smooth transition
             setTimeout(() => {
@@ -418,17 +414,16 @@ function activateHollowPurple() {
         }
     }, 1000);
 
-    // --- ABSOLUTE-TIMED SEQUENCE (stretched & paused for readability) ---
     const sequence = [
         // PHASE 1: THE RITUAL — slower build
-        [CMD.IMPACT_FRAME, 0, 'rgba(0, 0, 0, 0.6)', 'none'],
+        [CMD.IMPACT_FRAME, 0, 'rgba(0, 0, 0, 0.1)', 'none'],
         [CMD.VFX, 0, 'energy_tornado', '50%', '50%', { color: '#8b00ff', size: 6 }],
         [CMD.VFX, 900, 'distortion_wave', '50%', '50%', { color: '#4b0082' }],
-        [CMD.IMPACT_FRAME, 900, 'rgba(75, 0, 130, 0.22)', 'rumble'],
+        [CMD.IMPACT_FRAME, 900, 'rgba(75, 0, 130, 0.3)', 'rumble'],
 
         [CMD.VFX, 1900, 'energy_tornado', '50%', '50%', { color: '#d8b4fe', size: 18 }],
         [CMD.VFX, 1900, 'purple_lightning', '50%', '50%', { color: '#fff' }],
-        [CMD.IMPACT_FRAME, 1900, 'rgba(139, 0, 255, 0.32)', 'rumble'],
+        [CMD.IMPACT_FRAME, 1900, 'rgba(139, 0, 255, 0.2)', 'rumble'],
 
         [CMD.VFX, 2800, 'distortion_wave', '50%', '50%', { color: '#fff' }],
         [CMD.VFX, 2800, 'black_hole_core', '50%', '50%', { size: 22 }],
@@ -444,7 +439,7 @@ function activateHollowPurple() {
 
         [CMD.MOVE_VFX, 3800, 'blue', '42%', '50%', 900],
         [CMD.MOVE_VFX, 3800, 'red', '58%', '50%', 900],
-        [CMD.IMPACT_FRAME, 3800, 'rgba(0, 0, 0, 0.33)', 'rumble'],
+        [CMD.IMPACT_FRAME, 3800, 'rgba(0, 0, 0, 0.3)', 'rumble'],
 
         [CMD.MOVE_VFX, 4300, 'blue', '28%', '50%', 900],
         [CMD.MOVE_VFX, 4300, 'red', '72%', '50%', 900],
@@ -453,7 +448,7 @@ function activateHollowPurple() {
 
         [CMD.MOVE_VFX, 4800, 'blue', '50%', '50%', 900],
         [CMD.MOVE_VFX, 4800, 'red', '50%', '50%', 900],
-        [CMD.IMPACT_FRAME, 4800, 'rgba(106, 13, 173, 0.45)', 'chromatic'],
+        [CMD.IMPACT_FRAME, 4800, 'rgba(106, 13, 173, 0.2)', 'chromatic'],
         [CMD.VFX, 4800, 'purple_lightning', '50%', '50%', { color: '#d8b4fe', length: 180 }],
 
         // Small pause to let tension breathe before fusion
@@ -489,7 +484,7 @@ function activateHollowPurple() {
         [CMD.VFX, 9300, 'apocalypse', '20%', '50%', { size: 60 }],
         [CMD.VFX, 9000, 'dismantle_slash', '50%', '50%', { color: '#8b00ff', length: 700 }],
 
-        [CMD.IMPACT_FRAME, 9000, 'rgba(139, 0, 255, 0.62)', 'chromatic'],
+        [CMD.IMPACT_FRAME, 9000, 'rgba(139, 0, 255, 0.5)', 'chromatic'],
         [CMD.IMPACT_FRAME, 9500, 'rgba(0, 0, 0, 1)', 'invert'],
 
         // PHASE 5: AFTERMATH — longer fade
@@ -500,13 +495,13 @@ function activateHollowPurple() {
     // convert & run (raise default life a bit to avoid accidental early expiration)
     const converted = convertAbsoluteSequence(sequence, { warn: true, defaultVFXLife: 600 });
     fx.runSequence(converted).then(function () {
+        btn.classList.remove('hidden');
+        shrineBtn.classList.remove('hidden');
+        title.classList.remove('visible');
+        title.innerText = originalTitle;
+        title.style.transform = "";
+        title.style.color = "";
+        title.style.textShadow = "";
         clearInterval(chantInterval);
-        const chantEl = document.getElementById('chant-text');
-        if (chantEl) {
-            chantEl.style.opacity = 0;
-            setTimeout(() => {
-                chantEl.innerText = "";
-            }, 1000);
-        }
     });
 }
