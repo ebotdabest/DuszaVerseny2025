@@ -116,6 +116,24 @@ namespace DuszaVerseny2025.Engine.Cards
 
             return new CardTemplate(dmg, hp, this.name, ElementType, bossName, prof);
         }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is not CardTemplate other) return false;
+
+            return name == other.name || bossName == other.bossName;
+        }
+
+        public static bool operator ==(CardTemplate? left, CardTemplate? right)
+        {
+            if (left is null || right is null) return false;
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(CardTemplate? left, CardTemplate? right)
+        {
+            return !(left == right);
+        }
     }
 
     public class Card

@@ -312,9 +312,25 @@ namespace DuszaVerseny2025.Engine
         public int BaseId => _baseId;
     }
 
-    public record DungeonTemplate(DungeonTemplate.DungeonType type, string name, Collection collection, CardTemplate? bossTemplate, DungeonTemplate.DungeonReward reward) : ISerialize
+    public class DungeonTemplate : ISerialize
     {
-        public DungeonTemplate(DungeonType type, string name, Collection collection, DungeonReward reward) : this(type, name, collection, null, reward) { }
+        public DungeonType type { get; init; }
+        public string name { get; init; }
+        public Collection collection { get; init; }
+        public CardTemplate? bossTemplate { get; set; }
+        public DungeonReward reward { get; init; }
+
+        public DungeonTemplate(DungeonType type, string name, Collection collection, CardTemplate? bossTemplate, DungeonReward reward)
+        {
+            this.type = type;
+            this.name = name;
+            this.collection = collection;
+            this.bossTemplate = bossTemplate;
+            this.reward = reward;
+        }
+
+        public DungeonTemplate(DungeonType type, string name, Collection collection, DungeonReward reward)
+            : this(type, name, collection, null, reward) { }
 
         public interface DungeonReward : ISerialize
         {
@@ -324,6 +340,7 @@ namespace DuszaVerseny2025.Engine
         public class AttributeReward : DungeonReward
         {
             public Card.Attribute attribute;
+
             public AttributeReward(Card.Attribute attribute)
             {
                 this.attribute = attribute;
@@ -352,7 +369,6 @@ namespace DuszaVerseny2025.Engine
         public class CardReward : DungeonReward
         {
             CardTemplate[] rewards;
-
 
             public CardReward(CardTemplate[] rewards)
             {
@@ -414,13 +430,11 @@ namespace DuszaVerseny2025.Engine
             if (type == DungeonType.Small)
             {
                 var reward = Utils.Utils.GetAttributeByName(args[3]);
-
                 return new DungeonTemplate(type, args[1], dungeonCards, new AttributeReward(reward));
             }
             else if (type == DungeonType.Medium)
             {
                 var reward = Utils.Utils.GetAttributeByName(args[4]);
-
                 var boss = cards.Where(t => t.bossName == args[3]).First();
                 return new DungeonTemplate(type, args[1], dungeonCards, boss, new AttributeReward(reward));
             }
@@ -463,6 +477,29 @@ namespace DuszaVerseny2025.Engine
 
             return dungeonBuilder.ToString();
         }
+
+        public void Orphan()
+        {
+            this.bossTemplate = null;
+        }
+        public override bool Equals(object? obj)
+        {
+            if (obj is not DungeonTemplate other) return false;
+
+            return name == other.name;
+        }
+
+        public static bool operator ==(DungeonTemplate? left, DungeonTemplate? right)
+        {
+            if (left is null || right is null) return false;
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(DungeonTemplate? left, DungeonTemplate? right)
+        {
+            return !(left == right);
+        }
+
     }
 
     public class Dungeon

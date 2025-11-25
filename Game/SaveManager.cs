@@ -60,9 +60,16 @@ namespace DuszaVerseny2025.Engine.Save
                 public string dungeonSize { get; set; } = string.Empty;
             }
 
+            public class CollectionSave
+            {
+                public string collectionName { get; set; } = String.Empty;
+                public string[] cards { get; set; } = Array.Empty<string>();
+            }
+
             public string templateName { get; set; } = string.Empty;
             public CardSave[] cards { get; set; } = Array.Empty<CardSave>();
             public BossOverride[] bosses { get; set; } = Array.Empty<BossOverride>();
+            public CollectionSave[] collections { get; set; } = Array.Empty<CollectionSave>();
             public string[] starterDeck { get; set; } = Array.Empty<string>();
             public required int worldId { get; set; }
         }
@@ -180,8 +187,13 @@ namespace DuszaVerseny2025.Engine.Save
             bw.Write(encoded);
         }
 
-
         public static void SaveWorld(int id, GameEngine engine, string templateName)
+        {
+            SaveWorld(id, engine, templateName, new List<WorldSave.CollectionSave>());
+        }
+
+
+        public static void SaveWorld(int id, GameEngine engine, string templateName, List<WorldSave.CollectionSave> collections)
         {
             if (engine == null) throw new ArgumentNullException(nameof(engine));
 
@@ -218,6 +230,8 @@ namespace DuszaVerseny2025.Engine.Save
                 }
             }
 
+
+
             string[] initialCards = engine.initialDeck.Select(c => c.name).ToArray();
 
             var worldSave = new WorldSave
@@ -226,7 +240,8 @@ namespace DuszaVerseny2025.Engine.Save
                 cards = cards.ToArray(),
                 bosses = bosses.ToArray(),
                 starterDeck = initialCards,
-                worldId = id
+                worldId = id,
+                collections = collections.ToArray()
             };
 
 

@@ -9,10 +9,21 @@ namespace DuszaVerseny2025.Engine.Editor
 {
     public class DungeonEditor
     {
+        public class NamedCollection
+        {
+            public string Name { get; set; }
+            public Collection collection { get; set; }
+            public NamedCollection(List<CardTemplate> initialCards, string name)
+            {
+                Name = name;
+                collection = new Collection(initialCards);
+            }
+        }
         public List<CardTemplate> cards = new List<CardTemplate>();
         public List<DungeonTemplate> dungeons = new List<DungeonTemplate>();
         public PlayerCollection playerInventory = new PlayerCollection();
         public List<CardTemplate> initialDeck = new List<CardTemplate>();
+        public List<NamedCollection> collections = new List<NamedCollection>();
         public int difficulty = 0;
 
         public GameEngine CompileMockEngine()
@@ -193,9 +204,19 @@ namespace DuszaVerseny2025.Engine.Editor
                 initialDeck.Add(template);
             }
 
+            var namedCollections = new List<NamedCollection>();
+
+            foreach (var collection in save.collections)
+            {
+                List<CardTemplate> cards = new List<CardTemplate>();
+                foreach (var card in collection.cards) cards.Add(cardByName[card]);
+                namedCollections.Add(new NamedCollection(cards, collection.collectionName));
+            }
+
             dungeonEditor.cards = cardTemplates;
             dungeonEditor.dungeons = dungeonTemplates;
             dungeonEditor.initialDeck = initialDeck;
+            dungeonEditor.collections = namedCollections;
 
             return dungeonEditor;
         }

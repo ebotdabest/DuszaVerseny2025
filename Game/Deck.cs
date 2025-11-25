@@ -131,6 +131,11 @@ public class Collection
         if (string.IsNullOrWhiteSpace(name)) return false;
         return _cards.Any(t => t.name == name);
     }
+
+    public void Purge(CardTemplate card)
+    {
+        _cards.Remove(card);
+    }
 }
 
 public class PlayerCollection : Collection, ISerialize

@@ -327,7 +327,6 @@ public static class MauiProgram
             SetupEngine();
             SaveManager.SaveWorld(0, engine, "Az alap világ");
 
-
             Console.ReadLine();
             FreeConsole();
             Environment.Exit(0);

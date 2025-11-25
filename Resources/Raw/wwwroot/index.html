@@ -101,14 +101,16 @@
 
         <!-- Editor Page (only once, properly structured) -->
         <div id="editor-page" class="fake-page">
+                <div id="contextClose" onclick="closeContextMenu()"></div>
                 <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
                 <h2 class="page-title">Világszerkesztő</h2>
 
                 <div class="editor-layout">
                         <div class="editor-sidebar">
-                                <button class="editor-tab" onclick="switchEditorTab('cards')">Kártyák</button>
-                                <button class="editor-tab" onclick="switchEditorTab('sets')">Szettek</button>
-                                <button class="editor-tab" onclick="switchEditorTab('dungeons')">Kazamaták</button>
+                                <button class="editor-tab" onclick="switchEditorTab('settings')">Beállítások</button>   
+                                <button class="editor-tab" onclick="switchEditorTab('cards')">Kártya Létrehozása</button>
+                                <button class="editor-tab" onclick="switchEditorTab('sets')">Szett Létrehozása</button>
+                                <button class="editor-tab" onclick="switchEditorTab('dungeons')">Kazamata Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('paths')">Útvonalak</button>
                                 <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">Világ
                                         mentése</button>
@@ -117,7 +119,18 @@
                         </div>
 
                         <div class="editor-content">
+                            <div id="editor-settings" class="editor-section">
+                                <h3>Beállítások</h3>
                                 <input type="text" id="worldName" placeholder="Világ sablon neve">
+                                <h3>Összes kártya</h3>
+                                <div id="allCardsList" class="scrollable-list small"></div>
+                                <h3>Összes vezér</h3>
+                                <div id="allBosses" class="scrollable-list small"></div>
+                                <div id="contextMenu">
+                                    <button class="context-tab" id="contextEdit" onclick="">Szerkesztés</button>
+                                    <button class="context-tab delete-btn" id="contextDelete" onclick="">Törlés</button>
+                                </div>
+                                </div>
                                 <!-- Cards Tab -->
                                 <div id="editor-cards" class="editor-section active">
                                         <h3>Kártya Létrehozása</h3>
@@ -191,23 +204,25 @@
                                         <div class="form-group">
                                                 <label>Típus:</label>
                                                 <select id="dungeonType" onchange="toggleDungeonInputs()">
-                                                        <option value="Small">Egyszerű (Small)</option>
-                                                        <option value="Medium">Kis (Medium)</option>
-                                                        <option value="Big">Nagy (Big)</option>
+                                                        <option value="egyszeru">Egyszerű (Small)</option>
+                                                        <option value="kis">Kis (Medium)</option>
+                                                        <option value="nagy">Nagy (Big)</option>
                                                 </select>
                                         </div>
                                         <div class="form-group">
                                                 <label>Ellenséges Pakli (Szett):</label>
-                                                <select id="dungeonDeck">
+                                                <select id="dungeonDeck" onchange="updatePreview()">
                                                         <option value="">Válassz szettet...</option>
                                                 </select>
+                                                <div id="preview">
+                                                    <h3>Előnézet:</h3>
+                                                    <div id="cardPreview" class="scrollable-list small"></div>
+                                                </div>
                                         </div>
                                         <div id="dungeonBossInput" style="display: none;">
                                                 <div class="form-group">
-                                                        <label>Főellenség (Boss):</label>
-                                                        <select id="dungeonBoss">
-                                                                <option value="">Válassz bosst...</option>
-                                                        </select>
+                                                    <label>Vezér választása</label>
+                                                    <div id="bossChooser" class="scrollable-list small"></div>
                                                 </div>
                                         </div>
                                         <div class="form-group">

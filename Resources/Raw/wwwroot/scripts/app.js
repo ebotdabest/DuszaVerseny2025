@@ -252,7 +252,6 @@ function createFallingStars() {
 // ====================================================================
 
 function showMainMenu() {
-    window.HybridWebView.InvokeDotNet("SaveGame");
         showLoadingScreen(() => {
             debugLog('→ Back to Main Menu', 'info');
             document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
@@ -370,6 +369,70 @@ function loadSave(id) {
     });
 }
 
+
+async function getCards() {
+    return await window.HybridWebView.InvokeDotNet("GetEditorCards");
+}
+
+async function getBosses() {
+    return await window.HybridWebView.InvokeDotNet("GetBossCards");
+}
+
+// Holy naming by me, if you don't know what it does i can make a docstring
+function refreshSetCardListNumbers() {
+    window.editorContext.cardObjects.forEach(cardElement => {
+        if (window.editorContext.setCards.includes(cardElement.getAttribute('cardName'))) {
+            const index = window.editorContext.setCards.indexOf(cardElement.getAttribute('cardName'));
+            cardElement.style.setProperty('--card-index', `"${index+1}"`);
+        }else {
+            cardElement.style.setProperty('--card-index', ``);
+        }
+    });
+    
+}
+
+function openContextMenu(card, isBoss = false) {
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenu.style.setProperty('--context-menu-y', `${window.mouse.y}px`);
+    contextMenu.style.setProperty('--context-menu-x', `${window.mouse.x}px`);
+    contextMenu.style.display = 'flex';
+
+    debugLog(card);
+    if (isBoss) {
+        document.getElementById('contextDelete').onclick = () => {
+            window.HybridWebView.InvokeDotNet("DeleteBoss", {'bossName': card.Name}).then(result => {
+                if (result) showAlert(`A ${card.Name} vezér sikeresen törölve lett!`);
+                else showAlert("Valami hiba történt!");
+                
+                closeContextMenu();
+                switchEditorTab('settings');
+            })
+        };
+        return;
+    }
+    document.getElementById('contextDelete').onclick = () => {
+        window.HybridWebView.InvokeDotNet("DeleteCard", {'cardName': card.Name}).then(result => {
+            if (result) showAlert(`A ${card.Name} kártya sikeresen törölve lett!`);
+            else showAlert("Valami hiba történt!");
+            
+            closeContextMenu();
+            switchEditorTab('settings');
+        })
+    };
+
+    document.getElementById('contextClose').style.display = 'block';
+}
+
+function closeContextMenu() {
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenu.style.display = 'none';
+    document.getElementById('contextClose').style.display = 'none';
+}
+
+
+
+
+
 function switchEditorTab(tabId) {
         // 1. Remove active from tabs
         document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
@@ -385,8 +448,109 @@ function switchEditorTab(tabId) {
         if (section) section.classList.add('active');
 
         if (tabId == 'sets') {
-            // document.getElementById('cardSelectionList')
+            document.getElementById('setName').value = '';
+            const cardSelectionlist = document.getElementById('cardSelectionList');
+            cardSelectionlist.innerHTML = ''
+            
+            window.editorContext.setCards = [];
+            window.editorContext.cardObjects = [];
+
+            getCards().then(cards => {
+                cards.forEach(card => {
+                    const cardElement = createCardElement(card);
+                    window.editorContext.cardObjects.push(cardElement);
+                    cardElement.classList.add('editor-card');
+                    cardElement.setAttribute("cardName", card.Name);
+                    cardElement.onclick = () => {
+                        if (!window.editorContext.setCards.includes(card.Name)) window.editorContext.setCards.push(card.Name);
+                        else window.editorContext.setCards.splice(window.editorContext.setCards.indexOf(card.Name), 1);
+                        
+                        refreshSetCardListNumbers();
+                    }
+                    cardSelectionlist.appendChild(cardElement);
+                });
+            });            
+        }else if (tabId == 'settings') {
+            const allCardsList = document.getElementById('allCardsList');
+            const allBosses = document.getElementById('allBosses');
+            getCards().then(cards => {
+                if (cards.length === 0) {
+                    allCardsList.innerHTML = `<p>Úgy néz ki még nincs egyetlen egy kártya ebben a világban.</p>
+                    \n<p>Menj a <button class="fake-link" onclick="switchEditorTab('cards')"> Kártya Létrehozása</button> oldalra és csináj egyet!</p>`;
+                    allCardsList.classList.add('emptyMessage');
+                    return;
+                }
+                allCardsList.innerHTML='';
+                allCardsList.classList.remove('emptyMessage');
+                cards.forEach(card => {
+                    debugLog(card);
+                    const cardElement = createCardElement(card);
+                    cardElement.onclick = () => openContextMenu(card);
+                    allCardsList.appendChild(cardElement);
+                });
+            });
+            getBosses().then(bosses => {
+                allBosses.innerHTML = '';
+                bosses.forEach(boss => {
+                    const cardElement = createCardElement(boss);
+                    cardElement.onclick = () => openContextMenu(boss, true);
+                    allBosses.appendChild(cardElement);
+                });
+            });
+        }else if (tabId == 'cards') {
+            document.getElementById('cardName').value = '';
+            document.getElementById('cardAttack').value = '1';
+            document.getElementById('cardHealth').value = '1';
+            document.getElementById('cardElement').value = 'tuz';
+
+            document.getElementById('isBoss').checked = false;
+            document.getElementById('bossName').value = '';
+            document.getElementById('bossProficiency').value = 'sebzes';
+            toggleBossInputs();
+        }else if (tabId == 'dungeons') {
+            window.editorContext.currentSelectedBoss = '';
+            document.getElementById('dungeonName').value = '';
+            document.getElementById('dungeonType').value = 'egyszeru';
+
+            document.getElementById('cardPreview').innerHTML = '';
+            document.getElementById('preview').style.display = 'none';
+            toggleDungeonInputs();
+            const dungeonDeck = document.getElementById('dungeonDeck');
+            dungeonDeck.innerHTML = '<option value="">Válassz szettet...</option>';
+            window.editorContext.collectionPairs = {}
+
+            getCollections().then(collections => {
+                collections.forEach(coll => {
+                    window.editorContext.collectionPairs[coll.Name] = coll.Cards;
+                    const option = document.createElement('option');
+                    option.setAttribute('value', coll.Name);
+                    option.innerText = coll.Name;
+                    dungeonDeck.appendChild(option);
+                })
+            })
         }
+}
+
+function updatePreview() {
+    const dungeonDeck = document.getElementById('dungeonDeck');
+    if (dungeonDeck.value == "") {
+        document.getElementById('preview').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('preview').style.display = 'block';
+    const cardPreview = document.getElementById('cardPreview');
+    cardPreview.innerHTML = '';
+    const cards = window.editorContext.collectionPairs[dungeonDeck.value];
+    let i = 1;
+    cards.forEach(card => {
+        const cardElement = createCardElement(card);
+        cardElement.onclick = () => {};
+        cardElement.classList.add('editor-card', 'not-interesting');
+        cardElement.style.setProperty('--card-index', `"${i}"`);
+        cardPreview.appendChild(cardElement);
+        i++;
+    });
 }
 
 function saveWorld() {
@@ -429,16 +593,17 @@ function loadWorld() {
                 return;
             }
 
+
             let i = 0;
             worlds.forEach(world => {
-                    debugLog(world, 'info');
+                    debugLog(world.world.templateName, 'info');
 
                     const item = document.createElement('div');
                     item.className = 'world-item-btn';
-                    item.onclick = () => loadWorldTemplate(world.id, modal, world.name);
+                    item.onclick = () => loadWorldTemplate(world.world.worldId, modal, world.world.templateName);
 
                     item.innerHTML = `
-                <div class="world-name">${world.name}</div>
+                <div class="world-name">${world.world.templateName}</div>
                 <div class="world-date"></div>
             `;
 
@@ -526,12 +691,55 @@ function toggleBossInputs() {
 }
 
 function toggleDungeonInputs() {
-        const show = ['Medium', 'Big'].includes(document.getElementById('dungeonType').value);
-        // Logic placeholder
+    const show = ['kis', 'nagy'].includes(document.getElementById('dungeonType').value);
+    const bossField = document.getElementById('dungeonBossInput');
+    if (show) {
+        bossField.style.display = 'block';
+        const bossChooser = document.getElementById('bossChooser');
+        bossChooser.innerHTML = '';
+
+        let cards = [];
+
+        getBosses().then(bosses => {
+            if (bosses.length == 0) {
+                bossChooser.innerHTML = '<p>Még jelenleg nincsen egy vezéred sem! Készíts egyet <button class="fake-link" onclick="switchEditorTab(\'cards\')">itt</button>!</p>';
+                return; 
+            }
+            bosses.forEach(boss => {
+                const cardElement = createCardElement(boss);
+                cardElement.onclick = () => {
+                    window.editorContext.currentSelectedBoss = boss.Name;
+                    cards.forEach(c => {
+                        c.classList.remove('bossSelected');
+                    });
+                    cardElement.classList.add('bossSelected');
+                };
+                if (window.editorContext.currentSelectedBoss === boss.Name) cardElement.classList.add('bossSelected');
+
+                cards.push(cardElement);
+                bossChooser.appendChild(cardElement);
+            })
+        })
+    }else {
+        bossField.style.display = 'none';
+    }
 }
 
 function initWorldEditor() {
     window.HybridWebView.InvokeDotNet("InitEditor");
+    window.editorContext = {};
+    switchEditorTab('settings');
+    document.getElementById('contextMenu').style.display = 'none';
+    document.getElementById('contextClose').style.display = 'none';
+
+    document.getElementById('cardName').value = '';
+    document.getElementById('cardAttack').value = '1';
+    document.getElementById('cardHealth').value = '1';
+    document.getElementById('cardElement').value = 'tuz';
+
+    document.getElementById('isBoss').checked = false;
+    document.getElementById('bossName').value = '';
+    document.getElementById('bossProficiency').value = 'sebzes';
 }
 
 function createCardPlaceholder() { 
@@ -543,8 +751,17 @@ function createCardPlaceholder() {
     const isBoss = document.getElementById('isBoss').checked;
     const bossName = document.getElementById('bossName').value;
     const bossProficiency = document.getElementById('bossProficiency').value;
-    
-    
+
+    if (cardName.trim() == "") {
+        showAlert("A név nem lehet üres!");
+        return;
+    }
+
+    if (isBoss && bossName.trim() == "") {
+        showAlert("Be van állítva hogy ez egy vezér, de a nevet üresen hagytad!");
+        return;
+    }
+
 
     window.HybridWebView.InvokeDotNet("CreateCard", {
         "name": cardName,
@@ -554,17 +771,38 @@ function createCardPlaceholder() {
         "isBoss": isBoss,
         "bossName": bossName,
         "bossProficiency": bossProficiency
+    }).then(result => {
+        if (result) {
+            showAlert(`A(z) ${cardName} kártya létrehozva!`);
+        }else {
+            showAlert('Kártya vagy vezér ilyen névvel már van!');
+        }
+        switchEditorTab('cards');
     });
 
 }
-function createSetPlaceholder() { showAlert('Szett mentve (Demo)'); }
+function createSetPlaceholder() { 
+    const setName = document.getElementById('setName');
+
+    if (setName.value.trim() == "") {
+        showAlert("A szett neve nem lehet öres!");
+        return;
+    }
+
+    window.HybridWebView.InvokeDotNet("CreateCollection", {
+        "name": setName.value,
+        "cards": window.editorContext.setCards
+    }).then(result => {
+        if (result) showAlert(`A(z) ${setName.value} elkészítve!`);
+        else showAlert(`Ilyen nevű szett már létezik`);
+    })
+}
 function createDungeonPlaceholder() { showAlert('Kazamata létrehozva (Demo)'); }
 
 // Data Providers
 async function getTemplatesPlaceholder() {
     if (window.HybridWebView) {
         const worlds = await window.HybridWebView.InvokeDotNet("RequestWorlds");
-        debugLog(worlds);
         return worlds;
     }
 
@@ -574,6 +812,10 @@ async function getTemplatesPlaceholder() {
 async function getSavesPlaceholder() {
     const saves = await window.HybridWebView.InvokeDotNet("RequestSaves");
     return saves;
+}
+
+async function getCollections() {
+    return await window.HybridWebView.InvokeDotNet("GetCollections");
 }
 
 // ====================================================================
@@ -599,3 +841,4 @@ window.addEventListener('DOMContentLoaded', () => {
         hideGameViewElements();
         requestGameState();
 });
+document.addEventListener("mousemove", ev => window.mouse = {'x': ev.pageX, 'y': ev.pageY});

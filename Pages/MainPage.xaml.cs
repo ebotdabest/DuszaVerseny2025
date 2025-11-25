@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -67,7 +68,6 @@ namespace DuszaVerseny2025
             string saveName = o.GetProperty("name").GetString();
             int templateId = int.Parse(o.GetProperty("template").GetString());
 
-
             MauiProgram.currentSaveId = SaveManager.GetSaves().Count;
             System.Console.WriteLine($"Changed save id to {MauiProgram.currentSaveId}");
             MauiProgram.currentSaveName = saveName;
@@ -106,9 +106,10 @@ namespace DuszaVerseny2025
             editor = new DungeonEditor();
         }
 
-        public void CreateCard(JsonElement json)
+        public bool CreateCard(JsonElement json)
         {
             string name = json.GetProperty("name").GetString();
+            if (editor.cards.Any(c => c.name == name || c.bossName == name)) return false;
             int attack = json.GetProperty("attack").GetInt32();
             int health = json.GetProperty("health").GetInt32();
             CardTemplate.Type element = Utils.GetNamedType(json.GetProperty("element").GetString());
@@ -121,7 +122,10 @@ namespace DuszaVerseny2025
             {
                 Card.Attribute bossProficiency = Utils.GetAttributeByName(json.GetProperty("bossProficiency").GetString());
                 editor.cards.Add(template.ToBoss(bossName, bossProficiency));
+                System.Console.WriteLine("Making boss, yummers...");
             }
+
+            return true;
         }
 
         public void SaveCurrentlyEditing(string saveName)
@@ -129,6 +133,125 @@ namespace DuszaVerseny2025
             var engine = editor.CompileMockEngine();
             SaveManager.SaveWorld(currentlyEditing, engine, saveName);
         }
+
+        public CardData[] GetEditorCards()
+        {
+            List<CardData> cards = new();
+            for (int i = 0; i < editor.cards.Count; i++)
+            {
+                if (editor.cards[i].IsBoss) continue;
+                cards.Add(new CardData
+                {
+                    Name = editor.cards[i].Name,
+                    Attack = editor.cards[i].Attack,
+                    Health = editor.cards[i].Health,
+                    ElementColor = editor.cards[i].ElementColor.ToHex(),
+                    IsOwned = true
+                });
+            }
+
+            return cards.ToArray();
+        }
+
+        public CardData[] GetBossCards()
+        {
+            List<CardData> cards = new();
+
+            foreach (CardTemplate boss in editor.cards.Where(c => c.IsBoss))
+            {
+                cards.Add(new CardData
+                {
+                    Name = boss.bossName,
+                    Attack = boss.Attack,
+                    Health = boss.Health,
+                    ElementColor = boss.ElementColor.ToHex(),
+                    IsOwned = true
+                });
+            }
+
+            return cards.ToArray();
+        }
+
+        void CompleteRemove(CardTemplate card)
+        {
+            editor.cards.Remove(card);
+            foreach (var collection in editor.collections) collection.collection.Purge(card);
+            foreach (var dungeon in editor.dungeons)
+            {
+                dungeon.collection.Purge(card);
+                if (dungeon.bossTemplate != null && dungeon.bossTemplate.bossName == card.bossName) dungeon.Orphan();
+            }
+        }
+
+        public bool DeleteCard(JsonElement request)
+        {
+            string cardName = request.GetProperty("cardName").GetString();
+
+            if (!editor.cards.Any(c => c.name == cardName)) return false;
+
+            CardTemplate card = editor.cards.First(c => c.name == cardName);
+            CompleteRemove(card);
+
+            return true;
+        }
+
+        public bool DeleteBoss(JsonElement request)
+        {
+            string bossName = request.GetProperty("bossName").GetString();
+            if (!editor.cards.Any(c => c.bossName == bossName)) return false;
+
+            CardTemplate boss = editor.cards.First(c => c.bossName == bossName);
+            CompleteRemove(boss);
+            return true;
+        }
+
+        public bool CreateCollection(JsonElement json)
+        {
+            string name = json.GetProperty("name").GetString();
+            if (editor.collections.Any(c => c.Name == name)) return false;
+
+            List<CardTemplate> cards = new();
+            foreach (var card in json.GetProperty("cards").EnumerateArray())
+            {
+                cards.Add(editor.cards.First(c => c.name == card.GetString()));
+            }
+
+            editor.collections.Add(new DungeonEditor.NamedCollection(cards, name));
+            return true;
+        }
+        public struct CollectionData
+        {
+            public string Name { get; set; }
+            public CardData[] Cards { get; set; }
+        }
+
+        public CollectionData[] GetCollections()
+        {
+            CollectionData[] collections = new CollectionData[editor.collections.Count];
+            for (int i = 0; i < editor.collections.Count; i++)
+            {
+                List<CardData> cards = new();
+                foreach (var card in editor.collections[i].collection.Cards)
+                {
+                    if (card.IsBoss) continue;
+                    cards.Add(new CardData
+                    {
+                        Name = card.Name,
+                        Attack = card.Attack,
+                        Health = card.Health,
+                        ElementColor = card.ElementColor.ToHex(),
+                        IsOwned = true
+                    });
+                }
+                collections[i] = new CollectionData
+                {
+                    Name = editor.collections[i].Name,
+                    Cards = cards.ToArray()
+                };
+            }
+            return collections;
+        }
+
 
 
         // Strict editor logic END
