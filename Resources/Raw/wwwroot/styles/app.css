@@ -976,92 +976,207 @@ input[type=range].custom-slider::-webkit-slider-thumb:hover {
 }
 
 #cardSelectionList {
-    display: flex;
-    gap: 2vw;
+        display: flex;
+        gap: 2vw;
 }
 
 .editor-card::after {
-    content: var(--card-index);
-    background-color: rgb(128,0,0);
-    border-radius: 15px;
-    position: absolute;
-    left: 91%;
-    z-index: 500;
-    padding: 6px;
-    top:-8%;
-} 
+        content: var(--card-index);
+        background-color: rgb(128, 0, 0);
+        border-radius: 15px;
+        position: absolute;
+        left: 91%;
+        z-index: 500;
+        padding: 6px;
+        top: -8%;
+}
 
 button.fake-link {
-    border: none;
-    background-color: transparent;
-    color: blue;
-    cursor: pointer;
-    padding: 0px;
+        border: none;
+        background-color: transparent;
+        color: blue;
+        cursor: pointer;
+        padding: 0px;
 }
+
 button.fake-link:hover {
-    text-decoration: underline;
+        text-decoration: underline;
 }
 
 #allCardsList,
 #allBosses,
 #cardPreview,
 #bossChooser {
-    display: flex;
-    gap: 2vw;
+        display: flex;
+        gap: 2vw;
 }
 
 #allCardsList.emptyMessage {
-    align-items: center;
-    flex-direction: column;
-    gap: 0vw;
+        align-items: center;
+        flex-direction: column;
+        gap: 0vw;
 }
 
-#allCardsList.emptyMessage > p {
-    margin-top: 0px;
+#allCardsList.emptyMessage>p {
+        margin-top: 0px;
 }
 
 #contextMenu {
-    background-color: #444;
-    position: absolute;
-    top: var(--context-menu-y);
-    left: var(--context-menu-x);
-    display: none;
-    flex-direction: column;
-    z-index: 6900;
-    gap: 1vh;
+        background-color: #444;
+        position: absolute;
+        top: var(--context-menu-y);
+        left: var(--context-menu-x);
+        display: none;
+        flex-direction: column;
+        z-index: 6900;
+        gap: 1vh;
 }
+
 #contextClose {
-    position: absolute;
-    height: 100vh;
-    width: 100vw;
-    z-index: 6700;
-    display: none;
+        position: absolute;
+        height: 100vh;
+        width: 100vw;
+        z-index: 6700;
+        display: none;
 }
 
 .context-tab {
-    color: white;
-    cursor: pointer;
+        color: white;
+        cursor: pointer;
 }
 
 .delete-btn {
-    color: rgb(180, 0, 0);
-    border-color: rgb(180, 0, 0);
+        color: rgb(180, 0, 0);
+        border-color: rgb(180, 0, 0);
 }
 
 #preview {
-    display: none;
+        display: none;
 }
 
 .not-interesting {
-    cursor: none;
+        cursor: none;
 }
 
 .not-interesting:hover {
-    transform: translateY(0);
-    border-color: #444;
-    box-shadow: 0 0 0px rgba(255, 255, 255, 0.1);
+        transform: translateY(0);
+        border-color: #444;
+        box-shadow: 0 0 0px rgba(255, 255, 255, 0.1);
 }
 
 .bossSelected {
-    outline: 3px solid rgb(196, 46, 0);
+        outline: 3px solid rgb(196, 46, 0);
+}
+
+.ability-card {
+        background: #1a1a1a;
+        border: 2px solid #444;
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+        transition: 0.2s;
+}
+
+.ability-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+}
+
+.ability-card.common {
+        border-color: #808080;
+}
+
+.ability-card.rare {
+        border-color: #4169e1;
+}
+
+.ability-card.epic {
+        border-color: #9400d3;
+}
+
+.ability-card.legendary {
+        border-color: #ffd700;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.ability-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+}
+
+.ability-card-icon {
+        font-size: 32px;
+        filter: drop-shadow(0 0 5px currentColor);
+}
+
+.ability-card-title {
+        font-size: 18px;
+        font-weight: bold;
+        color: var(--accent-gold);
+}
+
+.ability-card-type {
+        font-size: 12px;
+        text-transform: uppercase;
+        color: #888;
+        letter-spacing: 1px;
+}
+
+.ability-card-description {
+        font-size: 14px;
+        color: #ccc;
+}
+
+.ability-card-stats {
+        display: flex;
+        gap: 15px;
+        font-size: 12px;
+        color: #666;
+}
+
+.ability-delete-btn {
+        padding: 8px 16px;
+        background: transparent;
+        border: 1px solid var(--accent-red);
+        color: var(--accent-red);
+        cursor: pointer;
+        transition: 0.2s;
+}
+
+.ability-delete-btn:hover {
+        background: var(--accent-red);
+        color: black;
+}
+
+.ability-preview {
+        background: rgba(255, 193, 7, 0.1);
+        border-left: 3px solid var(--accent-gold);
+        padding: 15px;
+        margin-top: 10px;
+}
+
+.ability-preview p {
+        margin: 5px 0 0 0;
+        color: var(--accent-gold);
+        font-weight: bold;
+}
+
+.form-row {
+        display: flex;
+        gap: 10px;
+}
+
+.form-row .form-group {
+        flex: 1;
+}
+
+.form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+        font-size: 11px;
 }

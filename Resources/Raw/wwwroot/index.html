@@ -107,10 +107,14 @@
 
                 <div class="editor-layout">
                         <div class="editor-sidebar">
-                                <button class="editor-tab" onclick="switchEditorTab('settings')">Beállítások</button>   
-                                <button class="editor-tab" onclick="switchEditorTab('cards')">Kártya Létrehozása</button>
+                                <button class="editor-tab" onclick="switchEditorTab('settings')">Beállítások</button>
+                                <button class="editor-tab" onclick="switchEditorTab('cards')">Kártya
+                                        Létrehozása</button>
+                                <button class="editor-tab" onclick="switchEditorTab('abilities')">Képesség
+                                        Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('sets')">Szett Létrehozása</button>
-                                <button class="editor-tab" onclick="switchEditorTab('dungeons')">Kazamata Létrehozása</button>
+                                <button class="editor-tab" onclick="switchEditorTab('dungeons')">Kazamata
+                                        Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('paths')">Útvonalak</button>
                                 <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">Világ
                                         mentése</button>
@@ -119,17 +123,19 @@
                         </div>
 
                         <div class="editor-content">
-                            <div id="editor-settings" class="editor-section">
-                                <h3>Beállítások</h3>
-                                <input type="text" id="worldName" placeholder="Világ sablon neve">
-                                <h3>Összes kártya</h3>
-                                <div id="allCardsList" class="scrollable-list small"></div>
-                                <h3>Összes vezér</h3>
-                                <div id="allBosses" class="scrollable-list small"></div>
-                                <div id="contextMenu">
-                                    <button class="context-tab" id="contextEdit" onclick="">Szerkesztés</button>
-                                    <button class="context-tab delete-btn" id="contextDelete" onclick="">Törlés</button>
-                                </div>
+                                <div id="editor-settings" class="editor-section">
+                                        <h3>Beállítások</h3>
+                                        <input type="text" id="worldName" placeholder="Világ sablon neve">
+                                        <h3>Összes kártya</h3>
+                                        <div id="allCardsList" class="scrollable-list small"></div>
+                                        <h3>Összes vezér</h3>
+                                        <div id="allBosses" class="scrollable-list small"></div>
+                                        <div id="contextMenu">
+                                                <button class="context-tab" id="contextEdit"
+                                                        onclick="">Szerkesztés</button>
+                                                <button class="context-tab delete-btn" id="contextDelete"
+                                                        onclick="">Törlés</button>
+                                        </div>
                                 </div>
                                 <!-- Cards Tab -->
                                 <div id="editor-cards" class="editor-section active">
@@ -178,6 +184,59 @@
                                         <button class="action-btn small"
                                                 onclick="createCardPlaceholder()">Létrehozás</button>
                                 </div>
+                                <div id="editor-abilities" class="editor-section">
+                                        <h3>Képesség Létrehozása</h3>
+                                        <div class="form-group">
+                                                <label>Név:</label>
+                                                <input type="text" id="abilityName" placeholder="Képesség neve">
+                                        </div>
+
+                                        <div class="form-group">
+                                                <label>Típus:</label>
+                                                <select id="abilityType" onchange="updateAbilityPreview()">
+                                                        <option value="Heal">Gyógyítás</option>
+                                                        <option value="Shield">Pajzs</option>
+                                                        <option value="InstantDamage">Azonnali Sebzés</option>
+                                                        <option value="DamageBuff">Sebzés Erősítés</option>
+                                                </select>
+                                        </div>
+
+                                        <div class="form-row">
+                                                <div class="form-group">
+                                                        <label>Érték:</label>
+                                                        <input type="number" id="abilityValue" value="2" min="1"
+                                                                onchange="updateAbilityPreview()">
+                                                        <small>Gyógyítás/Sebzés mennyisége vagy buff százalék</small>
+                                                </div>
+                                                <div class="form-group">
+                                                        <label>Időtartam (körök):</label>
+                                                        <input type="number" id="abilityDuration" value="0" min="0"
+                                                                onchange="updateAbilityPreview()">
+                                                        <small>0 = azonnali hatás</small>
+                                                </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                                <label>Ritkaság: <span id="rarityLabel">Közönséges</span></label>
+                                                <input type="range" id="abilityRarity" min="1" max="500" value="300"
+                                                        class="custom-slider" oninput="updateRarityLabel()">
+                                                <small>Magasabb érték = gyakoribb (300=Közönséges, 100=Ritka, 20=Epikus,
+                                                        5=Legendás)</small>
+                                        </div>
+
+                                        <div class="form-group">
+                                                <label>Leírás (opcionális):</label>
+                                                <input type="text" id="abilityDescription"
+                                                        placeholder="Automatikus, ha üresen hagyod">
+                                        </div>
+
+                                        <div class="ability-preview">
+                                                <strong>Előnézet:</strong>
+                                                <p id="abilityPreview">Visszakap 2 életerőt</p>
+                                        </div>
+
+                                        <button class="action-btn small" onclick="createAbility()">Létrehozás</button>
+                                </div>
 
                                 <!-- Sets Tab -->
                                 <div id="editor-sets" class="editor-section">
@@ -215,14 +274,14 @@
                                                         <option value="">Válassz szettet...</option>
                                                 </select>
                                                 <div id="preview">
-                                                    <h3>Előnézet:</h3>
-                                                    <div id="cardPreview" class="scrollable-list small"></div>
+                                                        <h3>Előnézet:</h3>
+                                                        <div id="cardPreview" class="scrollable-list small"></div>
                                                 </div>
                                         </div>
                                         <div id="dungeonBossInput" style="display: none;">
                                                 <div class="form-group">
-                                                    <label>Vezér választása</label>
-                                                    <div id="bossChooser" class="scrollable-list small"></div>
+                                                        <label>Vezér választása</label>
+                                                        <div id="bossChooser" class="scrollable-list small"></div>
                                                 </div>
                                         </div>
                                         <div class="form-group">

@@ -336,6 +336,67 @@ body {
     text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
 }
 
+.vs-divider {
+    font-family: 'Cinzel', serif;
+    font-size: 48px;
+    font-weight: bold;
+    /* Updated gradient to use accents */
+    background: linear-gradient(to bottom, var(--accent-red), var(--accent-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-style: italic;
+    filter: drop-shadow(0 0 10px rgba(255, 42, 109, 0.5));
+}
+
+/* Damage Popup - PREPARED FOR JS CLASS CONTROL */
+.damage-popup {
+    position: absolute;
+    font-size: 64px;
+    font-weight: bold;
+    color: var(--accent-red);
+    text-shadow: 3px 3px 0 #000, 0 0 20px rgba(255, 42, 109, 0.8);
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+    /* Alapértelmezett állapot, amiből az animáció indul */
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+}
+
+/* A JS hozzáadja ezt az osztályt a sebzés megjelenítéséhez */
+.damage-popup.animate-damage-popup {
+    animation: popupFloat 1s ease-out forwards;
+}
+
+@keyframes popupFloat {
+    0% {
+        transform: translateY(0) scale(0.5);
+        opacity: 0;
+    }
+
+    20% {
+        transform: translateY(-20px) scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-80px) scale(1);
+        opacity: 0;
+    }
+}
+
+/* History Panel */
+.history-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    height: 100%;
+    display: flex;
+    color: var(--accent-gold);
+    /* Use gold for health/positive stat */
+    text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
 /* Arena Cards */
 .arena-card {
     width: 150px;
@@ -691,4 +752,97 @@ button {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* CSS Animations for Cards */
+
+/* Attack Animation - Player (Left to Right) */
+@keyframes attackRight {
+    0% {
+        transform: scale(1.1) translateX(0);
+    }
+
+    40% {
+        transform: scale(1.2) translateX(60px) rotate(5deg);
+    }
+
+    100% {
+        transform: scale(1) translateX(0);
+    }
+}
+
+.attack-right {
+    animation: attackRight 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Attack Animation - Enemy (Right to Left) */
+@keyframes attackLeft {
+    0% {
+        transform: scale(1.1) translateX(0);
+    }
+
+    40% {
+        transform: scale(1.2) translateX(-60px) rotate(-5deg);
+    }
+
+    100% {
+        transform: scale(1) translateX(0);
+    }
+}
+
+.attack-left {
+    animation: attackLeft 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Damage Animation - Shake */
+@keyframes damageShake {
+    0% {
+        transform: scale(1.1) translateX(0);
+        filter: brightness(1);
+    }
+
+    20% {
+        transform: scale(1.1) translateX(-10px) rotate(-5deg);
+        filter: brightness(2) sepia(1) hue-rotate(-50deg) saturate(3);
+    }
+
+    40% {
+        transform: scale(1.1) translateX(10px) rotate(5deg);
+    }
+
+    60% {
+        transform: scale(1.1) translateX(-5px);
+    }
+
+    80% {
+        transform: scale(1.1) translateX(5px);
+    }
+
+    100% {
+        transform: scale(1) translateX(0);
+        filter: brightness(1);
+    }
+}
+
+.damage-shake {
+    animation: damageShake 0.5s ease-out;
+}
+
+/* Death Animation - Fade Out */
+@keyframes deathFade {
+    0% {
+        transform: scale(1.1);
+        opacity: 1;
+        filter: grayscale(0);
+    }
+
+    100% {
+        transform: scale(0.5) translateY(20px);
+        opacity: 0;
+        filter: grayscale(1);
+    }
+}
+
+.death-fade {
+    animation: deathFade 0.8s ease-in forwards;
 }
