@@ -2,7 +2,7 @@
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
+using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Editor;
 using DuszaVerseny2025.Engine.Save;
@@ -13,6 +13,16 @@ namespace DuszaVerseny2025
     public partial class MainPage : ContentPage
     {
         public static MainPage Current { get; private set; }
+
+        private int GetNextSaveId()
+        {
+            var saves = SaveManager.GetSaves();
+
+            if (saves == null || saves.Count == 0)
+                return 0;
+
+            return saves.Max(s => s.saveId) + 1;
+        }
 
         public MainPage()
         {
@@ -33,32 +43,47 @@ namespace DuszaVerseny2025
 
         public List<SaveManager.PlayerSave> RequestSaves()
         {
-            var saves = SaveManager.GetSaves();
+            var saves = SaveManager.GetSaves()
+                                   .OrderBy(s => s.saveId)
+                                   .ToList();
             return saves;
         }
 
         public List<SaveManager.WorldDungeonCombo> RequestWorlds()
         {
             var worlds = SaveManager.GetWorlds().ToList();
-            System.Console.WriteLine(worlds.Count);
             return worlds;
         }
 
         public SaveManager.PlayerSave LoadGameById(int saveId)
         {
+            MauiProgram.deckBuilder?.Clear();
+            MauiProgram.engine = null;
+
             var save = SaveManager.LoadPlayerSave(saveId);
             var (world, dungeons) = SaveManager.LoadWorld(save.saveBase);
+
             var engine = DungeonEditor.loadFromWorld(world, dungeons).CompileMockEngine();
             MauiProgram.engine = engine;
-            MauiProgram.deckBuilder.engine = engine;
+
+            if (MauiProgram.deckBuilder != null)
+                MauiProgram.deckBuilder.engine = engine;
+
             MauiProgram.currentSaveId = save.saveId;
             MauiProgram.currentSaveName = save.saveName;
+            engine.GameWorld.SetBaseId(world.worldId);
 
             foreach (var cardName in save.unlockedCards)
-                MauiProgram.engine.PlayerInventory.AddToCollection(engine.CardTemplates.First(c => c.name == cardName));
+            {
+                var template = engine.CardTemplates.First(c => c.name == cardName);
+                MauiProgram.engine.PlayerInventory.AddToCollection(template);
+            }
 
             foreach (var cardName in save.selectedCards)
-                MauiProgram.deckBuilder.Add(MauiProgram.engine.PlayerInventory.Cards.First(c => c.name == cardName));
+            {
+                var ownedCard = MauiProgram.engine.PlayerInventory.Cards.First(c => c.name == cardName);
+                MauiProgram.deckBuilder?.Add(ownedCard);
+            }
 
             return save;
         }
@@ -68,8 +93,11 @@ namespace DuszaVerseny2025
             string saveName = o.GetProperty("name").GetString();
             int templateId = int.Parse(o.GetProperty("template").GetString());
 
-            MauiProgram.currentSaveId = SaveManager.GetSaves().Count;
-            System.Console.WriteLine($"Changed save id to {MauiProgram.currentSaveId}");
+            MauiProgram.deckBuilder?.Clear();
+            MauiProgram.engine = null;
+
+            MauiProgram.currentSaveId = GetNextSaveId();
+            System.Console.WriteLine($"New save id: {MauiProgram.currentSaveId}");
             MauiProgram.currentSaveName = saveName;
 
             var (world, dungeons) = SaveManager.LoadWorld(templateId);
@@ -77,21 +105,32 @@ namespace DuszaVerseny2025
 
             var engine = editor.CompileMockEngine();
             MauiProgram.engine = engine;
-            MauiProgram.deckBuilder.engine = engine;
 
-            System.Console.WriteLine("Starting unlocked!");
+            if (MauiProgram.deckBuilder != null)
+                MauiProgram.deckBuilder.engine = engine;
+
+            engine.GameWorld.SetBaseId(templateId);
+
             foreach (var cardName in world.starterDeck)
-            {
-                System.Console.WriteLine(cardName);
-                MauiProgram.engine.PlayerInventory.AddToCollection(engine.CardTemplates.First(c => c.name == cardName));
-            }
+                MauiProgram.engine.PlayerInventory.AddToCollection(
+                    engine.CardTemplates.First(c => c.name == cardName)
+                );
 
             SaveGame();
         }
 
         public void SaveGame()
         {
+            if (MauiProgram.currentSaveId == -1) return;
             SaveManager.SavePlayerSave(MauiProgram.currentSaveId, MauiProgram.engine, MauiProgram.currentSaveName);
+        }
+
+        public void UnloadGame()
+        {
+            MauiProgram.currentSaveName = "";
+            MauiProgram.currentSaveId = -1;
+            MauiProgram.engine = null;
+            MauiProgram.deckBuilder.Clear();
         }
 
         // Strict editor logic START
@@ -122,7 +161,6 @@ namespace DuszaVerseny2025
             {
                 Card.Attribute bossProficiency = Utils.GetAttributeByName(json.GetProperty("bossProficiency").GetString());
                 editor.cards.Add(template.ToBoss(bossName, bossProficiency));
-                System.Console.WriteLine("Making boss, yummers...");
             }
 
             return true;
@@ -250,6 +288,81 @@ namespace DuszaVerseny2025
                 };
             }
             return collections;
+        }
+
+        public void AddToInitialDeck(string name)
+        {
+            CardTemplate card = editor.cards.First(c => c.name == name);
+            editor.initialDeck.Add(card);
+        }
+
+        public void RemoveFromInitialDeck(string name)
+        {
+            CardTemplate card = editor.cards.First(c => c.name == name);
+            editor.initialDeck.Remove(card);
+        }
+
+        public bool IsInitialCard(string name)
+        {
+            return editor.initialDeck.Any(c => c.name == name);
+        }
+
+        public object LoadWorldForEditing(int worldId)
+        {
+            var (world, dungeons) = SaveManager.LoadWorld(worldId);
+
+            editor = DungeonEditor.loadFromWorld(world, dungeons);
+            currentlyEditing = worldId;
+
+            return new { World = world, Dungeons = dungeons };
+        }
+
+        public bool CreateDungeon(JsonElement json)
+        {
+            // {"name": "sex dungeon", "deckName": "deckSex", "type": "kis", "hasBoss": true, "boss": "jancsika", "reward": "health | damage"}
+            string name = json.GetProperty("name").GetString();
+            string deckName = json.GetProperty("deckName").GetString();
+            string type = json.GetProperty("type").GetString();
+            bool hasBoss = json.GetProperty("hasBoss").GetBoolean();
+            string reward = json.GetProperty("reward").GetString();
+
+            if (hasBoss)
+            {
+                string boss = json.GetProperty("boss").GetString();
+            }
+
+            Collection dungeonCollection = editor.collections.First(c => c.Name == deckName).collection;
+
+            var dungeonType = type switch
+            {
+                "egyszeru" => DungeonTemplate.DungeonType.Small,
+                "kis" => DungeonTemplate.DungeonType.Medium,
+                "nagy" => DungeonTemplate.DungeonType.Big
+            };
+            editor.dungeons.Add(new DungeonTemplate(dungeonType, name, dungeonCollection, dungeonType switch
+            {
+                DungeonTemplate.DungeonType.Big => new DungeonTemplate.CardReward(dungeonCollection.Cards.ToArray()),
+                _ => new DungeonTemplate.AttributeReward(Utils.GetAttributeByName(reward))
+            }));
+
+            return true;
+        }
+
+        public void SaveEditor(string name)
+        {
+            List<SaveManager.WorldSave.CollectionSave> collectionSaves = new();
+            foreach (var collection in editor.collections)
+            {
+                string[] cards = new string[collection.collection.Size];
+                for (int i = 0; i < collection.collection.Size; i++) cards[i] = collection.collection[i].name;
+                collectionSaves.Add(new()
+                {
+                    collectionName = collection.Name,
+                    cards = cards
+                });
+            }
+
+            SaveManager.SaveWorld(currentlyEditing, editor.CompileMockEngine(), WebUtility.UrlDecode(name), collectionSaves);
         }
 
 

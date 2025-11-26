@@ -181,11 +181,6 @@ function renderDungeons() {
 
 async function onDungeonClick(name) {
     showLoadingScreen(async () => {
-        if (!window.HybridWebView) {
-            showAlert(`Belépés a kazamatába: ${name} (Demo)`);
-            return;
-        }
-
         try {
             const result = await window.HybridWebView.InvokeDotNet('OnDungeonSelected', [name]);
             const res = JSON.parse(result);
@@ -251,12 +246,16 @@ function createFallingStars() {
 // PAGE NAVIGATION
 // ====================================================================
 
-function showMainMenu() {
+function showMainMenu(doSave = false) {
+    if (doSave) {
+        window.HybridWebView.InvokeDotNet("SaveGame");
+        window.HybridWebView.InvokeDotNet("UnloadGame");
+    }
     showLoadingScreen(() => {
         debugLog('→ Back to Main Menu', 'info');
         document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
         document.getElementById('main-menu').style.display = 'flex';
-        hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése
+        hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése      
     })
 }
 
@@ -293,14 +292,19 @@ function showNewGamePage() {
     document.getElementById('difficultyValue').innerText = "5";
 
     const select = document.getElementById('worldTemplate');
-    if (select.children.length === 1) {
-        getTemplatesPlaceholder().then(templates => {
-            templates.forEach(t => {
-                const opt = new Option(t.world.templateName, t.world.worldId);
-                select.add(opt);
-            });
+    select.innerHTML = ''
+    getTemplatesPlaceholder().then(templates => {
+        if (templates.length == 0) {
+            select.disabled = true;
+            return;
+        }else {
+            select.disabled = false;
+        }
+        templates.forEach(t => {
+            const opt = new Option(t.world.templateName, t.world.worldId);
+            select.add(opt);
         });
-    }
+    });
 }
 
 async function showLoadGamePage() {
@@ -474,6 +478,7 @@ function switchEditorTab(tabId) {
         const allCardsList = document.getElementById('allCardsList');
         const allBosses = document.getElementById('allBosses');
         getCards().then(cards => {
+            document.getElementById('worldName').value = window.editorContext.name;
             if (cards.length === 0) {
                 allCardsList.innerHTML = `<p>Úgy néz ki még nincs egyetlen egy kártya ebben a világban.</p>
                     \n<p>Menj a <button class="fake-link" onclick="switchEditorTab('cards')"> Kártya Létrehozása</button> oldalra és csináj egyet!</p>`;
@@ -528,9 +533,7 @@ function switchEditorTab(tabId) {
                 dungeonDeck.appendChild(option);
             })
         })
-    }
-    if (tabId === 'abilities') {
-        // Reset ability form
+    } else if (tabId === 'abilities') {
         document.getElementById('abilityName').value = '';
         document.getElementById('abilityType').value = 'Heal';
         document.getElementById('abilityValue').value = '2';
@@ -538,6 +541,39 @@ function switchEditorTab(tabId) {
         document.getElementById('abilityRarity').value = '300';
         document.getElementById('abilityDescription').value = '';
         updateAbilityPreview();
+    }else if (tabId == 'plydeck') {
+        document.getElementById('setName').value = '';
+        const plyCardSelect = document.getElementById('plyCardSelect');
+        plyCardSelect.innerHTML = '';
+
+        getCards().then(cards => {
+            if (cards.length === 0) {
+                plyCardSelect.innerHTML = `<p>Még egy kártyád sincs! Készíts egyet <button class="fake-link" onclick="switchEditorTab('cards')">itt</button>!</p>`;
+                return;
+            }
+
+            cards.forEach(card => {
+                const cardElement = createCardElement(card);
+                cardElement.setAttribute("selected", "false");
+                window.HybridWebView.InvokeDotNet("IsInitialCard", card.Name).then(isAdded => {
+                    if (isAdded) {
+                        cardElement.setAttribute("selected", "true");
+                        cardElement.classList.add("plySelected");
+                    }
+                });
+                cardElement.onclick = () => {
+                    cardElement.setAttribute("selected", cardElement.getAttribute("selected") == "true" ? "false": "true");
+                    if (cardElement.getAttribute("selected") == "true") {
+                        cardElement.classList.add("plySelected");
+                        window.HybridWebView.InvokeDotNet("AddToInitialDeck", card.Name);
+                    }else {
+                        cardElement.classList.remove("plySelected");
+                        window.HybridWebView.InvokeDotNet("RemoveFromInitialDeck", card.Name);
+                    }
+                };
+                plyCardSelect.appendChild(cardElement);
+            });
+        });
     }
 }
 
@@ -564,7 +600,13 @@ function updatePreview() {
 }
 
 function saveWorld() {
-    showAlert('Világ mentve (Demo)');
+    const worldName = document.getElementById('worldName');
+    if (worldName.value.trim() == "") {
+        showAlert("Ne hagyd üresen a világ nevét!");
+        return;
+    }
+    window.HybridWebView.InvokeDotNet("SaveEditor", encodeURIComponent(worldName.value.trim()));
+    showAlert('Világ mentve!');
 }
 
 // Add this to your scripts/app.js file
@@ -805,45 +847,21 @@ function getAbilityTypeName(type) {
 
 // Helper function to load a specific world template by ID
 function loadWorldTemplate(worldId, modalElement, worldName) {
-    // Close the modal
     modalElement.remove();
 
-    // Here you would load the specific world template into your editor
-    // For example, populate editor fields with the world's data
     loadWorldIntoEditor(worldId, worldName);
 
-    // Show success message
     showAlert(`Világ betöltve: ${worldName}`);
 }
 
 // Function to load world data into editor based on template ID
 function loadWorldIntoEditor(worldId, worldName) {
-    // This function should populate your editor with the specific world template's data
-    // You'll need to implement this based on what data each template should load
-
-    console.log(`Loading world template: ${worldId} (${worldName})`);
-
-    // Example: Set some editor fields based on the template
-    switch (worldId) {
-        case 'forest':
-            // Load forest-specific data into editor
-            console.log('Loading Forest template data...');
-            // Example: document.getElementById('worldName').value = 'Sötét Erdő';
-            break;
-        case 'cave':
-            // Load cave-specific data into editor
-            console.log('Loading Cave template data...');
-            break;
-        case 'volcano':
-            // Load volcano-specific data into editor
-            console.log('Loading Volcano template data...');
-            break;
-        default:
-            console.log('Loading generic template data...');
-    }
-
-    // Add your actual editor population logic here
-    // This could involve loading cards, dungeons, sets, etc. specific to the template
+    window.HybridWebView.InvokeDotNet("LoadWorldForEditing", worldId).then(world => {
+        debugLog(world);
+        switchEditorTab('settings');
+        window.editorContext = {};
+        window.editorContext.name = world.World.templateName;
+    });
 }
 
 // Make sure you have this helper function for debugging
@@ -910,6 +928,7 @@ function toggleDungeonInputs() {
 function initWorldEditor() {
     window.HybridWebView.InvokeDotNet("InitEditor");
     window.editorContext = {};
+    window.editorContext.name = '';
     switchEditorTab('settings');
     document.getElementById('contextMenu').style.display = 'none';
     document.getElementById('contextClose').style.display = 'none';
@@ -979,7 +998,26 @@ function createSetPlaceholder() {
         else showAlert(`Ilyen nevű szett már létezik`);
     })
 }
-function createDungeonPlaceholder() { showAlert('Kazamata létrehozva (Demo)'); }
+function createDungeonPlaceholder() { 
+    // {"name": "sex dungeon", "deckName": "deckSex", "type": "kis", "hasBoss": true, "boss": "jancsika", "reward": "health | damage"}
+    const dungeonName = document.getElementById('dungeonName');
+    const dungeonType = document.getElementById('dungeonType');
+    const dungeonDeck = document.getElementById('dungeonDeck');
+    const dungeonBossInput = document.getElementById('dungeonBossInput');
+    const rewardType = document.getElementById('rewardType');
+
+    window.HybridWebView.InvokeDotNet("CreateDungeon", {
+        "name": dungeonName.value,
+        "deckName": dungeonDeck.value,
+        "type": dungeonType.value,
+        "hasBoss": ["kis", "nagy"].includes(dungeonType.value),
+        "boss": dungeonBossInput.value,
+        "reward": rewardType.value
+    }).then(result => {
+        debugLog(result);
+        showAlert(`A(z) ${dungeonName.value} kazamata létrehozva!`)
+    });
+}
 
 // Data Providers
 async function getTemplatesPlaceholder() {
@@ -1023,4 +1061,6 @@ window.addEventListener('DOMContentLoaded', () => {
     hideGameViewElements();
     requestGameState();
 });
+
 document.addEventListener("mousemove", ev => window.mouse = { 'x': ev.pageX, 'y': ev.pageY });
+document.getElementById('worldName').oninput = (ev) => window.editorContext.name = ev.target.value;

@@ -87,5 +87,9 @@ namespace DuszaVerseny2025.Engine
         }
 
         public int Count => Engine.currentDeck.Count;
+        public void Clear()
+        {
+            Engine.currentDeck.Clear();
+        }
     }
 }

@@ -13,7 +13,7 @@
 <body>
         <div class="container">
                 <header class="game-header">
-                        <button class="btnBackToMenu" id="headerBackButton" onclick="showMainMenu()" title="Menü"
+                        <button class="btnBackToMenu" id="headerBackButton" onclick="showMainMenu(true)" title="Menü"
                                 style="display: none;">☰</button>
                         <h1 class="game-title">DAMAREEN</h1>
                         <div class="game-subtitle">♔</div>
@@ -107,7 +107,8 @@
 
                 <div class="editor-layout">
                         <div class="editor-sidebar">
-                                <button class="editor-tab" onclick="switchEditorTab('settings')">Beállítások</button>
+                                <button class="editor-tab" onclick="switchEditorTab('settings')">Általános</button>
+                                <button class="editor-tab" onclick="switchEditorTab('plydeck')">Játékos kártyák</button>  
                                 <button class="editor-tab" onclick="switchEditorTab('cards')">Kártya
                                         Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('abilities')">Képesség
@@ -183,6 +184,13 @@
                                         </div>
                                         <button class="action-btn small"
                                                 onclick="createCardPlaceholder()">Létrehozás</button>
+                                </div>
+                                <div id="editor-plydeck" class="editor-section">
+                                    <h3>Játékos Kártyái</h3>
+                                    <h5>A játékos kezdőkártyáinak beállítása</h5>
+                                    <div id="plyCardSelect">
+                                        <p>Még egy kártyád sincs! Készíts egyet <button class="fake-link" onclick="switchEditorTab('cards')">itt</button>!</p>
+                                    </div>
                                 </div>
                                 <div id="editor-abilities" class="editor-section">
                                         <h3>Képesség Létrehozása</h3>
@@ -287,8 +295,8 @@
                                         <div class="form-group">
                                                 <label>Jutalom Típusa:</label>
                                                 <select id="rewardType">
-                                                        <option value="Attribute">Tulajdonság Növelés</option>
-                                                        <option value="Card">Kártya</option>
+                                                        <option value="eletero">Életerő</option>
+                                                        <option value="sebzes">Sebzés</option>
                                                 </select>
                                         </div>
                                         <button class="action-btn small" onclick="createDungeonPlaceholder()">Kazamata

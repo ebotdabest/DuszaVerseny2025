@@ -292,6 +292,7 @@ export class ArcaneFX {
  *   (MOVE_VFX / CLEAR_VFX / any other ref) and set life = (lastRefTime - createTime) + margin
  */
 export function convertAbsoluteSequence(sequence, opts = {}) {
+    // absolute cinema
         const { warn = true, defaultVFXLife = 200, marginMs = 100 } = opts;
         const supportedCommands = new Set(Object.values(SEQUENCE_COMMANDS));
         const longLivedVFX = new Set([

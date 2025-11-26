@@ -40,7 +40,7 @@ namespace DuszaVerseny2025
 
             // Navigate to game.html
             await hybridWebView.EvaluateJavaScriptAsync("window.location.href = 'game.html';");
-            
+
             // Wait a bit more for the page to load
             await Task.Delay(300);
 
@@ -101,23 +101,23 @@ namespace DuszaVerseny2025
                 }
 
                 await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Creating SimplePlayerDeck...', 'info')");
-                var simplePlayerDeck = new SimpleDeck 
-                { 
-                    Cards = CurrentDeck.Cards.Select(c => new SimpleCard(c)).ToList() 
+                var simplePlayerDeck = new SimpleDeck
+                {
+                    Cards = CurrentDeck.Cards.Select(c => new SimpleCard(c)).ToList()
                 };
 
                 await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Creating SimpleDungeonDeck...', 'info')");
                 var simpleDungeonDeck = dungeonDeck.Cards.Select(c => new SimpleCard(c)).ToList();
-                
+
                 await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Creating StartGameData...', 'info')");
                 var gameData = new StartGameData
                 {
                     PlayerDeck = simplePlayerDeck,
-                    Dungeon = new SimpleDungeon 
-                    { 
-                        Name = Dungeon.Name, 
-                        HasBoss = Dungeon.HasBoss, 
-                        boss = new SimpleCard(Dungeon.boss) 
+                    Dungeon = new SimpleDungeon
+                    {
+                        Name = Dungeon.Name,
+                        HasBoss = Dungeon.HasBoss,
+                        boss = new SimpleCard(Dungeon.boss)
                     },
                     DungeonDeck = simpleDungeonDeck
                 };
@@ -128,11 +128,9 @@ namespace DuszaVerseny2025
                 await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Sending startGame message...', 'info')");
                 hybridWebView.SendRawMessage($"startGame|{json}");
 
-                // Start the fight in the engine
                 await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Starting fight engine...', 'info')");
                 var result = await MauiProgram.engine.GameWorld.FightDungeonButFancy(Dungeon, CurrentDeck, OnFightEvent);
-                
-                // Handle Game Over
+
                 string rewardText = "";
                 if (result.Success)
                 {
@@ -160,7 +158,7 @@ namespace DuszaVerseny2025
 
         private async Task OnFightEvent(World.FightEvent ev)
         {
-            try 
+            try
             {
                 Debug.WriteLine($"[C#] OnFightEvent: {ev.event_name}");
 
@@ -184,16 +182,14 @@ namespace DuszaVerseny2025
                 }
 
                 string json = JsonSerializer.Serialize(jsEvent, GamePageJSContext.Default.FightEventData);
-                
-                // Ensure message sending happens on the Main Thread
-                MainThread.BeginInvokeOnMainThread(() => 
+
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
                     hybridWebView.SendRawMessage($"fightEvent|{json}");
                 });
-                
-                // Add delays to match the original pacing
+
                 if (ev.event_name.Contains("select")) await Task.Delay(500);
-                else await Task.Delay(400);
+                else await Task.Delay(600);
             }
             catch (Exception ex)
             {

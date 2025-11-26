@@ -121,7 +121,6 @@ class TestMode
         });
         if (didWin)
         {
-            Console.WriteLine(lastCard);
             dungeon.Reward.Grant(playerInventory,
             playerInventory.Cards.Where(c => c.name == lastCard).First());
         }
@@ -158,7 +157,6 @@ class TestMode
                 builder.AppendLine(card.Export());
             }
             StringBuilder dungeonBuilder = new StringBuilder();
-            Console.WriteLine(dungeons.Count);
             foreach (var dungeon in dungeons)
             {
                 dungeonBuilder.AppendLine(dungeon.Export());
