@@ -126,7 +126,9 @@ namespace DuszaVerseny2025.Engine.Cards
 
         public static bool operator ==(CardTemplate? left, CardTemplate? right)
         {
+            if (ReferenceEquals(left, right)) return true;
             if (left is null || right is null) return false;
+
             return left.Equals(right);
         }
 
