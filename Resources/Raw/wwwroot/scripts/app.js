@@ -296,14 +296,23 @@ function showNewGamePage() {
     getTemplatesPlaceholder().then(templates => {
         if (templates.length == 0) {
             select.disabled = true;
+            document.getElementById('makeTheGameButtonHasToBeUniqueAAAAA').disabled = true;
             return;
         }else {
+            document.getElementById('makeTheGameButtonHasToBeUniqueAAAAA').disabled = false;
             select.disabled = false;
         }
-        templates.forEach(t => {
-            const opt = new Option(t.world.templateName, t.world.worldId);
-            select.add(opt);
+        window.HybridWebView.InvokeDotNet("GetDefaultWorld").then(world => {
+            const defaultOpt = new Option(world.templateName, world.worldId);
+            select.add(defaultOpt);
+            templates.forEach(t => {
+                if (t.world.templateName == world.templateName) return;
+                const opt = new Option(t.world.templateName, t.world.worldId);
+                select.add(opt);
+            });
         });
+        
+
     });
 }
 
@@ -656,7 +665,7 @@ function loadWorld() {
 
             item.innerHTML = `
                 <div class="world-name">${world.world.templateName}</div>
-                <div class="world-date"></div>
+                <div class="world-date">ID: ${world.world.worldId}</div>
             `;
 
             i++;
@@ -999,7 +1008,6 @@ function createSetPlaceholder() {
     })
 }
 function createDungeonPlaceholder() { 
-    // {"name": "sex dungeon", "deckName": "deckSex", "type": "kis", "hasBoss": true, "boss": "jancsika", "reward": "health | damage"}
     const dungeonName = document.getElementById('dungeonName');
     const dungeonType = document.getElementById('dungeonType');
     const dungeonDeck = document.getElementById('dungeonDeck');
@@ -1011,7 +1019,7 @@ function createDungeonPlaceholder() {
         "deckName": dungeonDeck.value,
         "type": dungeonType.value,
         "hasBoss": ["kis", "nagy"].includes(dungeonType.value),
-        "boss": dungeonBossInput.value,
+        "boss": window.editorContext.currentSelectedBoss,
         "reward": rewardType.value
     }).then(result => {
         debugLog(result);

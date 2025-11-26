@@ -353,16 +353,11 @@ namespace DuszaVerseny2025.Engine
 
             public string Grant(PlayerCollection playerCollection, CardTemplate lastPlayedCard)
             {
-                StringBuilder rewardBuilder = new StringBuilder();
                 System.Console.WriteLine($"Upgrading {lastPlayedCard.name}'s {Export()}");
                 playerCollection.Upgrade(lastPlayedCard.name, attribute);
-                rewardBuilder.Append("A ");
-                rewardBuilder.Append(lastPlayedCard.name);
-                rewardBuilder.Append(" kártyád kap +");
-                rewardBuilder.Append(attribute == Card.Attribute.Damage ? 1 : 2);
-                rewardBuilder.Append(" ");
-                rewardBuilder.Append(attribute == Card.Attribute.Damage ? "Sebzést" : "Életerőt");
-                return rewardBuilder.ToString();
+                var amount = attribute == Card.Attribute.Damage ? 1 : 2;
+                var what = attribute == Card.Attribute.Damage ? "Sebzést" : "Életerőt";
+                return $"A {lastPlayedCard.name} kártyád kap +{amount} {what}";
             }
         }
 

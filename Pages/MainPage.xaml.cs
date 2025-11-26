@@ -319,17 +319,11 @@ namespace DuszaVerseny2025
 
         public bool CreateDungeon(JsonElement json)
         {
-            // {"name": "sex dungeon", "deckName": "deckSex", "type": "kis", "hasBoss": true, "boss": "jancsika", "reward": "health | damage"}
             string name = json.GetProperty("name").GetString();
             string deckName = json.GetProperty("deckName").GetString();
             string type = json.GetProperty("type").GetString();
             bool hasBoss = json.GetProperty("hasBoss").GetBoolean();
             string reward = json.GetProperty("reward").GetString();
-
-            if (hasBoss)
-            {
-                string boss = json.GetProperty("boss").GetString();
-            }
 
             Collection dungeonCollection = editor.collections.First(c => c.Name == deckName).collection;
 
@@ -339,11 +333,27 @@ namespace DuszaVerseny2025
                 "kis" => DungeonTemplate.DungeonType.Medium,
                 "nagy" => DungeonTemplate.DungeonType.Big
             };
-            editor.dungeons.Add(new DungeonTemplate(dungeonType, name, dungeonCollection, dungeonType switch
+
+            DungeonTemplate.DungeonReward dungeonReward;
+
+            if (reward == "kartya") dungeonReward = new DungeonTemplate.CardReward(dungeonCollection.Cards.ToArray());
+            else dungeonReward = new DungeonTemplate.AttributeReward(Utils.GetAttributeByName(reward));
+
+            DungeonTemplate template;
+
+
+            if (hasBoss)
             {
-                DungeonTemplate.DungeonType.Big => new DungeonTemplate.CardReward(dungeonCollection.Cards.ToArray()),
-                _ => new DungeonTemplate.AttributeReward(Utils.GetAttributeByName(reward))
-            }));
+                string boss = json.GetProperty("boss").GetString();
+                CardTemplate bossCard = editor.cards.First(c => c.bossName == boss);
+                template = new DungeonTemplate(dungeonType, name, dungeonCollection, bossCard, dungeonReward);
+            }
+            else
+            {
+                template = new DungeonTemplate(dungeonType, name, dungeonCollection, dungeonReward);
+            }
+
+            editor.dungeons.Add(template);
 
             return true;
         }
@@ -363,6 +373,11 @@ namespace DuszaVerseny2025
             }
 
             SaveManager.SaveWorld(currentlyEditing, editor.CompileMockEngine(), WebUtility.UrlDecode(name), collectionSaves);
+        }
+
+        public SaveManager.WorldSave GetDefaultWorld()
+        {
+            return SaveManager.GetWorlds()[0].world;
         }
 
 
@@ -437,18 +452,51 @@ namespace DuszaVerseny2025
             Debug.WriteLine("=== SendGameStateToJS START ===");
             await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Preparing game state...', 'info')");
 
-            var availableCards = MauiProgram.engine.CardTemplates
-                .Where(t => !t.IsBoss)
-                .Select((t, index) => new CardData
+            var availableCards = new List<CardData>();
+            int i = 0;
+            foreach (var card in MauiProgram.engine.CardTemplates)
+            {
+                // System.Console.WriteLine($"{card.name};{MauiProgram.engine.PlayerInventory.Has(card)}");
+                if (MauiProgram.engine.PlayerInventory.Has(card))
                 {
-                    Index = index,
-                    Name = t.name,
-                    Attack = t.damage,
-                    Health = t.health,
-                    ElementColor = t.ElementColor?.ToHex() ?? "#1a1a2e",
-                    IsOwned = MauiProgram.engine.PlayerInventory.Has(t),
-                    IsSelected = MauiProgram.deckBuilder.Any(d => d.name == t.name)
-                }).ToList();
+                    var plyCard = MauiProgram.engine.PlayerInventory[i];
+                    availableCards.Add(new CardData
+                    {
+                        Index = i++,
+                        Name = card.Name,
+                        Attack = plyCard.damage,
+                        Health = plyCard.Health,
+                        ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
+                        IsOwned = true,
+                        IsSelected = MauiProgram.deckBuilder.Any(d => d.name == card.name)
+                    });
+                }
+                else
+                {
+                    availableCards.Add(new CardData
+                    {
+                        Index = i++,
+                        Name = card.Name,
+                        Attack = card.damage,
+                        Health = card.Health,
+                        ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
+                        IsOwned = false,
+                        IsSelected = MauiProgram.deckBuilder.Any(d => d.name == card.name)
+                    });
+                }
+            }
+            // var availableCards = MauiProgram.engine.CardTemplates
+            //     .Where(t => !t.IsBoss)
+            //     .Select((t, index) => new CardData
+            //     {
+            //         Index = index,
+            //         Name = t.name,
+            //         Attack = t.damage,
+            //         Health = t.health,
+            //         ElementColor = t.ElementColor?.ToHex() ?? "#1a1a2e",
+            //         IsOwned = MauiProgram.engine.PlayerInventory.Has(t),
+            //         IsSelected = MauiProgram.deckBuilder.Any(d => d.name == t.name)
+            //     }).ToList();
 
 
             var dungeons = MauiProgram.engine.GameWorld.Dungeons

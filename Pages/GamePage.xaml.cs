@@ -134,7 +134,8 @@ namespace DuszaVerseny2025
                 string rewardText = "";
                 if (result.Success)
                 {
-                    rewardText = Dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory, MauiProgram.engine.PlayerInventory.Cards.Where(t => t.name == result.lastCard).First());
+                    rewardText = Dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory,
+                    MauiProgram.engine.PlayerInventory.Cards.First(c => c.name == result.lastCard));
                 }
 
                 var gameOverData = new GameOverData
@@ -189,7 +190,7 @@ namespace DuszaVerseny2025
                 });
 
                 if (ev.event_name.Contains("select")) await Task.Delay(500);
-                else await Task.Delay(600);
+                else await Task.Delay(500);
             }
             catch (Exception ex)
             {

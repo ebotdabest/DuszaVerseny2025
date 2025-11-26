@@ -165,25 +165,22 @@ public class PlayerCollection : Collection, ISerialize
             throw new KeyNotFoundException($"Cannot upgrade: card '{cardName}' not found in player collection.");
 
         CardTemplate newTemplate;
-        if (toUpgrade == Card.Attribute.Health)
+        if (toUpgrade == Card.Attribute.Health) newTemplate = template.MakeAnother(0, 2);
+        else if (toUpgrade == Card.Attribute.Damage) newTemplate = template.MakeAnother(1, 0);
+        else return;
+
+        int idx = -1;
+        foreach (var card in _cards)
         {
-            newTemplate = template.MakeAnother(0, 2);
-        }
-        else if (toUpgrade == Card.Attribute.Damage)
-        {
-            newTemplate = template.MakeAnother(1, 0);
-        }
-        else
-        {
-            // No change if None or unsupported – or you could throw, but I keep it safe.
-            return;
+            if (card.name == cardName)
+            {
+                idx++;
+                break;
+            }
+            idx++;
         }
 
-        int idx = _cards.IndexOf(template);
-        if (idx >= 0)
-        {
-            _cards[idx] = newTemplate;
-        }
+        if (idx >= 0) _cards[idx] = newTemplate;
     }
 }
 
