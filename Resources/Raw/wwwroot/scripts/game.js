@@ -73,7 +73,10 @@ document.addEventListener('DOMContentLoaded', function () {
                                         if (result.Success) {
                                                 rewardText = result.Reward;
                                         }
-                                        showEndScreen(result, rewardText);
+                                        // Wait dynamically for all animations (including finisher) to end
+                                        waitForAnimations(() => {
+                                                showEndScreen(result, rewardText);
+                                        });
                                         break;
                                 }
                                 case 'navigateBack':
@@ -90,6 +93,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
         });
 });
+
+function waitForAnimations(callback) {
+        const check = () => {
+                const now = Date.now();
+                let maxPending = 0;
+                for (const time of Object.values(pendingAnimations)) {
+                        if (time > maxPending) maxPending = time;
+                }
+                if (maxPending <= now) {
+                        debugLog('All animations completed, proceeding with callback', 'debug');
+                        callback();
+                } else {
+                        debugLog(`Still pending animations until ${maxPending}, checking again in 50ms`, 'debug');
+                        setTimeout(check, 50);
+                }
+        };
+        check();
+}
 
 function renderEnemyCards() {
         const container = document.getElementById('enemyDeck');
@@ -300,6 +321,8 @@ function delayedAttack(attackerId, targetId, attackClass, damage, targetCard, hi
         const actualDelay = Math.max(baseDelay, pendingTime > now ? pendingTime - now : 0);
         debugLog(`delayedAttack for ${attackerId}: pendingTime=${pendingTime}, now=${now}, actualDelay=${actualDelay}ms`, 'debug');
 
+        const isLethal = targetCard.Health <= 0;
+
         setTimeout(() => {
                 debugLog(`delayedAttack timeout fired for ${attackerId} after ${actualDelay}ms`, 'debug');
 
@@ -312,25 +335,95 @@ function delayedAttack(attackerId, targetId, attackClass, damage, targetCard, hi
                 debugLog(`Triggering ${attackClass} on ${attackerId}`, 'debug');
                 triggerAnimation(attackerId, attackClass);
 
-                // Damage shake + label on target after 250ms
-                setTimeout(() => {
-                        debugLog(`Triggering damage-shake on ${targetId} after 250ms`, 'debug');
-                        triggerAnimation(targetId, 'damage-shake');
-                        showDamageLabel(damage, !isPlayerAttack);  // isPlayer=false for game:attack (red), true for player:attack (gold)
+                // --- NEW VFX INTEGRATION ---
+                // Get attacker element color
+                let attackerColor = null;
+                if (isPlayerAttack) {
+                        // Player attacking: currentCard
+                        attackerColor = gameState.currentCard ? gameState.currentCard.ElementColor : null;
+                } else {
+                        // Enemy attacking: enemyCard
+                        attackerColor = gameState.enemyCard ? gameState.enemyCard.ElementColor : null;
+                }
 
-                        // Death fade if needed, 550ms after damage (total 800ms from attack start)
-                        if (targetCard.Health <= 0) {
+                if (window.playElementalAttack && attackerColor) {
+                        debugLog(`Playing Elemental Attack: ${attackerColor}`, 'info');
+
+                        if (isLethal && window.playElementalFinisher) {
+                                debugLog(`Triggering FINISHER for ${attackerColor}`, 'info');
+                                // Determine finisher duration based on element type
+                                const elementType = getElementTypeFromColor(attackerColor);
+                                const finisherDurations = {
+                                        'FIRE': 1500,
+                                        'WATER': 1700,
+                                        'EARTH': 1300,
+                                        'AIR': 1500,
+                                        'NONE': 1000  // Fallback
+                                };
+                                const finisherDuration = (finisherDurations[elementType] || 1000) + 200; // +200ms buffer
+                                const finisherEndTime = Date.now() + finisherDuration;
+                                pendingAnimations['finisher'] = Math.max(pendingAnimations['finisher'] || 0, finisherEndTime);
+                                debugLog(`Set pending finisher end for ${elementType}: ${finisherEndTime} (${finisherDuration}ms)`, 'debug');
                                 setTimeout(() => {
-                                        debugLog(`Triggering death-fade on ${targetId} after 800ms from attack`, 'debug');
-                                        triggerAnimation(targetId, 'death-fade');
-                                        const deathText = targetId === 'arenaEnemyCard' ? `${targetCard.Name}(Kazamata) legyőzve!` : `${gameState.currentCard ? gameState.currentCard.Name : targetCard.Name}(Játékos) kártya legyőzve!`;
-                                        addHistoryEntry(deathText);
-                                }, 550);
+                                        delete pendingAnimations['finisher'];
+                                        debugLog(`Cleared pending finisher for ${elementType}`, 'debug');
+                                }, finisherDuration);
+
+                                window.playElementalFinisher(attackerId, targetId, attackerColor);
+
+                                // For lethal: add death history immediately
+                                const deathText = targetId === 'arenaEnemyCard' ? `${targetCard.Name}(Kazamata) legyőzve!` : `${gameState.currentCard ? gameState.currentCard.Name : targetCard.Name}(Játékos) kártya legyőzve!`;
+                                addHistoryEntry(deathText);
+
+                                // Skip damage-shake, damage label, and death-fade for finisher
+                                debugLog(`Skipping damage-shake and death-fade for lethal finisher on ${targetId}`, 'debug');
+                        } else {
+                                // Normal attack
+                                window.playElementalAttack(attackerId, targetId, attackerColor);
                         }
-                }, 250);
+                }
+                // ---------------------------
+
+                // For non-lethal attacks only: Damage shake + label on target after 250ms
+                if (!isLethal) {
+                        setTimeout(() => {
+                                debugLog(`Triggering damage-shake on ${targetId} after 250ms`, 'debug');
+                                triggerAnimation(targetId, 'damage-shake');
+                                showDamageLabel(damage, !isPlayerAttack);  // isPlayer=false for game:attack (red), true for player:attack (gold)
+
+                                // Death fade if needed, 550ms after damage (total 800ms from attack start)
+                                if (targetCard.Health <= 0) {
+                                        setTimeout(() => {
+                                                debugLog(`Triggering death-fade on ${targetId} after 800ms from attack`, 'debug');
+                                                triggerAnimation(targetId, 'death-fade');
+                                                const deathText = targetId === 'arenaEnemyCard' ? `${targetCard.Name}(Kazamata) legyőzve!` : `${gameState.currentCard ? gameState.currentCard.Name : targetCard.Name}(Játékos) kártya legyőzve!`;
+                                                addHistoryEntry(deathText);
+                                        }, 550);
+                                }
+                        }, 250);
+                }
 
                 debugLog(`delayedAttack completed for ${attackerId}`, 'debug');
         }, actualDelay);
+}
+
+function getElementTypeFromColor(hexColor) {
+        if (!hexColor) return 'NONE';
+        const color = hexColor.toUpperCase();
+
+        const ELEMENT_COLORS = {
+                FIRE: '#CD5C5C',   // IndianRed
+                WATER: '#1E90FF',  // DodgerBlue
+                AIR: '#ADD8E6',    // LightBlue
+                EARTH: '#556B2F'   // DarkOliveGreen
+        };
+
+        if (color === ELEMENT_COLORS.FIRE) return 'FIRE';
+        if (color === ELEMENT_COLORS.WATER) return 'WATER';
+        if (color === ELEMENT_COLORS.AIR) return 'AIR';
+        if (color === ELEMENT_COLORS.EARTH) return 'EARTH';
+
+        return 'NONE';
 }
 
 function handleFightEvent(event) {
