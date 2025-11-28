@@ -8,6 +8,126 @@
         <link rel="icon" href="data:,">
         <link rel="stylesheet" href="styles/app.css">
         <script src="scripts/HybridWebView.js"></script>
+        <style>
+                /* Page Switch Buttons */
+                .page-switch-container {
+                        display: flex;
+                        gap: 10px;
+                        margin-bottom: 15px;
+                }
+
+                .page-switch-btn {
+                        flex: 1;
+                        padding: 10px 20px;
+                        background: rgba(30, 30, 40, 0.6);
+                        border: 2px solid rgba(255, 255, 255, 0.1);
+                        color: #888;
+                        font-family: 'Cinzel', serif;
+                        font-size: 14px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                }
+
+                .page-switch-btn:hover {
+                        background: rgba(40, 40, 50, 0.8);
+                        border-color: rgba(255, 255, 255, 0.2);
+                }
+
+                .page-switch-btn.active {
+                        background: linear-gradient(135deg, rgba(139, 69, 19, 0.5), rgba(160, 82, 45, 0.5));
+                        border-color: #8b4513;
+                        color: #fff;
+                        box-shadow: 0 0 20px rgba(139, 69, 19, 0.4);
+                }
+
+                /* Hide/Show Card Grids */
+                .card-grid-container {
+                        display: none;
+                }
+
+                .card-grid-container.active {
+                        display: block;
+                }
+
+                /* Adjust right panel to accommodate button */
+                .right-panel {
+                        position: relative;
+                        padding-bottom: 70px;
+                        display: flex;
+                        flex-direction: column;
+                }
+
+                /* Dynamic section title */
+                .right-panel .section-title {
+                        margin-bottom: 15px;
+                }
+
+                /* Dungeon Lists Container */
+                .dungeon-lists-container {
+                        position: relative;
+                        overflow: hidden;
+                        flex: 1;
+                        min-height: 0;
+                }
+
+                .dungeon-list-wrapper {
+                        position: absolute;
+                        width: 100%;
+                        height: 100%;
+                        overflow-y: auto;
+                        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+                        opacity: 0;
+                        pointer-events: none;
+                }
+
+                .dungeon-list-wrapper.active {
+                        transform: translateX(0);
+                        opacity: 1;
+                        pointer-events: auto;
+                }
+
+                .dungeon-list-wrapper.slide-left {
+                        transform: translateX(-100%);
+                }
+
+                .dungeon-list-wrapper.slide-right {
+                        transform: translateX(100%);
+                }
+
+                /* Dungeon Panel Floating Button */
+                .dungeon-view-toggle {
+                        position: absolute;
+                        bottom: 20px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        padding: 12px 24px;
+                        background: linear-gradient(135deg, rgba(139, 69, 19, 0.8), rgba(160, 82, 45, 0.8));
+                        border: 2px solid #8b4513;
+                        border-radius: 25px;
+                        color: #fff;
+                        font-family: 'Cinzel', serif;
+                        font-size: 13px;
+                        font-weight: 700;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+                        z-index: 10;
+                }
+
+                .dungeon-view-toggle:hover {
+                        background: linear-gradient(135deg, rgba(160, 82, 45, 0.9), rgba(139, 69, 19, 0.9));
+                        transform: translateX(-50%) translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(139, 69, 19, 0.6);
+                }
+
+                .dungeon-view-toggle:active {
+                        transform: translateX(-50%) translateY(0);
+                }
+        </style>
 </head>
 
 <body>
@@ -22,8 +142,26 @@
                 <div class="main-content" id="mainGameContent" style="display: none;">
                         <div class="left-panel">
                                 <div class="section">
-                                        <h2 class="section-title">Gyűjtemény</h2>
-                                        <div id="cardCollection" class="card-grid"></div>
+                                        <!-- Page Switch Buttons -->
+                                        <div class="page-switch-container">
+                                                <button class="page-switch-btn active"
+                                                        onclick="switchCardGrid('cards')">
+                                                        Gyűjtemény
+                                                </button>
+                                                <button class="page-switch-btn" onclick="switchCardGrid('powers')">
+                                                        Képességek
+                                                </button>
+                                        </div>
+
+                                        <!-- Card Collection Grid -->
+                                        <div id="cardGridContainer" class="card-grid-container active">
+                                                <div id="cardCollection" class="card-grid"></div>
+                                        </div>
+
+                                        <!-- Power Card Collection Grid -->
+                                        <div id="powerCardGridContainer" class="card-grid-container">
+                                                <div id="powercardCollection" class="card-grid"></div>
+                                        </div>
                                 </div>
 
                                 <div class="selection-counter" id="selectionCounter">
@@ -35,9 +173,32 @@
                                         <div id="selectedDeck" class="deck-container"></div>
                                 </div>
                         </div>
+
                         <div class="right-panel">
-                                <h2 class="section-title">Kazamaták</h2>
-                                <div id="dungeonList" class="dungeon-list"></div>
+                                <h2 class="section-title" id="dungeonPanelTitle">Kazamaták</h2>
+
+                                <!-- Dungeon Lists Container with Slide Animation -->
+                                <div class="dungeon-lists-container">
+                                        <!-- Dungeons List -->
+                                        <div class="dungeon-list-wrapper active" id="dungeonsWrapper">
+                                                <div id="dungeonList" class="dungeon-list"></div>
+                                        </div>
+
+                                        <!-- Dungeon Paths List -->
+                                        <div class="dungeon-list-wrapper slide-right" id="pathsWrapper">
+                                                <div id="dungeonPathsList" class="dungeon-list">
+                                                        <div style="color:#666;text-align:center;padding:20px">
+                                                                Útvonalak (Hamarosan...)
+                                                        </div>
+                                                </div>
+                                        </div>
+                                </div>
+
+                                <!-- Floating Toggle Button -->
+                                <button class="dungeon-view-toggle" id="dungeonViewToggle"
+                                        onclick="toggleDungeonView()">
+                                        Útvonalak
+                                </button>
                         </div>
                 </div>
         </div>
@@ -88,7 +249,8 @@
                                         oninput="document.getElementById('difficultyValue').textContent = this.value">
                         </div>
                         <div class="button-row">
-                                <button class="action-btn" id="makeTheGameButtonHasToBeUniqueAAAAA" onclick="startNewGame()">Indítás</button>
+                                <button class="action-btn" id="makeTheGameButtonHasToBeUniqueAAAAA"
+                                        onclick="startNewGame()">Indítás</button>
                         </div>
                 </div>
         </div>
@@ -108,7 +270,7 @@
                 <div class="editor-layout">
                         <div class="editor-sidebar">
                                 <button class="editor-tab" onclick="switchEditorTab('settings')">Általános</button>
-                                <button class="editor-tab" onclick="switchEditorTab('plydeck')">Játékos kártyák</button>  
+                                <button class="editor-tab" onclick="switchEditorTab('plydeck')">Játékos kártyák</button>
                                 <button class="editor-tab" onclick="switchEditorTab('cards')">Kártya
                                         Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('abilities')">Képesség
@@ -156,13 +318,13 @@
                                                 </div>
                                         </div>
                                         <div class="form-group">
-                                                <label>Elem:</ select>
-                                                        <select id="cardElement">
-                                                                <option value="tuz">Tűz</option>
-                                                                <option value="viz">Víz</option>
-                                                                <option value="fold">Föld</option>
-                                                                <option value="levego">Levegő</option>
-                                                        </select>
+                                                <label>Elem:</label>
+                                                <select id="cardElement">
+                                                        <option value="tuz">Tűz</option>
+                                                        <option value="viz">Víz</option>
+                                                        <option value="fold">Föld</option>
+                                                        <option value="levego">Levegő</option>
+                                                </select>
                                         </div>
                                         <div class="form-group checkbox-group">
                                                 <input type="checkbox" id="isBoss" class="tech-checkbox"
@@ -186,11 +348,12 @@
                                                 onclick="createCardPlaceholder()">Létrehozás</button>
                                 </div>
                                 <div id="editor-plydeck" class="editor-section">
-                                    <h3>Játékos Kártyái</h3>
-                                    <h5>A játékos kezdőkártyáinak beállítása</h5>
-                                    <div id="plyCardSelect">
-                                        <p>Még egy kártyád sincs! Készíts egyet <button class="fake-link" onclick="switchEditorTab('cards')">itt</button>!</p>
-                                    </div>
+                                        <h3>Játékos Kártyái</h3>
+                                        <h5>A játékos kezdőkártyáinak beállítása</h5>
+                                        <div id="plyCardSelect">
+                                                <p>Még egy kártyád sincs! Készíts egyet <button class="fake-link"
+                                                                onclick="switchEditorTab('cards')">itt</button>!</p>
+                                        </div>
                                 </div>
                                 <div id="editor-abilities" class="editor-section">
                                         <h3>Képesség Létrehozása</h3>
