@@ -298,7 +298,7 @@ function showNewGamePage() {
             select.disabled = true;
             document.getElementById('makeTheGameButtonHasToBeUniqueAAAAA').disabled = true;
             return;
-        }else {
+        } else {
             document.getElementById('makeTheGameButtonHasToBeUniqueAAAAA').disabled = false;
             select.disabled = false;
         }
@@ -311,7 +311,7 @@ function showNewGamePage() {
                 select.add(opt);
             });
         });
-        
+
 
     });
 }
@@ -368,7 +368,7 @@ function startNewGame() {
     showLoadingScreen(() => {
         window.HybridWebView.InvokeDotNet("MakeNewGame", { "name": name, "template": template });
         enterGameMode();
-        showAlert(`Üdvözöllek, ${name}!`);
+        showAlert(`Üdvözöllek a ${name} világban!`);
     });
 }
 
@@ -377,7 +377,7 @@ function loadSave(id) {
         window.HybridWebView.InvokeDotNet("LoadGameById", id).then((save) => {
             debugLog(save);
             enterGameMode();
-            showAlert(`Üdv újra, ${save.saveName}`);
+            showAlert(`Üdv újra a ${save.saveName} világban!`);
         });
     });
 }
@@ -550,7 +550,7 @@ function switchEditorTab(tabId) {
         document.getElementById('abilityRarity').value = '300';
         document.getElementById('abilityDescription').value = '';
         updateAbilityPreview();
-    }else if (tabId == 'plydeck') {
+    } else if (tabId == 'plydeck') {
         document.getElementById('setName').value = '';
         const plyCardSelect = document.getElementById('plyCardSelect');
         plyCardSelect.innerHTML = '';
@@ -571,11 +571,11 @@ function switchEditorTab(tabId) {
                     }
                 });
                 cardElement.onclick = () => {
-                    cardElement.setAttribute("selected", cardElement.getAttribute("selected") == "true" ? "false": "true");
+                    cardElement.setAttribute("selected", cardElement.getAttribute("selected") == "true" ? "false" : "true");
                     if (cardElement.getAttribute("selected") == "true") {
                         cardElement.classList.add("plySelected");
                         window.HybridWebView.InvokeDotNet("AddToInitialDeck", card.Name);
-                    }else {
+                    } else {
                         cardElement.classList.remove("plySelected");
                         window.HybridWebView.InvokeDotNet("RemoveFromInitialDeck", card.Name);
                     }
@@ -1007,7 +1007,7 @@ function createSetPlaceholder() {
         else showAlert(`Ilyen nevű szett már létezik`);
     })
 }
-function createDungeonPlaceholder() { 
+function createDungeonPlaceholder() {
     const dungeonName = document.getElementById('dungeonName');
     const dungeonType = document.getElementById('dungeonType');
     const dungeonDeck = document.getElementById('dungeonDeck');
@@ -1045,6 +1045,73 @@ async function getSavesPlaceholder() {
 async function getCollections() {
     return await window.HybridWebView.InvokeDotNet("GetCollections");
 }
+
+// Card Grid Switching Function with Animation
+function switchCardGrid(gridType) {
+    const cardGrid = document.getElementById('cardGridContainer');
+    const powerGrid = document.getElementById('powerCardGridContainer');
+    const buttons = document.querySelectorAll('.page-switch-btn');
+
+    if (gridType === 'cards') {
+        // Switch to cards
+        powerGrid.classList.remove('active');
+        powerGrid.classList.add('slide-right');
+
+        cardGrid.classList.remove('slide-left');
+        cardGrid.classList.add('active');
+
+        buttons[0].classList.add('active');
+        buttons[1].classList.remove('active');
+    } else {
+        // Switch to powers
+        cardGrid.classList.remove('active');
+        cardGrid.classList.add('slide-left');
+
+        powerGrid.classList.remove('slide-right');
+        powerGrid.classList.add('active');
+
+        buttons[0].classList.remove('active');
+        buttons[1].classList.add('active');
+    }
+}
+
+// Dungeon View Toggle Function
+let currentDungeonView = 'dungeons';
+
+function toggleDungeonView() {
+    const dungeonsWrapper = document.getElementById('dungeonsWrapper');
+    const pathsWrapper = document.getElementById('pathsWrapper');
+    const toggleBtn = document.getElementById('dungeonViewToggle');
+    const panelTitle = document.getElementById('dungeonPanelTitle');
+
+    if (currentDungeonView === 'dungeons') {
+        // Switch to paths
+        dungeonsWrapper.classList.remove('active');
+        dungeonsWrapper.classList.add('slide-left');
+
+        pathsWrapper.classList.remove('slide-right');
+        pathsWrapper.classList.add('active');
+
+        toggleBtn.textContent = 'Kazamaták';
+        panelTitle.textContent = 'Útvonalak';
+        currentDungeonView = 'paths';
+    } else {
+        // Switch to dungeons
+        pathsWrapper.classList.remove('active');
+        pathsWrapper.classList.add('slide-right');
+
+        dungeonsWrapper.classList.remove('slide-left');
+        dungeonsWrapper.classList.add('active');
+
+        toggleBtn.textContent = 'Útvonalak';
+        panelTitle.textContent = 'Kazamaták';
+        currentDungeonView = 'dungeons';
+    }
+}
+
+// Make functions globally available
+window.switchCardGrid = switchCardGrid;
+window.toggleDungeonView = toggleDungeonView;
 
 // ====================================================================
 // INIT & MOCK DATA

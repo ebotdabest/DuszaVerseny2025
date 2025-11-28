@@ -322,8 +322,8 @@ public static class MauiProgram
             // SaveManager.SaveWorld(1, e, "Smegma world");
             // SaveManager.SavePlayerSave(0, e, "My awesome save!");
 
-            // SetupEngine();
-            // SaveManager.SaveWorld(1, engine, "Back up");
+            SetupEngine();
+            SaveManager.SaveWorld(0, engine, "wololo");
 
             Console.ReadLine();
             FreeConsole();

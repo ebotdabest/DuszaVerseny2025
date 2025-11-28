@@ -459,7 +459,7 @@ namespace DuszaVerseny2025
                 // System.Console.WriteLine($"{card.name};{MauiProgram.engine.PlayerInventory.Has(card)}");
                 if (MauiProgram.engine.PlayerInventory.Has(card))
                 {
-                    var plyCard = MauiProgram.engine.PlayerInventory[i];
+                    var plyCard = MauiProgram.engine.PlayerInventory[card.Name];
                     availableCards.Add(new CardData
                     {
                         Index = i++,
