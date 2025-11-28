@@ -3,13 +3,7 @@ using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Save;
 using DuszaVerseny2025.Engine.Utils;
 using Microsoft.Extensions.Logging;
-
-using Microsoft.Maui;
-using Microsoft.Maui.Handlers;
-using Microsoft.Maui.Hosting;
-using System;
-using System.IO;
-using System.Linq;
+using Newtonsoft.Json;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -297,11 +291,24 @@ public static class MauiProgram
     [DllImport("kernel32.dll")] static extern bool AllocConsole();
     [DllImport("kernel32.dll")] static extern bool FreeConsole();
 
+    // static async Task callbackTest(World.FightEvent ev)
+    // {
+    //     System.Console.WriteLine(ev.event_name);
+    // }
+
     public static MauiApp CreateMauiApp()
     {
         string[] args = Environment.GetCommandLineArgs();
         AllocConsole();
         if (args.Length < 2) Environment.Exit(1);
+        if (args[1] == "peek")
+        {
+            System.Console.WriteLine($"Loading save: {int.Parse(args[2])}");
+            var save = SaveManager.LoadPlayerSave(int.Parse(args[2]));
+            System.Console.WriteLine(JsonConvert.SerializeObject(save));
+            Console.ReadLine();
+            Environment.Exit(0);
+        }
         if (args[1] != "--ui")
         {
             // TestMode tm = new TestMode();
@@ -323,7 +330,19 @@ public static class MauiProgram
             // SaveManager.SavePlayerSave(0, e, "My awesome save!");
 
             // SetupEngine();
+            // DungeonPathTemplate pathTemplate = new DungeonPathTemplate("Way of the testicle", engine.GameWorld.Dungeons.ToArray());
+            // var c = new Collection(new()
+            // {
+            //     engine.CardTemplates[0],
+            //     engine.CardTemplates[1]
+            // });
+            // Deck d = Deck.makeGameDeck(c);
+            // DungeonPath path = new DungeonPath(pathTemplate, d, callbackTest);
+            // path.FightPath(engine).Wait();
+
             // SaveManager.SaveWorld(1, engine, "Back up");
+
+
 
             Console.ReadLine();
             FreeConsole();

@@ -85,6 +85,12 @@ namespace DuszaVerseny2025
                 MauiProgram.deckBuilder?.Add(ownedCard);
             }
 
+            foreach (var upgrade in save.upgradedCards)
+            {
+                engine.PlayerInventory.Upgrade(upgrade.cardName, upgrade.healthDiff, upgrade.damageDiff);
+                System.Console.WriteLine($"Setting {upgrade.cardName} to +{upgrade.healthDiff}; +{upgrade.damageDiff}");
+            }
+
             return save;
         }
 
@@ -485,18 +491,6 @@ namespace DuszaVerseny2025
                     });
                 }
             }
-            // var availableCards = MauiProgram.engine.CardTemplates
-            //     .Where(t => !t.IsBoss)
-            //     .Select((t, index) => new CardData
-            //     {
-            //         Index = index,
-            //         Name = t.name,
-            //         Attack = t.damage,
-            //         Health = t.health,
-            //         ElementColor = t.ElementColor?.ToHex() ?? "#1a1a2e",
-            //         IsOwned = MauiProgram.engine.PlayerInventory.Has(t),
-            //         IsSelected = MauiProgram.deckBuilder.Any(d => d.name == t.name)
-            //     }).ToList();
 
 
             var dungeons = MauiProgram.engine.GameWorld.Dungeons

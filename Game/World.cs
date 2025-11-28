@@ -1,5 +1,7 @@
 
 using System.Text;
+using DuszaVerseny2025;
+using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
 using DuszaVerseny2025.Engine.Serializer;
 
@@ -79,7 +81,7 @@ namespace DuszaVerseny2025.Engine
                 {
                     int damageDealt;
                     Console.WriteLine($"Enemy attack {currentEnemyCard.Name}: {currentEnemyCard.Damage}");
-                    currentEnemyCard.Attack(currentPlayerCard, out damageDealt);
+                    currentEnemyCard.Attack(currentPlayerCard, false, out damageDealt);
                     await callback(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", currentEnemyCard),
                         ("card", currentPlayerCard), ("damage", damageDealt)));
                 }
@@ -100,7 +102,7 @@ namespace DuszaVerseny2025.Engine
                 else if (playerChoice == 1)
                 {
                     int damageDealt;
-                    currentPlayerCard.Attack(currentEnemyCard, out damageDealt);
+                    currentPlayerCard.Attack(currentEnemyCard, true, out damageDealt);
                     await callback(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
                 }
                 await callback(FightEvent.makeEvent("round_over", ("round", round)));
@@ -127,14 +129,14 @@ namespace DuszaVerseny2025.Engine
             await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", boss), ("isBoss", true)));
             int dmg;
             Card currentCard = playerDeck.Cards[currentPlayerIndex];
-            currentCard.Attack(boss, out dmg);
+            currentCard.Attack(boss, true, out dmg);
             await callback(FightEvent.makeEvent("player:attack", ("card", currentCard),
             ("enemy", boss), ("damage", dmg), ("round", round)));
 
             while (boss.Health > 0 && !isDead)
             {
                 int damage;
-                boss.Attack(currentCard, out damage);
+                boss.Attack(currentCard, false, out damage);
                 await callback(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", boss),
                         ("card", currentCard), ("damage", damage)));
 
@@ -153,7 +155,7 @@ namespace DuszaVerseny2025.Engine
                 else
                 {
                     int plyDmg;
-                    currentCard.Attack(boss, out plyDmg);
+                    currentCard.Attack(boss, true, out plyDmg);
                     await callback(FightEvent.makeEvent("player:attack", ("card", currentCard),
                     ("enemy", boss), ("damage", plyDmg), ("round", round)));
 
@@ -208,7 +210,7 @@ namespace DuszaVerseny2025.Engine
                 else if (enemyChoice == 1)
                 {
                     int damageDealt;
-                    currentEnemyCard.Attack(currentPlayerCard, out damageDealt);
+                    currentEnemyCard.Attack(currentPlayerCard, false, out damageDealt);
                     callback.Invoke(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", currentEnemyCard),
                         ("card", currentPlayerCard), ("damage", damageDealt)));
                 }
@@ -228,7 +230,7 @@ namespace DuszaVerseny2025.Engine
                 else if (playerChoice == 1)
                 {
                     int damageDealt;
-                    currentPlayerCard.Attack(currentEnemyCard, out damageDealt);
+                    currentPlayerCard.Attack(currentEnemyCard, true, out damageDealt);
                     callback.Invoke(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
                 }
 
@@ -256,14 +258,14 @@ namespace DuszaVerseny2025.Engine
             callback.Invoke(FightEvent.makeEvent("game:select", ("round", round), ("card", boss)));
             int dmg;
             Card currentCard = playerDeck.Cards[currentPlayerIndex];
-            currentCard.Attack(boss, out dmg);
+            currentCard.Attack(boss, true, out dmg);
             callback.Invoke(FightEvent.makeEvent("player:attack", ("card", currentCard),
             ("enemy", boss), ("damage", dmg), ("round", round)));
 
             while (boss.Health > 0 && !isDead)
             {
                 int damage;
-                boss.Attack(currentCard, out damage);
+                boss.Attack(currentCard, false, out damage);
                 callback.Invoke(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", boss),
                         ("card", currentCard), ("damage", damage)));
 
@@ -282,7 +284,7 @@ namespace DuszaVerseny2025.Engine
                 else
                 {
                     int plyDmg;
-                    currentCard.Attack(boss, out plyDmg);
+                    currentCard.Attack(boss, true, out plyDmg);
                     callback.Invoke(FightEvent.makeEvent("player:attack", ("card", currentCard),
                     ("enemy", boss), ("damage", plyDmg), ("round", round)));
 
@@ -535,5 +537,72 @@ namespace DuszaVerseny2025.Engine
         {
             return new Dungeon(template.collection, template.name, template.type, template.bossTemplate, template.reward);
         }
+    }
+}
+
+public class DungeonPathTemplate
+{
+    DungeonTemplate[] _dungeons;
+    string _name;
+
+    public DungeonTemplate[] Dungeons => _dungeons.ToArray();
+    public string Name => _name;
+
+    public DungeonPathTemplate(string name, DungeonTemplate[] dungeons)
+    {
+        _dungeons = dungeons;
+        _name = name;
+    }
+}
+
+public class DungeonPath
+{
+
+    int currentStage = 0;
+
+    Deck playerDeck;
+
+    Func<World.FightEvent, Task> callbackFunc;
+    DungeonPathTemplate _template;
+
+    public DungeonPath(DungeonPathTemplate template, Deck playerDeck, Func<World.FightEvent, Task> callback)
+    {
+        this.playerDeck = playerDeck;
+        callbackFunc = callback;
+        _template = template;
+    }
+
+    public async Task<bool> FightPath(GameEngine engine)
+    {
+        bool hasLostOnce = false;
+        for (int state = 0; !hasLostOnce && state < _template.Dungeons.Length; state++)
+        {
+            bool hasWon = await fightState(state, engine);
+            if (!hasWon) hasLostOnce = true;
+        }
+
+        if (!hasLostOnce) return true;
+
+        return false;
+    }
+
+    async Task<bool> fightState(int dungeon, GameEngine engine)
+    {
+        var d = Dungeon.fromTemplate(_template.Dungeons[dungeon]);
+        var res = await engine.GameWorld.FightDungeonButFancy(d, playerDeck.Clone(), OnFightEvent);
+        if (res.Success)
+        {
+            await callbackFunc(World.FightEvent.makeEvent("dungeonp:dungeonwon", ("dungeonidx", dungeon), ("round", -1)));
+            return true;
+        }
+
+        await callbackFunc(World.FightEvent.makeEvent("dungeonp:dungeonlost", ("dungeonidx", dungeon), ("round", -1)));
+        return false;
+
+    }
+
+    async Task OnFightEvent(World.FightEvent ev)
+    {
+        await callbackFunc(ev);
     }
 }

@@ -192,7 +192,7 @@ namespace DuszaVerseny2025.Engine.Cards
             return new BossCard(this);
         }
 
-        public void Attack(Card target, out int damageDealt)
+        public void Attack(Card target, bool isPlayer, out int damageDealt)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
 
@@ -206,7 +206,7 @@ namespace DuszaVerseny2025.Engine.Cards
             CardTemplate.Type attType = this.Type;
             CardTemplate.Type defType = target.Type;
 
-            int effectiveDamage = Utils.Utils.CalculateDamage(baseDamage, attType, defType);
+            int effectiveDamage = Utils.Utils.CalculateDamage(baseDamage, attType, defType, MauiProgram.engine.GameWorld.Difficulty, isPlayer);
             damageDealt = effectiveDamage;
 
             target._health -= effectiveDamage;

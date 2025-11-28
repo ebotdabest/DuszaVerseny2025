@@ -182,6 +182,31 @@ public class PlayerCollection : Collection, ISerialize
 
         if (idx >= 0) _cards[idx] = newTemplate;
     }
+
+    public void Upgrade(string cardName, int healthPlus, int damagePlus)
+    {
+        if (string.IsNullOrWhiteSpace(cardName))
+            throw new ArgumentException("Card name cannot be null or whitespace.", nameof(cardName));
+
+        var template = _cards.FirstOrDefault(t => t.name == cardName);
+        if (template == null)
+            throw new KeyNotFoundException($"Cannot upgrade: card '{cardName}' not found in player collection.");
+
+
+        var newCard = template.MakeAnother(damagePlus, healthPlus);
+        int idx = -1;
+        foreach (var card in _cards)
+        {
+            if (card.name == cardName)
+            {
+                idx++;
+                break;
+            }
+            idx++;
+        }
+
+        if (idx >= 0) _cards[idx] = newCard;
+    }
 }
 
 public class Deck : ISerialize
@@ -263,5 +288,11 @@ public class Deck : ISerialize
         }
 
         return builder.ToString();
+    }
+
+    public Deck Clone()
+    {
+        List<CardTemplate> cardTemplates = _cards.Select(c => c.Template).ToList();
+        return makeGameDeck(new Collection(cardTemplates));
     }
 }

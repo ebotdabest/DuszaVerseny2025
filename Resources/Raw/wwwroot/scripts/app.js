@@ -268,6 +268,7 @@ function enterGameMode() {
     document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
     showGameViewElements(); // Fő játék nézet és fejléc gomb megjelenítése
     requestGameState();
+    debugLog("Game state requested!");
 }
 
 function newGame() { showLoadingScreen(showNewGamePage); }

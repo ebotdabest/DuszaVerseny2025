@@ -63,15 +63,33 @@ public class Utils
         return 1.0;
     }
 
-    public static int CalculateDamage(int baseDamage, CardTemplate.Type attacker, CardTemplate.Type taker)
+    private static readonly Random Rng = new Random();
+
+    public static double CalculateDamageDifficulty(int baseDamage, int difficulty, bool isPlayer)
+    {
+        if (difficulty <= 0)
+            return baseDamage;
+
+        var rnd = Rng.NextDouble();
+        if (isPlayer)
+        {
+            return Math.Round(baseDamage * (1 - rnd * difficulty / 20));
+        }
+        return Math.Round(baseDamage * (1 + rnd * difficulty / 10));
+    }
+
+    public static int CalculateDamage(int baseDamage, CardTemplate.Type attacker, CardTemplate.Type taker, int difficulty, bool isPlayer)
     {
         double multiplier = GetDamageMultiplier(attacker, taker);
         double adjusted = baseDamage * multiplier;
         if (multiplier == 0.5)
         {
-            return (int)Math.Floor(adjusted);
+            adjusted = Math.Floor(adjusted);
         }
-        return (int)adjusted;
+
+        double finalDamage = CalculateDamageDifficulty((int)adjusted, difficulty, isPlayer);
+
+        return (int)finalDamage;
     }
 
     public static string GetTypeName(CardTemplate.Type type)
