@@ -386,6 +386,66 @@ namespace DuszaVerseny2025
             return SaveManager.GetWorlds()[0].world;
         }
 
+        public List<SaveManager.WorldSave.PowerCardSave> GetPowerCards()
+        {
+            return editor.powerCards.Select(c => new SaveManager.WorldSave.PowerCardSave
+            {
+                name = c.getName(),
+                value = c.getValue(),
+                rarity = c.getRarity(),
+                duration = c.getRarity(),
+                type = c.GetType().Name
+            }).ToList();
+        }
+
+        public List<DungeonData> GetDungeons()
+        {
+            return editor.dungeons.Select(d => new DungeonData
+            {
+                Name = d.name,
+                HasBoss = d.bossTemplate != null,
+                BossName = d.bossTemplate?.name,
+                BossHealth = d.bossTemplate?.health ?? 0,
+                BossDamage = d.bossTemplate?.damage ?? 0,
+                Size = d.type switch
+                {
+                    DungeonTemplate.DungeonType.Small => "Egyszerű",
+                    DungeonTemplate.DungeonType.Medium => "Kis",
+                    DungeonTemplate.DungeonType.Big => "Nagy",
+                },
+                Reward = d.reward.GetType() == typeof(DungeonTemplate.AttributeReward) ? ((DungeonTemplate.AttributeReward)d.reward).Export() : "Kártya"
+            }).ToList();
+        }
+
+        public List<DungeonPathTemplate> GetPaths()
+        {
+            return editor.dungeonPaths;
+        }
+
+        Dictionary<string, Func<int, int, string, int, PowerCard>> cardConstructors = new()
+        {
+            {"Heal", (duration, value, name, rarity) => new HealPower(duration, value, name, rarity)},
+            {"Shield", (duration, value, name, rarity) => new ShieldPower(duration, value, name, rarity)},
+            {"InstantDamage", (duration, value, name, rarity) => new DamagePower(duration, value, name, rarity)},
+            {"DamageBuff", (duration, value, name, rarity) => new StrengthPower(duration, value, name, rarity)}
+        };
+
+        public bool CreateAbility(JsonElement e)
+        {
+            //{"name":"Here vakarás","type":"InstantDamage","value":67,"duration":0,"rarity":62,"description":""}
+            string name = e.GetProperty("name").GetString();
+            string type = e.GetProperty("type").GetString();
+            int value = e.GetProperty("value").GetInt32();
+            int duration = e.GetProperty("duration").GetInt32();
+            int rarity = e.GetProperty("rarity").GetInt32();
+
+            PowerCard card = cardConstructors[type](value, duration, name, rarity);
+            editor.powerCards.Add(card);
+            System.Console.WriteLine(editor.powerCards.Count);
+            return true;
+        }
+
+
 
 
         // Strict editor logic END
@@ -661,6 +721,8 @@ namespace DuszaVerseny2025
         public string BossName { get; set; }
         public int BossHealth { get; set; }
         public int BossDamage { get; set; }
+        public string Size { get; set; } = string.Empty;
+        public string Reward { get; set; } = string.Empty;
     }
 
     // JSON serialization context

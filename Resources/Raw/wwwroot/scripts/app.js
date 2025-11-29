@@ -432,6 +432,7 @@ function switchEditorTab(tabId) {
                 cardElement.classList.add('editor-card');
                 cardElement.setAttribute("cardName", card.Name);
                 cardElement.onclick = () => {
+                    console.log("Hello?!");
                     if (!window.editorContext.setCards.includes(card.Name)) window.editorContext.setCards.push(card.Name);
                     else window.editorContext.setCards.splice(window.editorContext.setCards.indexOf(card.Name), 1);
 

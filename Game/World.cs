@@ -507,6 +507,8 @@ namespace DuszaVerseny2025.Engine
         DungeonTemplate.DungeonReward _reward;
         BossCard? _boss;
         bool _hasBoss = false;
+        public List<PowerCard> activeEnemyPowers = new List<PowerCard>();
+        public List<PowerCard> activePlayerPowers = new List<PowerCard>();
 
         public Collection collection => _collection.Clone();
         public string Name => _name;

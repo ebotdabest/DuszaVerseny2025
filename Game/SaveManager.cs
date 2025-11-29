@@ -66,10 +66,20 @@ namespace DuszaVerseny2025.Engine.Save
                 public string[] cards { get; set; } = Array.Empty<string>();
             }
 
+            public class PowerCardSave
+            {
+                public string name { get; set; } = string.Empty;
+                public int duration { get; set; }
+                public int value { get; set; }
+                public int rarity { get; set; }
+                public string type { get; set; } = string.Empty;
+            }
+
             public string templateName { get; set; } = string.Empty;
             public CardSave[] cards { get; set; } = Array.Empty<CardSave>();
             public BossOverride[] bosses { get; set; } = Array.Empty<BossOverride>();
             public CollectionSave[] collections { get; set; } = Array.Empty<CollectionSave>();
+            public PowerCardSave[] powerCards { get; set; } = Array.Empty<PowerCardSave>();
             public string[] starterDeck { get; set; } = Array.Empty<string>();
             public required int worldId { get; set; }
         }
@@ -234,6 +244,15 @@ namespace DuszaVerseny2025.Engine.Save
 
             string[] initialCards = engine.initialDeck.Select(c => c.name).ToArray();
 
+            WorldSave.PowerCardSave[] powerCards = engine.powerCards.Select(c => new WorldSave.PowerCardSave
+            {
+                name = c.getName(),
+                value = c.getValue(),
+                duration = c.getDuration(),
+                rarity = c.getRarity(),
+                type = c.GetType().Name
+            }).ToArray();
+
             var worldSave = new WorldSave
             {
                 templateName = templateName ?? string.Empty,
@@ -241,7 +260,8 @@ namespace DuszaVerseny2025.Engine.Save
                 bosses = bosses.ToArray(),
                 starterDeck = initialCards,
                 worldId = id,
-                collections = collections.ToArray()
+                collections = collections.ToArray(),
+                powerCards = powerCards
             };
 
 

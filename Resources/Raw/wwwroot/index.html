@@ -1,472 +1,635 @@
 <!DOCTYPE html>
 <html lang="hu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DAMAREEN</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles/app.css" />
+    <script src="scripts/HybridWebView.js"></script>
+    <script src="scripts/ux-enhancements.js"></script>
+  </head>
 
-<head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>DAMAREEN</title>
-        <link rel="icon" href="data:,">
-        <link rel="stylesheet" href="styles/app.css">
-        <script src="scripts/HybridWebView.js"></script>
-        <script src="scripts/ux-enhancements.js"></script>
-</head>
+  <body>
+    <div class="container">
+      <header class="game-header">
+        <button
+          class="btnBackToMenu"
+          id="headerBackButton"
+          onclick="showMainMenu(true)"
+          title="Menü"
+          style="display: none"
+        >
+          ☰
+        </button>
+        <h1 class="game-title">DAMAREEN</h1>
+        <div class="game-subtitle">♔</div>
+      </header>
 
-<body>
-        <div class="container">
-                <header class="game-header">
-                        <button class="btnBackToMenu" id="headerBackButton" onclick="showMainMenu(true)" title="Menü"
-                                style="display: none;">☰</button>
-                        <h1 class="game-title">DAMAREEN</h1>
-                        <div class="game-subtitle">♔</div>
-                </header>
+      <div class="main-content" id="mainGameContent" style="display: none">
+        <div class="left-panel">
+          <div class="section">
+            <!-- Page Switch Buttons -->
+            <div class="page-switch-container">
+              <button
+                class="page-switch-btn active"
+                onclick="switchCardGrid('cards')"
+              >
+                Gyűjtemény
+              </button>
+              <button
+                class="page-switch-btn"
+                onclick="switchCardGrid('powers')"
+              >
+                Képességek
+              </button>
+            </div>
 
-                <div class="main-content" id="mainGameContent" style="display: none;">
-                        <div class="left-panel">
-                                <div class="section">
-                                        <!-- Page Switch Buttons -->
-                                        <div class="page-switch-container">
-                                                <button class="page-switch-btn active"
-                                                        onclick="switchCardGrid('cards')">
-                                                        Gyűjtemény
-                                                </button>
-                                                <button class="page-switch-btn" onclick="switchCardGrid('powers')">
-                                                        Képességek
-                                                </button>
-                                        </div>
+            <!-- Card Collection Grid -->
+            <div id="cardGridContainer" class="card-grid-container active">
+              <div id="cardCollection" class="card-grid"></div>
+            </div>
 
-                                        <!-- Card Collection Grid -->
-                                        <div id="cardGridContainer" class="card-grid-container active">
-                                                <div id="cardCollection" class="card-grid"></div>
-                                        </div>
+            <!-- Power Card Collection Grid -->
+            <div id="powerCardGridContainer" class="card-grid-container">
+              <div id="powercardCollection" class="card-grid"></div>
+            </div>
+          </div>
 
-                                        <!-- Power Card Collection Grid -->
-                                        <div id="powerCardGridContainer" class="card-grid-container">
-                                                <div id="powercardCollection" class="card-grid"></div>
-                                        </div>
-                                </div>
+          <div class="selection-counter" id="selectionCounter">
+            Kiválasztva: 0 / 0
+          </div>
 
-                                <div class="selection-counter" id="selectionCounter">
-                                        Kiválasztva: 0 / 0
-                                </div>
+          <div class="section deck-section">
+            <h2 class="section-title">Pakli</h2>
+            <div id="selectedDeck" class="deck-container"></div>
+          </div>
+        </div>
 
-                                <div class="section deck-section">
-                                        <h2 class="section-title">Pakli</h2>
-                                        <div id="selectedDeck" class="deck-container"></div>
-                                </div>
-                        </div>
+        <div class="right-panel">
+          <h2 class="section-title" id="dungeonPanelTitle">Kazamaták</h2>
 
-                        <div class="right-panel">
-                                <h2 class="section-title" id="dungeonPanelTitle">Kazamaták</h2>
+          <!-- Dungeon Lists Container with Slide Animation -->
+          <div class="dungeon-lists-container">
+            <!-- Dungeons List -->
+            <div class="dungeon-list-wrapper active" id="dungeonsWrapper">
+              <div id="dungeonList" class="dungeon-list"></div>
+            </div>
 
-                                <!-- Dungeon Lists Container with Slide Animation -->
-                                <div class="dungeon-lists-container">
-                                        <!-- Dungeons List -->
-                                        <div class="dungeon-list-wrapper active" id="dungeonsWrapper">
-                                                <div id="dungeonList" class="dungeon-list"></div>
-                                        </div>
-
-                                        <!-- Dungeon Paths List -->
-                                        <div class="dungeon-list-wrapper slide-right" id="pathsWrapper">
-                                                <div id="dungeonPathsList" class="dungeon-list">
-                                                        <div style="color:#666;text-align:center;padding:20px">
-                                                                Katakombák (Hamarosan...)
-                                                        </div>
-                                                </div>
-                                        </div>
-                                </div>
-
-                                <!-- Floating Toggle Button -->
-                                <button class="dungeon-view-toggle" id="dungeonViewToggle"
-                                        onclick="toggleDungeonView()">
-                                        Katakombák
-                                </button>
-                        </div>
+            <!-- Dungeon Paths List -->
+            <div class="dungeon-list-wrapper slide-right" id="pathsWrapper">
+              <div id="dungeonPathsList" class="dungeon-list">
+                <div style="color: #666; text-align: center; padding: 20px">
+                  Katakombák (Hamarosan...)
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Toggle Button -->
+          <button
+            class="dungeon-view-toggle"
+            id="dungeonViewToggle"
+            onclick="toggleDungeonView()"
+          >
+            Katakombák
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="main-menu">
+      <button id="btnNewGame" onclick="newGame()">Új játék</button>
+      <button id="btnLoadGame" onclick="loadGame()">Betöltés</button>
+      <button id="btnEditor" onclick="editor()">Világszerkesztő</button>
+      <button id="btnExit" onclick="exit()">Kilépés</button>
+    </div>
+
+    <div id="alertModal" class="modal">
+      <div class="modal-content">
+        <p id="alertMessage"></p>
+        <button onclick="closeAlert()" class="modal-btn">OK</button>
+      </div>
+    </div>
+
+    <div id="loading-screen" class="loading-screen">
+      <div class="loading-content">
+        <div class="rotating-cross">✟</div>
+        <div class="loading-bar-container">
+          <div class="loading-bar"></div>
+        </div>
+        <div class="loading-text">BETÖLTÉS...</div>
+      </div>
+      <div class="stars"></div>
+    </div>
+
+    <div id="new-game-page" class="fake-page">
+      <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
+      <h2 class="page-title">Új Játék Indítása</h2>
+      <div class="fake-page-content">
+        <div class="form-group">
+          <label>Mentés Neve:</label>
+          <input type="text" id="saveName" placeholder="Add meg a nevet..." />
+        </div>
+        <div class="form-group">
+          <label>Világ Sablon:</label>
+          <select id="worldTemplate">
+            <option value="">Válassz sablont...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nehézség: <span id="difficultyValue">5</span></label>
+          <input
+            type="range"
+            id="difficulty"
+            min="0"
+            max="10"
+            value="5"
+            class="custom-slider"
+            oninput="document.getElementById('difficultyValue').textContent = this.value"
+          />
+        </div>
+        <div class="button-row">
+          <button
+            class="action-btn"
+            id="makeTheGameButtonHasToBeUniqueAAAAA"
+            onclick="startNewGame()"
+          >
+            Indítás
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="load-game-page" class="fake-page">
+      <h2 class="page-title">Játék Betöltése</h2>
+      <div id="saveList" class="save-list-container"></div>
+      <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
+    </div>
+
+    <div id="editor-page" class="fake-page">
+      <div id="contextClose" onclick="closeContextMenu()"></div>
+      <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
+      <h2 class="page-title">⚙️ Világszerkesztő</h2>
+
+      <div class="editor-layout">
+        <div class="editor-sidebar">
+          <div class="section-header">VILÁG KEZELÉS</div>
+          <button class="editor-tab" onclick="switchEditorTab('settings')">
+            📋 Általános
+          </button>
+
+          <div class="spacer"></div>
+
+          <div class="section-header">TARTALOM LÉTREHOZÁSA</div>
+          <button class="editor-tab" onclick="switchEditorTab('cards')">
+            🃏 Kártyák
+          </button>
+          <button class="editor-tab" onclick="switchEditorTab('abilities')">
+            ⚡ Képességek
+          </button>
+          <button class="editor-tab" onclick="switchEditorTab('sets')">
+            📦 Szettek
+          </button>
+          <button class="editor-tab" onclick="switchEditorTab('dungeons')">
+            🏰 Kazamaták
+          </button>
+
+          <div class="spacer"></div>
+
+          <div class="section-header">JÁTÉK BEÁLLÍTÁSOK</div>
+          <button class="editor-tab" onclick="switchEditorTab('plydeck')">
+            🎴 Kezdőpakli
+          </button>
+          <button class="editor-tab" onclick="switchEditorTab('paths')">
+            🗺️ Katakombák
+          </button>
+
+          <div class="flex-spacer"></div>
+
+          <div class="bottom-divider"></div>
+          <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">
+            💾 Mentés
+          </button>
+          <button class="editor-tab" id="btnLoadWorld" onclick="loadWorld()">
+            📂 Betöltés
+          </button>
         </div>
 
-        <div id="main-menu">
-                <button id="btnNewGame" onclick="newGame()">Új játék</button>
-                <button id="btnLoadGame" onclick="loadGame()">Betöltés</button>
-                <button id="btnEditor" onclick="editor()">Világszerkesztő</button>
-                <button id="btnExit" onclick="exit()">Kilépés</button>
+        <div class="editor-content">
+          <div id="editor-settings" class="editor-section active">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Általános Beállítások</span>
+            </div>
+
+            <h3>⚙️ Világ Beállítások</h3>
+            <h5>A világ sablon alapvető adatai és tartalmai</h5>
+
+            <div class="form-group">
+              <label>Világ Sablon Neve:</label>
+              <input
+                type="text"
+                id="worldName"
+                placeholder="Add meg a világ nevét..."
+              />
+            </div>
+
+            <div class="spacer-30"></div>
+
+            <h3>📚 Tartalmi Áttekintés</h3>
+            <h5>A világban jelenleg elérhető elemek</h5>
+
+            <div class="mb-30">
+              <div class="flex-header">
+                <h4 class="subheader">Kártyák</h4>
+                <button
+                  class="action-btn small small-btn"
+                  onclick="switchEditorTab('cards')"
+                >
+                  + Új Kártya
+                </button>
+              </div>
+              <div id="allCardsList" class="scrollable-list small"></div>
+            </div>
+
+            <div class="mb-30">
+              <div class="flex-header">
+                <h4 class="subheader">Vezérek (Boss-ok)</h4>
+                <button
+                  class="action-btn small small-btn"
+                  onclick="switchEditorTab('cards')"
+                >
+                  + Új Vezér
+                </button>
+              </div>
+              <div id="allBosses" class="scrollable-list small"></div>
+            </div>
+
+            <div class="mb-30">
+              <div class="flex-header">
+                <h4 class="subheader">Szettek</h4>
+                <button
+                  class="action-btn small small-btn"
+                  onclick="switchEditorTab('sets')"
+                >
+                  +Új szett
+                </button>
+              </div>
+              <label
+                >A szettek kizárólag a könnyebb kezelés érdekében készültek;
+                bármilyen módosítás rajtuk <b>NEM</b> érinti a többi
+                kazamatát.</label
+              >
+              <div id="allSets" class="scrollable-list small"></div>
+            </div>
+
+            <div class="mb-30">
+              <div class="flex-header">
+                <h4 class="subheader">Kazamaták</h4>
+                <button
+                  class="action-btn small small-btn"
+                  onclick="switchEditorTab('dungeons')"
+                >
+                  +Új Kazamata
+                </button>
+              </div>
+              <div id="allDungeons" class="scrollable-list small"></div>
+            </div>
+
+            <div class="mb-30">
+              <div class="flex-header">
+                <h4 class="subheader">Képességek</h4>
+                <button
+                  class="action-btn small small-btn"
+                  onclick="switchEditorTab('abilities')"
+                >
+                  +Új Képesség
+                </button>
+              </div>
+              <div id="allPowers" class="scrollable-list small"></div>
+            </div>
+
+            <div class="mb-30">
+              <div class="flex-header">
+                <h4 class="subheader">Katakombák</h4>
+                <button
+                  class="action-btn small small-btn"
+                  onclick="switchEditorTab('paths')"
+                >
+                  +Új Katakomba
+                </button>
+              </div>
+              <div id="allRoutes" class="scrollable-list small"></div>
+            </div>
+
+            <div id="contextMenu">
+              <button class="context-tab" id="contextEdit" onclick="">
+                Szerkesztés
+              </button>
+              <button
+                class="context-tab delete-btn"
+                id="contextDelete"
+                onclick=""
+              >
+                Törlés
+              </button>
+            </div>
+          </div>
+
+          <div id="editor-cards" class="editor-section">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Kártya Létrehozása</span>
+            </div>
+
+            <h3>🃏 Új Kártya Létrehozása</h3>
+            <h5>Hozz létre normál kártyákat vagy boss ellenségeket</h5>
+
+            <div class="form-group">
+              <label>Kártya Neve:</label>
+              <input
+                type="text"
+                id="cardName"
+                placeholder="Pl.: Tűzmágus, Őrült Lovag..."
+              />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Támadás:</label>
+                <input type="number" id="cardAttack" value="1" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Életerő:</label>
+                <input type="number" id="cardHealth" value="1" min="1" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Elem:</label>
+              <select id="cardElement">
+                <option value="tuz">🔥 Tűz</option>
+                <option value="viz">💧 Víz</option>
+                <option value="fold">🌍 Föld</option>
+                <option value="levego">💨 Levegő</option>
+              </select>
+            </div>
+
+            <div class="form-group checkbox-group">
+              <input
+                type="checkbox"
+                id="isBoss"
+                class="tech-checkbox"
+                onchange="toggleBossInputs()"
+              />
+              <label for="isBoss">Ez egy Főellenség (Boss)</label>
+            </div>
+
+            <div id="bossInputs" class="boss-section hidden">
+              <h4 class="boss-title">Boss Beállítások</h4>
+              <div class="form-group">
+                <label>Boss Megjelenítési Neve:</label>
+                <input
+                  type="text"
+                  id="bossName"
+                  placeholder="Pl.: A Vérvörös Lovag"
+                />
+              </div>
+              <div class="form-group">
+                <label>Boss Jártasság:</label>
+                <select id="bossProficiency">
+                  <option value="sebzes">⚔️ Sebzés</option>
+                  <option value="eletero">❤️ Életerő</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="button-row mt-30">
+              <button class="action-btn" onclick="createCardPlaceholder()">
+                ✓ Kártya Létrehozása
+              </button>
+            </div>
+          </div>
+
+          <div id="editor-plydeck" class="editor-section">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Kezdőpakli Beállítása</span>
+            </div>
+
+            <h3>🎴 Játékos Kezdőkártyái</h3>
+            <h5>Válaszd ki, mely kártyákkal kezd a játékos</h5>
+
+            <div id="plyCardSelect"></div>
+          </div>
+
+          <div id="editor-abilities" class="editor-section">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Képesség Létrehozása</span>
+            </div>
+
+            <h3>⚡ Új Képesség Létrehozása</h3>
+            <h5>Hozz létre különleges képességeket a kártyákhoz</h5>
+
+            <div class="form-group">
+              <label>Képesség Neve:</label>
+              <input
+                type="text"
+                id="abilityName"
+                placeholder="Pl.: Tűzgolyó, Gyógyító Aura..."
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Típus:</label>
+              <select id="abilityType" onchange="updateAbilityPreview()">
+                <option value="Heal">💚 Gyógyítás</option>
+                <option value="Shield">🛡️ Pajzs</option>
+                <option value="InstantDamage">⚔️ Azonnali Sebzés</option>
+                <option value="DamageBuff">💥 Sebzés Erősítés</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Érték:</label>
+                <input
+                  type="number"
+                  id="abilityValue"
+                  value="2"
+                  min="1"
+                  onchange="updateAbilityPreview()"
+                />
+                <small>Gyógyítás/Sebzés mennyisége vagy buff százalék</small>
+              </div>
+              <div class="form-group">
+                <label>Időtartam (körök):</label>
+                <input
+                  type="number"
+                  id="abilityDuration"
+                  value="0"
+                  min="0"
+                  onchange="updateAbilityPreview()"
+                />
+                <small>0 = azonnali hatás</small>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Ritkaság: <span id="rarityLabel">Közönséges</span></label>
+              <input
+                type="range"
+                id="abilityRarity"
+                min="1"
+                max="500"
+                value="300"
+                class="custom-slider"
+                oninput="updateRarityLabel()"
+              />
+              <small>Magasabb érték = gyakoribb</small>
+            </div>
+
+            <div class="form-group">
+              <label>Leírás (opcionális):</label>
+              <input
+                type="text"
+                id="abilityDescription"
+                placeholder="Automatikus, ha üresen hagyod"
+              />
+            </div>
+
+            <div class="ability-preview">
+              <strong>📋 Előnézet:</strong>
+              <p id="abilityPreview">Visszakap 2 életerőt</p>
+            </div>
+
+            <div class="button-row mt-30">
+              <button class="action-btn" onclick="createAbility()">
+                ✓ Képesség Létrehozása
+              </button>
+            </div>
+          </div>
+
+          <div id="editor-sets" class="editor-section">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Szett Összeállítása</span>
+            </div>
+
+            <h3>📦 Kártya Szett Készítése</h3>
+            <h5>Csoportosítsd a kártyákat szettekbe a kazamatákhoz</h5>
+
+            <div class="form-group">
+              <label>Szett Neve:</label>
+              <input
+                type="text"
+                id="setName"
+                placeholder="Pl.: Tűz Élőhelyek, Erdei Lények..."
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Kártyák Kiválasztása:</label>
+              <p class="help-text">
+                Kattints a kártyákra hogy hozzáadd őket a szetthez
+              </p>
+              <div id="cardSelectionList" class="scrollable-list small"></div>
+            </div>
+
+            <div class="button-row mt-30">
+              <button class="action-btn" onclick="createSetPlaceholder()">
+                ✓ Szett Mentése
+              </button>
+            </div>
+          </div>
+
+          <div id="editor-dungeons" class="editor-section">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Kazamata Tervezése</span>
+            </div>
+
+            <h3>🏰 Új Kazamata Létrehozása</h3>
+            <h5>Tervezz meg kihívásokat a játékosok számára</h5>
+
+            <div class="form-group">
+              <label>Kazamata Neve:</label>
+              <input
+                type="text"
+                id="dungeonName"
+                placeholder="Pl.: Az Égő Erdő, Sötét Kripta..."
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Méret:</label>
+              <select id="dungeonType" onchange="toggleDungeonInputs()">
+                <option value="egyszeru">🔹 Egyszerű</option>
+                <option value="kis">🔸 Közepes</option>
+                <option value="nagy">🔶 Nagy</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Ellenséges Pakli (Szett):</label>
+              <select id="dungeonDeck" onchange="updatePreview()">
+                <option value="">Válassz egy szettet...</option>
+              </select>
+
+              <div id="preview" class="preview mt-15">
+                <h4 class="preview-title">📋 Szett Előnézet:</h4>
+                <div id="cardPreview" class="scrollable-list small"></div>
+              </div>
+            </div>
+
+            <div id="dungeonBossInput" class="boss-input hidden">
+              <div class="form-group">
+                <label>Vezér Választása:</label>
+                <p class="help-text">Válaszd ki a kazamata végső ellenségét</p>
+                <div id="bossChooser" class="scrollable-list small"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Jutalom Típusa:</label>
+              <select id="rewardType">
+                <option value="eletero">❤️ Életerő Növelés</option>
+                <option value="sebzes">⚔️ Támadás Növelés</option>
+                <option value="kartya">🎁 Új Kártya</option>
+              </select>
+            </div>
+
+            <div class="button-row mt-30">
+              <button class="action-btn" onclick="createDungeonPlaceholder()">
+                ✓ Kazamata Létrehozása
+              </button>
+            </div>
+          </div>
+
+          <div id="editor-paths" class="editor-section">
+            <div class="editor-breadcrumb">
+              <span>Világszerkesztő</span> /
+              <span class="current">Katakombák</span>
+            </div>
+
+            <h3>🗺️ Katakombák</h3>
+            <h5>Hamarosan elérhető funkció</h5>
+
+            <div class="coming-soon">
+              <div class="construction-icon">🚧</div>
+              <p class="coming-title">Ez a funkció fejlesztés alatt áll</p>
+              <p class="coming-desc">
+                A térkép és katakomba rendszer hamarosan elérhető lesz!
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <div id="alertModal" class="modal">
-                <div class="modal-content">
-                        <p id="alertMessage"></p>
-                        <button onclick="closeAlert()" class="modal-btn">OK</button>
-                </div>
-        </div>
-
-        <div id="loading-screen" class="loading-screen">
-                <div class="loading-content">
-                        <div class="rotating-cross">✟</div>
-                        <div class="loading-bar-container">
-                                <div class="loading-bar"></div>
-                        </div>
-                        <div class="loading-text">BETÖLTÉS...</div>
-                </div>
-                <div class="stars"></div>
-        </div>
-
-        <div id="new-game-page" class="fake-page">
-                <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
-                <h2 class="page-title">Új Játék Indítása</h2>
-                <div class="fake-page-content">
-                        <div class="form-group">
-                                <label>Mentés Neve:</label>
-                                <input type="text" id="saveName" placeholder="Add meg a nevet...">
-                        </div>
-                        <div class="form-group">
-                                <label>Világ Sablon:</label>
-                                <select id="worldTemplate">
-                                        <option value="">Válassz sablont...</option>
-                                </select>
-                        </div>
-                        <div class="form-group">
-                                <label>Nehézség: <span id="difficultyValue">5</span></label>
-                                <input type="range" id="difficulty" min="0" max="10" value="5" class="custom-slider"
-                                        oninput="document.getElementById('difficultyValue').textContent = this.value">
-                        </div>
-                        <div class="button-row">
-                                <button class="action-btn" id="makeTheGameButtonHasToBeUniqueAAAAA"
-                                        onclick="startNewGame()">Indítás</button>
-                        </div>
-                </div>
-        </div>
-
-        <div id="load-game-page" class="fake-page">
-                <h2 class="page-title">Játék Betöltése</h2>
-                <div id="saveList" class="save-list-container"></div>
-                <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
-        </div>
-
-        <div id="editor-page" class="fake-page">
-                <div id="contextClose" onclick="closeContextMenu()"></div>
-                <button class="btnBackToMenu absolute" onclick="showMainMenu()">◄</button>
-                <h2 class="page-title">⚙️ Világszerkesztő</h2>
-
-                <div class="editor-layout">
-                        <div class="editor-sidebar">
-                                <div class="section-header">VILÁG KEZELÉS</div>
-                                <button class="editor-tab" onclick="switchEditorTab('settings')">📋 Általános</button>
-
-                                <div class="spacer"></div>
-
-                                <div class="section-header">TARTALOM LÉTREHOZÁSA</div>
-                                <button class="editor-tab" onclick="switchEditorTab('cards')">🃏 Kártyák</button>
-                                <button class="editor-tab" onclick="switchEditorTab('abilities')">⚡ Képességek</button>
-                                <button class="editor-tab" onclick="switchEditorTab('sets')">📦 Szettek</button>
-                                <button class="editor-tab" onclick="switchEditorTab('dungeons')">🏰 Kazamaták</button>
-
-                                <div class="spacer"></div>
-
-                                <div class="section-header">JÁTÉK BEÁLLÍTÁSOK</div>
-                                <button class="editor-tab" onclick="switchEditorTab('plydeck')">🎴 Kezdőpakli</button>
-                                <button class="editor-tab" onclick="switchEditorTab('paths')">🗺️ Katakombák</button>
-
-                                <div class="flex-spacer"></div>
-
-                                <div class="bottom-divider"></div>
-                                <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">💾 Mentés</button>
-                                <button class="editor-tab" id="btnLoadWorld" onclick="loadWorld()">📂 Betöltés</button>
-                        </div>
-
-                        <div class="editor-content">
-                                <div id="editor-settings" class="editor-section">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Általános
-                                                        Beállítások</span>
-                                        </div>
-
-                                        <h3>⚙️ Világ Beállítások</h3>
-                                        <h5>A világ sablon alapvető adatai és tartalmai</h5>
-
-                                        <div class="form-group">
-                                                <label>Világ Sablon Neve:</label>
-                                                <input type="text" id="worldName"
-                                                        placeholder="Add meg a világ nevét...">
-                                        </div>
-
-                                        <div class="spacer-30"></div>
-
-                                        <h3>📚 Tartalmi Áttekintés</h3>
-                                        <h5>A világban jelenleg elérhető elemek</h5>
-
-                                        <div class="mb-30">
-                                                <div class="flex-header">
-                                                        <h4 class="subheader">Kártyák</h4>
-                                                        <button class="action-btn small small-btn"
-                                                                onclick="switchEditorTab('cards')">+ Új Kártya</button>
-                                                </div>
-                                                <div id="allCardsList" class="scrollable-list small"></div>
-                                        </div>
-
-                                        <div class="mb-30">
-                                                <div class="flex-header">
-                                                        <h4 class="subheader">Vezérek (Boss-ok)</h4>
-                                                        <button class="action-btn small small-btn"
-                                                                onclick="switchEditorTab('cards')">+ Új Vezér</button>
-                                                </div>
-                                                <div id="allBosses" class="scrollable-list small"></div>
-                                        </div>
-
-                                        <div id="contextMenu">
-                                                <button class="context-tab" id="contextEdit"
-                                                        onclick="">Szerkesztés</button>
-                                                <button class="context-tab delete-btn" id="contextDelete"
-                                                        onclick="">Törlés</button>
-                                        </div>
-                                </div>
-
-                                <div id="editor-cards" class="editor-section active">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Kártya
-                                                        Létrehozása</span>
-                                        </div>
-
-                                        <h3>🃏 Új Kártya Létrehozása</h3>
-                                        <h5>Hozz létre normál kártyákat vagy boss ellenségeket</h5>
-
-                                        <div class="form-group">
-                                                <label>Kártya Neve:</label>
-                                                <input type="text" id="cardName"
-                                                        placeholder="Pl.: Tűzmágus, Őrült Lovag...">
-                                        </div>
-
-                                        <div class="form-row">
-                                                <div class="form-group">
-                                                        <label>Támadás:</label>
-                                                        <input type="number" id="cardAttack" value="1" min="0">
-                                                </div>
-                                                <div class="form-group">
-                                                        <label>Életerő:</label>
-                                                        <input type="number" id="cardHealth" value="1" min="1">
-                                                </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Elem:</label>
-                                                <select id="cardElement">
-                                                        <option value="tuz">🔥 Tűz</option>
-                                                        <option value="viz">💧 Víz</option>
-                                                        <option value="fold">🌍 Föld</option>
-                                                        <option value="levego">💨 Levegő</option>
-                                                </select>
-                                        </div>
-
-                                        <div class="form-group checkbox-group">
-                                                <input type="checkbox" id="isBoss" class="tech-checkbox"
-                                                        onchange="toggleBossInputs()">
-                                                <label for="isBoss">Ez egy Főellenség (Boss)</label>
-                                        </div>
-
-                                        <div id="bossInputs" class="boss-section hidden">
-                                                <h4 class="boss-title">Boss Beállítások</h4>
-                                                <div class="form-group">
-                                                        <label>Boss Megjelenítési Neve:</label>
-                                                        <input type="text" id="bossName"
-                                                                placeholder="Pl.: A Vérvörös Lovag">
-                                                </div>
-                                                <div class="form-group">
-                                                        <label>Boss Jártasság:</label>
-                                                        <select id="bossProficiency">
-                                                                <option value="sebzes">⚔️ Sebzés</option>
-                                                                <option value="eletero">❤️ Életerő</option>
-                                                        </select>
-                                                </div>
-                                        </div>
-
-                                        <div class="button-row mt-30">
-                                                <button class="action-btn" onclick="createCardPlaceholder()">✓ Kártya
-                                                        Létrehozása</button>
-                                        </div>
-                                </div>
-
-                                <div id="editor-plydeck" class="editor-section">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Kezdőpakli
-                                                        Beállítása</span>
-                                        </div>
-
-                                        <h3>🎴 Játékos Kezdőkártyái</h3>
-                                        <h5>Válaszd ki, mely kártyákkal kezd a játékos</h5>
-
-                                        <div id="plyCardSelect"></div>
-                                </div>
-
-                                <div id="editor-abilities" class="editor-section">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Képesség
-                                                        Létrehozása</span>
-                                        </div>
-
-                                        <h3>⚡ Új Képesség Létrehozása</h3>
-                                        <h5>Hozz létre különleges képességeket a kártyákhoz</h5>
-
-                                        <div class="form-group">
-                                                <label>Képesség Neve:</label>
-                                                <input type="text" id="abilityName"
-                                                        placeholder="Pl.: Tűzgolyó, Gyógyító Aura...">
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Típus:</label>
-                                                <select id="abilityType" onchange="updateAbilityPreview()">
-                                                        <option value="Heal">💚 Gyógyítás</option>
-                                                        <option value="Shield">🛡️ Pajzs</option>
-                                                        <option value="InstantDamage">⚔️ Azonnali Sebzés</option>
-                                                        <option value="DamageBuff">💥 Sebzés Erősítés</option>
-                                                </select>
-                                        </div>
-
-                                        <div class="form-row">
-                                                <div class="form-group">
-                                                        <label>Érték:</label>
-                                                        <input type="number" id="abilityValue" value="2" min="1"
-                                                                onchange="updateAbilityPreview()">
-                                                        <small>Gyógyítás/Sebzés mennyisége vagy buff százalék</small>
-                                                </div>
-                                                <div class="form-group">
-                                                        <label>Időtartam (körök):</label>
-                                                        <input type="number" id="abilityDuration" value="0" min="0"
-                                                                onchange="updateAbilityPreview()">
-                                                        <small>0 = azonnali hatás</small>
-                                                </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Ritkaság: <span id="rarityLabel">Közönséges</span></label>
-                                                <input type="range" id="abilityRarity" min="1" max="500" value="300"
-                                                        class="custom-slider" oninput="updateRarityLabel()">
-                                                <small>Magasabb érték = gyakoribb</small>
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Leírás (opcionális):</label>
-                                                <input type="text" id="abilityDescription"
-                                                        placeholder="Automatikus, ha üresen hagyod">
-                                        </div>
-
-                                        <div class="ability-preview">
-                                                <strong>📋 Előnézet:</strong>
-                                                <p id="abilityPreview">Visszakap 2 életerőt</p>
-                                        </div>
-
-                                        <div class="button-row mt-30">
-                                                <button class="action-btn" onclick="createAbility()">✓ Képesség
-                                                        Létrehozása</button>
-                                        </div>
-                                </div>
-
-                                <div id="editor-sets" class="editor-section">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Szett
-                                                        Összeállítása</span>
-                                        </div>
-
-                                        <h3>📦 Kártya Szett Készítése</h3>
-                                        <h5>Csoportosítsd a kártyákat szettekbe a kazamatákhoz</h5>
-
-                                        <div class="form-group">
-                                                <label>Szett Neve:</label>
-                                                <input type="text" id="setName"
-                                                        placeholder="Pl.: Tűz Élőhelyek, Erdei Lények...">
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Kártyák Kiválasztása:</label>
-                                                <p class="help-text">Kattints a kártyákra hogy hozzáadd őket a szetthez
-                                                </p>
-                                                <div id="cardSelectionList" class="scrollable-list small"></div>
-                                        </div>
-
-                                        <div class="button-row mt-30">
-                                                <button class="action-btn" onclick="createSetPlaceholder()">✓ Szett
-                                                        Mentése</button>
-                                        </div>
-                                </div>
-
-                                <div id="editor-dungeons" class="editor-section">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Kazamata
-                                                        Tervezése</span>
-                                        </div>
-
-                                        <h3>🏰 Új Kazamata Létrehozása</h3>
-                                        <h5>Tervezz meg kihívásokat a játékosok számára</h5>
-
-                                        <div class="form-group">
-                                                <label>Kazamata Neve:</label>
-                                                <input type="text" id="dungeonName"
-                                                        placeholder="Pl.: Az Égő Erdő, Sötét Kripta...">
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Méret:</label>
-                                                <select id="dungeonType" onchange="toggleDungeonInputs()">
-                                                        <option value="egyszeru">🔹 Egyszerű</option>
-                                                        <option value="kis">🔸 Közepes</option>
-                                                        <option value="nagy">🔶 Nagy</option>
-                                                </select>
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Ellenséges Pakli (Szett):</label>
-                                                <select id="dungeonDeck" onchange="updatePreview()">
-                                                        <option value="">Válassz egy szettet...</option>
-                                                </select>
-
-                                                <div id="preview" class="preview mt-15">
-                                                        <h4 class="preview-title">📋 Szett Előnézet:</h4>
-                                                        <div id="cardPreview" class="scrollable-list small"></div>
-                                                </div>
-                                        </div>
-
-                                        <div id="dungeonBossInput" class="boss-input hidden">
-                                                <div class="form-group">
-                                                        <label>Vezér Választása:</label>
-                                                        <p class="help-text">Válaszd ki a kazamata végső ellenségét</p>
-                                                        <div id="bossChooser" class="scrollable-list small"></div>
-                                                </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                                <label>Jutalom Típusa:</label>
-                                                <select id="rewardType">
-                                                        <option value="eletero">❤️ Életerő Növelés</option>
-                                                        <option value="sebzes">⚔️ Támadás Növelés</option>
-                                                        <option value="kartya">🎁 Új Kártya</option>
-                                                </select>
-                                        </div>
-
-                                        <div class="button-row mt-30">
-                                                <button class="action-btn" onclick="createDungeonPlaceholder()">✓
-                                                        Kazamata Létrehozása</button>
-                                        </div>
-                                </div>
-
-                                <div id="editor-paths" class="editor-section">
-                                        <div class="editor-breadcrumb">
-                                                <span>Világszerkesztő</span> / <span class="current">Katakombák</span>
-                                        </div>
-
-                                        <h3>🗺️ Katakombák</h3>
-                                        <h5>Hamarosan elérhető funkció</h5>
-
-                                        <div class="coming-soon">
-                                                <div class="construction-icon">🚧</div>
-                                                <p class="coming-title">Ez a funkció fejlesztés alatt áll</p>
-                                                <p class="coming-desc">A térkép és katakomba rendszer hamarosan elérhető
-                                                        lesz!</p>
-                                        </div>
-                                </div>
-                        </div>
-                </div>
-        </div>
-
-        <!-- Scripts at the end of body (best practice) -->
-        <script src="scripts/app.js"></script>
-</body>
-
+    <!-- Scripts at the end of body (best practice) -->
+    <script src="scripts/app.js"></script>
+  </body>
 </html>
