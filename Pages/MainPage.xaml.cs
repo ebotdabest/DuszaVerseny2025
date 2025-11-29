@@ -530,10 +530,7 @@ namespace DuszaVerseny2025
             }).ToList();
         }
 
-        public List<DungeonPathTemplate> GetPaths()
-        {
-            return editor.dungeonPaths;
-        }
+        // Removed duplicate GetPaths() that returned List<DungeonPathTemplate> to resolve CS0111
 
         Dictionary<string, Func<int, int, string, int, PowerCard>> cardConstructors = new()
         {
@@ -744,45 +741,123 @@ namespace DuszaVerseny2025
                 return JsonSerializer.Serialize(new { success = false, message = "Hiba történt!" });
             }
         }
-    }
-    public class GameStateData
-    {
-        public List<CardData> AvailableCards { get; set; }
-        public List<DungeonData> Dungeons { get; set; }
-        public int MaxDeckSize { get; set; }
-        public int CurrentDeckSize { get; set; }
-    }
 
-    public class CardData
-    {
-        public int Index { get; set; }
-        public string Name { get; set; }
-        public int Attack { get; set; }
-        public int Health { get; set; }
-        public string ElementColor { get; set; }
-        public bool IsOwned { get; set; }
-        public bool IsSelected { get; set; }
-    }
+        public string GetDungeonCards(string dungeonName)
+        {
+            try
+            {
+                var dungeonTemplate = MauiProgram.engine!.GameWorld.Dungeons
+                    .FirstOrDefault(d => d.name == dungeonName);
 
-    public class DungeonData
-    {
-        public string Name { get; set; }
-        public bool HasBoss { get; set; }
-        public string BossName { get; set; }
-        public int BossHealth { get; set; }
-        public int BossDamage { get; set; }
-        public string Size { get; set; } = string.Empty;
-        public string Reward { get; set; } = string.Empty;
-    }
+                if (dungeonTemplate == null)
+                {
+                    return JsonSerializer.Serialize(new List<CardData>());
+                }
 
-    // JSON serialization context
-    [JsonSourceGenerationOptions(WriteIndented = false)]
-    [JsonSerializable(typeof(GameStateData))]
-    [JsonSerializable(typeof(CardData))]
-    [JsonSerializable(typeof(DungeonData))]
-    [JsonSerializable(typeof(string))]
-    [JsonSerializable(typeof(int))]
-    internal partial class CardGameJSContext : JsonSerializerContext
-    {
+                var cards = dungeonTemplate.collection.Cards
+                    .Select(card => new CardData
+                    {
+                        Name = card.Name,
+                        Attack = card.Attack,
+                        Health = card.Health,
+                        ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
+                        IsOwned = true,
+                        IsSelected = false
+                    })
+                    .ToList();
+
+                return JsonSerializer.Serialize(cards, CardGameJSContext.Default.ListCardData);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in GetDungeonCards: {ex.Message}");
+                return JsonSerializer.Serialize(new List<CardData>());
+            }
+        }
+
+        public List<PathData> GetPaths()
+        {
+            try
+            {
+                if (editor?.dungeonPaths == null)
+                {
+                    return new List<PathData>();
+                }
+
+                var paths = editor.dungeonPaths.Select(path => new PathData
+                {
+                    name = path.name,
+                    dungeons = path.dungeons.Select(d => d.name).ToList(),
+                    escapeRewards = path.escapeRewards.Select(r =>
+                    {
+                        if (r.GetType() == typeof(DungeonTemplate.AttributeReward))
+                        {
+                            var attrReward = (DungeonTemplate.AttributeReward)r;
+                            return attrReward.Export();
+                        }
+                        else
+                        {
+                            return "kartya";
+                        }
+                    }).ToList(),
+                    dungeonData = path.dungeons.Select(d => new PathDungeonData
+                    {
+                        Size = d.type switch
+                        {
+                            DungeonTemplate.DungeonType.Small => "egyszeru",
+                            DungeonTemplate.DungeonType.Medium => "kis",
+                            DungeonTemplate.DungeonType.Big => "nagy",
+                            _ => "egyszeru"
+                        },
+                        HasBoss = d.bossTemplate != null
+                    }).ToList()
+                }).ToList();
+
+                return paths;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in GetPaths: {ex.Message}");
+                return new List<PathData>();
+            }
+        }
+
+        private List<DungeonData> GetDungeonsEnhanced()
+        {
+            try
+            {
+                if (MauiProgram.engine?.GameWorld?.Dungeons == null)
+                {
+                    return new List<DungeonData>();
+                }
+
+                return MauiProgram.engine.GameWorld.Dungeons
+                    .Select(d => new DungeonData
+                    {
+                        Name = d.name,
+                        HasBoss = d.bossTemplate != null,
+                        BossName = d.bossTemplate?.bossName ?? string.Empty,
+                        BossHealth = d.bossTemplate?.Health ?? 0,
+                        BossDamage = d.bossTemplate?.Attack ?? 0,
+                        Size = d.type switch
+                        {
+                            DungeonTemplate.DungeonType.Small => "egyszeru",
+                            DungeonTemplate.DungeonType.Medium => "kis",
+                            DungeonTemplate.DungeonType.Big => "nagy",
+                            _ => "egyszeru"
+                        },
+                        Reward = d.reward.GetType() == typeof(DungeonTemplate.AttributeReward)
+                            ? ((DungeonTemplate.AttributeReward)d.reward).Export()
+                            : "kartya"
+                    }).ToList();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error in GetDungeonsEnhanced: {ex.Message}");
+                return new List<DungeonData>();
+            }
+        }
+
+        #endregion
     }
 }

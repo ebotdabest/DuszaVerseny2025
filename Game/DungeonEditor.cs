@@ -27,12 +27,11 @@ namespace DuszaVerseny2025.Engine.Editor
         }
         public List<CardTemplate> cards = new List<CardTemplate>();
         public List<DungeonTemplate> dungeons = new List<DungeonTemplate>();
-        public List<EditorPath> dungeonPaths = new List<EditorPath>();
         public PlayerCollection playerInventory = new PlayerCollection();
         public List<CardTemplate> initialDeck = new List<CardTemplate>();
         public List<NamedCollection> collections = new List<NamedCollection>();
         public List<PowerCard> powerCards = new List<PowerCard>();
-        public List<DungeonPathTemplate> dungeonPaths = new List<DungeonPathTemplate>();
+        public List<EditorPath> dungeonPaths = new List<EditorPath>();
         public int difficulty = 0;
 
         public GameEngine CompileMockEngine()
