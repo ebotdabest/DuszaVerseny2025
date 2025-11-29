@@ -1,10 +1,4 @@
-// app.js - Fixed & Complete Version
-
 let gameState = null;
-
-// ====================================================================
-// UI RENDERING & NAVIGATION HELPERS
-// ====================================================================
 
 function hideGameViewElements() {
     const headerBtn = document.getElementById('headerBackButton');
@@ -16,12 +10,11 @@ function hideGameViewElements() {
 function showGameViewElements() {
     const headerBtn = document.getElementById('headerBackButton');
     const content = document.getElementById('mainGameContent');
-    if (headerBtn) headerBtn.style.display = 'flex'; // Use flex to center '◄'
+    if (headerBtn) headerBtn.style.display = 'flex';
     if (content) content.style.display = 'flex';
 }
 
 window.updateGameState = function (state) {
-    debugLog('=== updateGameState received ===', 'info');
     gameState = state;
     renderUI();
 };
@@ -35,7 +28,6 @@ function renderUI() {
         renderDungeons();
         updateSelectionCounter();
     } catch (err) {
-        debugLog(`UI render error: ${err.message}`, 'error');
         console.error(err);
     }
 }
@@ -43,28 +35,35 @@ function renderUI() {
 function renderCards() {
     const container = document.getElementById('cardCollection');
     if (!container) return;
-    container.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
 
     gameState.AvailableCards.forEach((card, index) => {
         if (card.IsSelected) return;
         const cardEl = createCardElement(card, index);
-        container.appendChild(cardEl);
+        fragment.appendChild(cardEl);
     });
+
+    container.innerHTML = '';
+    container.appendChild(fragment);
 }
 
 function renderDeck() {
     const container = document.getElementById('selectedDeck');
     if (!container) return;
-    container.innerHTML = '';
 
+    const fragment = document.createDocumentFragment();
     const selected = gameState.AvailableCards
         .filter(c => c.IsSelected)
         .sort((a, b) => a.DeckOrder - b.DeckOrder);
 
     selected.forEach((card, i) => {
         const cardEl = createCardElement(card, card.Index, i + 1);
-        container.appendChild(cardEl);
+        fragment.appendChild(cardEl);
     });
+
+    container.innerHTML = '';
+    container.appendChild(fragment);
 }
 
 function createCardElement(card, index, order = null) {
@@ -107,7 +106,6 @@ function createCardElement(card, index, order = null) {
 }
 
 async function onCardClick(index) {
-    // Browser Mode Fallback
     if (!window.HybridWebView) {
         const card = gameState.AvailableCards[index];
         if (card) {
@@ -122,14 +120,12 @@ async function onCardClick(index) {
     try {
         const result = await window.HybridWebView.InvokeDotNet('OnCardTapped', [index]);
         const res = JSON.parse(result);
-        if (!res.success) showAlert(res.message || 'Hiba történt');
+        if (!res.success) window.toast.error(res.message || 'Hiba történt');
     } catch (err) {
-        debugLog('Card click error: ' + err.message, 'error');
-        showAlert('Hiba történt a kártya kiválasztásakor!');
+        window.toast.error('Hiba történt a kártya kiválasztásakor!');
     }
 }
 
-// --- DUNGEON RENDERING ---
 function renderDungeons() {
     const container = document.getElementById('dungeonList');
     if (!container) return;
@@ -137,11 +133,9 @@ function renderDungeons() {
 
     if (gameState.Dungeons && gameState.Dungeons.length > 0) {
         gameState.Dungeons.forEach(d => {
-            // 1. Wrapper Row
             const row = document.createElement('div');
             row.className = 'dungeon-row';
 
-            // 2. Left Side: Interactive Button
             const btn = document.createElement('div');
             btn.className = 'dungeon-btn';
             btn.onclick = () => onDungeonClick(d.Name);
@@ -150,7 +144,6 @@ function renderDungeons() {
                 <div class="dungeon-lbl">KATTINTS A BELÉPÉSHEZ</div>
             `;
 
-            // 3. Right Side: Static Boss Card
             const bossCard = document.createElement('div');
             bossCard.className = 'boss-card-preview';
 
@@ -184,30 +177,18 @@ async function onDungeonClick(name) {
         try {
             const result = await window.HybridWebView.InvokeDotNet('OnDungeonSelected', [name]);
             const res = JSON.parse(result);
-            if (!res.success) showAlert(res.message || 'Nem lehet belépni a kazamatába!');
+            if (!res.success) window.toast.error(res.message || 'Nem lehet belépni a kazamatába!');
         } catch (err) {
-            debugLog('Dungeon error: ' + err.message, 'error');
-            showAlert('Hiba történt!');
+            window.toast.error('Hiba történt!');
         }
     });
 }
 
 function updateSelectionCounter() {
     const el = document.getElementById('selectionCounter');
-    if (el) el.textContent = `Kiválasztva: ${gameState.CurrentDeckSize} / ${gameState.MaxDeckSize}`;
-}
-
-// ====================================================================
-// MODAL & LOADING SCREEN
-// ====================================================================
-
-function showAlert(message) {
-    document.getElementById('alertMessage').textContent = message;
-    document.getElementById('alertModal').classList.add('show');
-}
-
-function closeAlert() {
-    document.getElementById('alertModal').classList.remove('show');
+    if (el) {
+        el.textContent = `Kiválasztva: ${gameState.CurrentDeckSize} / ${gameState.MaxDeckSize}`;
+    }
 }
 
 function showLoadingScreen(callback) {
@@ -242,20 +223,16 @@ function createFallingStars() {
     }
 }
 
-// ====================================================================
-// PAGE NAVIGATION
-// ====================================================================
-
 function showMainMenu(doSave = false) {
     if (doSave) {
+        showAutoSaveIndicator();
         window.HybridWebView.InvokeDotNet("SaveGame");
         window.HybridWebView.InvokeDotNet("UnloadGame");
     }
     showLoadingScreen(() => {
-        debugLog('→ Back to Main Menu', 'info');
         document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
         document.getElementById('main-menu').style.display = 'flex';
-        hideGameViewElements(); // Fő játék nézet és fejléc gomb elrejtése      
+        hideGameViewElements();
     })
 }
 
@@ -266,9 +243,8 @@ function hideMainMenu() {
 function enterGameMode() {
     hideMainMenu();
     document.querySelectorAll('.fake-page').forEach(p => p.classList.remove('active'));
-    showGameViewElements(); // Fő játék nézet és fejléc gomb megjelenítése
+    showGameViewElements();
     requestGameState();
-    debugLog("Game state requested!");
 }
 
 function newGame() { showLoadingScreen(showNewGamePage); }
@@ -279,7 +255,7 @@ function exit() {
     if (window.HybridWebView) {
         window.HybridWebView.SendRawMessage('ExitProgram');
     } else {
-        showAlert("Kilépés... (Csak appban működik)");
+        window.toast.warning("Kilépés... (Csak appban működik)");
     }
 }
 
@@ -312,8 +288,6 @@ function showNewGamePage() {
                 select.add(opt);
             });
         });
-
-
     });
 }
 
@@ -326,7 +300,6 @@ async function showLoadGamePage() {
 
     getSavesPlaceholder().then(saves => {
         saves.forEach(save => {
-            debugLog(save, 'info');
             const item = document.createElement('div');
             item.className = 'save-item-btn';
             item.onclick = () => loadSave(save.saveId);
@@ -355,34 +328,28 @@ function showEditorPage() {
     initWorldEditor();
 }
 
-// ====================================================================
-// GAME LOGIC
-// ====================================================================
-
 function startNewGame() {
     const name = document.getElementById('saveName').value.trim();
     const template = document.getElementById('worldTemplate').value;
 
-    if (!name) return showAlert('Add meg a mentés nevét!');
-    if (!template) return showAlert('Válassz világ sablont!');
+    if (!name) return window.toast.warning('Add meg a mentés nevét!');
+    if (!template) return window.toast.warning('Válassz világ sablont!');
 
     showLoadingScreen(() => {
         window.HybridWebView.InvokeDotNet("MakeNewGame", { "name": name, "template": template });
         enterGameMode();
-        showAlert(`Üdvözöllek a ${name} világban!`);
+        window.toast.success(`Üdvözöllek a ${name} világban!`);
     });
 }
 
 function loadSave(id) {
     showLoadingScreen(() => {
         window.HybridWebView.InvokeDotNet("LoadGameById", id).then((save) => {
-            debugLog(save);
             enterGameMode();
-            showAlert(`Üdv újra a ${save.saveName} világban!`);
+            window.toast.success(`Üdv újra a ${save.saveName} világban!`);
         });
     });
 }
-
 
 async function getCards() {
     return await window.HybridWebView.InvokeDotNet("GetEditorCards");
@@ -392,7 +359,6 @@ async function getBosses() {
     return await window.HybridWebView.InvokeDotNet("GetBossCards");
 }
 
-// Holy naming by me, if you don't know what it does i can make a docstring
 function refreshSetCardListNumbers() {
     window.editorContext.cardObjects.forEach(cardElement => {
         if (window.editorContext.setCards.includes(cardElement.getAttribute('cardName'))) {
@@ -402,7 +368,6 @@ function refreshSetCardListNumbers() {
             cardElement.style.setProperty('--card-index', ``);
         }
     });
-
 }
 
 function openContextMenu(card, isBoss = false) {
@@ -411,12 +376,13 @@ function openContextMenu(card, isBoss = false) {
     contextMenu.style.setProperty('--context-menu-x', `${window.mouse.x}px`);
     contextMenu.style.display = 'flex';
 
-    debugLog(card);
+    document.getElementById('contextClose').style.display = 'block';
+
     if (isBoss) {
         document.getElementById('contextDelete').onclick = () => {
             window.HybridWebView.InvokeDotNet("DeleteBoss", { 'bossName': card.Name }).then(result => {
-                if (result) showAlert(`A ${card.Name} vezér sikeresen törölve lett!`);
-                else showAlert("Valami hiba történt!");
+                if (result) window.toast.success(`A ${card.Name} vezér sikeresen törölve lett!`);
+                else window.toast.error("Valami hiba történt!");
 
                 closeContextMenu();
                 switchEditorTab('settings');
@@ -426,15 +392,13 @@ function openContextMenu(card, isBoss = false) {
     }
     document.getElementById('contextDelete').onclick = () => {
         window.HybridWebView.InvokeDotNet("DeleteCard", { 'cardName': card.Name }).then(result => {
-            if (result) showAlert(`A ${card.Name} kártya sikeresen törölve lett!`);
-            else showAlert("Valami hiba történt!");
+            if (result) window.toast.success(`A ${card.Name} kártya sikeresen törölve lett!`);
+            else window.toast.error("Valami hiba történt!");
 
             closeContextMenu();
             switchEditorTab('settings');
         })
     };
-
-    document.getElementById('contextClose').style.display = 'block';
 }
 
 function closeContextMenu() {
@@ -443,21 +407,13 @@ function closeContextMenu() {
     document.getElementById('contextClose').style.display = 'none';
 }
 
-
-
-
-
 function switchEditorTab(tabId) {
-    // 1. Remove active from tabs
     document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
-    // 2. Remove active from sections
     document.querySelectorAll('.editor-section').forEach(s => s.classList.remove('active'));
 
-    // 3. Find the specific button that was clicked
     const clickedBtn = document.querySelector(`button[onclick="switchEditorTab('${tabId}')"]`);
     if (clickedBtn) clickedBtn.classList.add('active');
 
-    // 4. Activate section
     const section = document.getElementById(`editor-${tabId}`);
     if (section) section.classList.add('active');
 
@@ -498,7 +454,6 @@ function switchEditorTab(tabId) {
             allCardsList.innerHTML = '';
             allCardsList.classList.remove('emptyMessage');
             cards.forEach(card => {
-                debugLog(card);
                 const cardElement = createCardElement(card);
                 cardElement.onclick = () => openContextMenu(card);
                 allCardsList.appendChild(cardElement);
@@ -612,25 +567,20 @@ function updatePreview() {
 function saveWorld() {
     const worldName = document.getElementById('worldName');
     if (worldName.value.trim() == "") {
-        showAlert("Ne hagyd üresen a világ nevét!");
+        window.toast.warning("Ne hagyd üresen a világ nevét!");
         return;
     }
     window.HybridWebView.InvokeDotNet("SaveEditor", encodeURIComponent(worldName.value.trim()));
-    showAlert('Világ mentve!');
+    window.toast.success('Világ mentve!');
 }
 
-// Add this to your scripts/app.js file
-
 function loadWorld() {
-    // Create modal overlay
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
 
-    // Create modal content
     const modalContent = document.createElement('div');
     modalContent.className = 'modal-content';
 
-    // Header
     const header = document.createElement('div');
     header.className = 'modal-header';
     header.innerHTML = `
@@ -638,13 +588,11 @@ function loadWorld() {
         <button class="modal-close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button>
     `;
 
-    // List container
     const listContainer = document.createElement('div');
     listContainer.className = 'world-list-container';
     listContainer.id = 'worldList';
-    listContainer.innerHTML = ''; // Clear any existing content
+    listContainer.innerHTML = '';
 
-    // Load world templates
     getTemplatesPlaceholder().then(worlds => {
         if (!worlds || worlds.length === 0) {
             listContainer.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Nincs elérhető világ sablon</p>';
@@ -655,11 +603,7 @@ function loadWorld() {
             return;
         }
 
-
-        let i = 0;
         worlds.forEach(world => {
-            debugLog(world.world.templateName, 'info');
-
             const item = document.createElement('div');
             item.className = 'world-item-btn';
             item.onclick = () => loadWorldTemplate(world.world.worldId, modal, world.world.templateName);
@@ -669,18 +613,14 @@ function loadWorld() {
                 <div class="world-date">ID: ${world.world.worldId}</div>
             `;
 
-            i++;
             listContainer.appendChild(item);
         });
-        // Append elements
         modalContent.appendChild(header);
         modalContent.appendChild(listContainer);
         modal.appendChild(modalContent);
 
-        // Add to document
         document.body.appendChild(modal);
     });
-
 }
 
 async function createAbility() {
@@ -692,12 +632,12 @@ async function createAbility() {
     const description = document.getElementById('abilityDescription').value.trim();
 
     if (!name) {
-        showAlert('Add meg a képesség nevét!');
+        window.toast.warning('Add meg a képesség nevét!');
         return;
     }
 
     if (value <= 0) {
-        showAlert('Az érték nem lehet 0 vagy negatív!');
+        window.toast.warning('Az érték nem lehet 0 vagy negatív!');
         return;
     }
 
@@ -712,14 +652,13 @@ async function createAbility() {
         });
 
         if (result) {
-            showAlert(`A(z) ${name} képesség létrehozva!`);
-            switchEditorTab('abilities'); // Refresh
+            window.toast.success(`A(z) ${name} képesség létrehozva!`);
+            switchEditorTab('abilities');
         } else {
-            showAlert('Ilyen nevű képesség már létezik!');
+            window.toast.error('Ilyen nevű képesség már létezik!');
         }
     } catch (err) {
-        debugLog('Create ability error: ' + err.message, 'error');
-        showAlert('Hiba történt a képesség létrehozásakor!');
+        window.toast.error('Hiba történt a képesség létrehozásakor!');
     }
 }
 
@@ -778,17 +717,16 @@ async function deleteAbility(abilityName) {
         });
 
         if (result) {
-            showAlert(`A ${abilityName} képesség törölve!`);
-            switchEditorTab('abilities'); // Refresh
+            window.toast.success(`A ${abilityName} képesség törölve!`);
+            switchEditorTab('abilities');
         } else {
-            showAlert('Hiba történt!');
+            window.toast.error('Hiba történt!');
         }
     } catch (err) {
-        showAlert('Hiba történt a képesség törlésekor!');
+        window.toast.error('Hiba történt a képesség törlésekor!');
     }
 }
 
-// Render ability list in settings tab
 async function renderAbilityList() {
     const container = document.getElementById('allAbilitiesList');
     if (!container) return;
@@ -813,12 +751,10 @@ async function renderAbilityList() {
     });
 }
 
-// Create ability card element for display
 function createAbilityCard(ability) {
     const card = document.createElement('div');
     card.className = 'ability-card';
 
-    // Rarity styling
     let rarityClass = 'common';
     if (ability.Rarity >= 200) rarityClass = 'common';
     else if (ability.Rarity >= 80) rarityClass = 'rare';
@@ -855,44 +791,20 @@ function getAbilityTypeName(type) {
     return typeNames[type] || type;
 }
 
-// Helper function to load a specific world template by ID
 function loadWorldTemplate(worldId, modalElement, worldName) {
     modalElement.remove();
 
     loadWorldIntoEditor(worldId, worldName);
 
-    showAlert(`Világ betöltve: ${worldName}`);
+    window.toast.success(`Világ betöltve: ${worldName}`);
 }
 
-// Function to load world data into editor based on template ID
 function loadWorldIntoEditor(worldId, worldName) {
     window.HybridWebView.InvokeDotNet("LoadWorldForEditing", worldId).then(world => {
-        debugLog(world);
         switchEditorTab('settings');
         window.editorContext = {};
         window.editorContext.name = world.World.templateName;
     });
-}
-
-// Make sure you have this helper function for debugging
-function debugLog(message, level = 'info') {
-    if (typeof console !== 'undefined') {
-        console[level](message);
-    }
-}
-
-function showAlert(message) {
-    const alertModal = document.createElement('div');
-    alertModal.className = 'alert-modal';
-
-    alertModal.innerHTML = `
-        <div class="alert-content">
-            <div class="alert-message">${message}</div>
-            <button class="alert-btn" onclick="this.closest('.alert-modal').remove()">OK</button>
-        </div>
-    `;
-
-    document.body.appendChild(alertModal);
 }
 
 function toggleBossInputs() {
@@ -964,15 +876,14 @@ function createCardPlaceholder() {
     const bossProficiency = document.getElementById('bossProficiency').value;
 
     if (cardName.trim() == "") {
-        showAlert("A név nem lehet üres!");
+        window.toast.warning("A név nem lehet üres!");
         return;
     }
 
     if (isBoss && bossName.trim() == "") {
-        showAlert("Be van állítva hogy ez egy vezér, de a nevet üresen hagytad!");
+        window.toast.warning("A vezér neve nem lehet üres!");
         return;
     }
-
 
     window.HybridWebView.InvokeDotNet("CreateCard", {
         "name": cardName,
@@ -984,19 +895,19 @@ function createCardPlaceholder() {
         "bossProficiency": bossProficiency
     }).then(result => {
         if (result) {
-            showAlert(`A(z) ${cardName} kártya létrehozva!`);
+            window.toast.success(`A(z) ${cardName} kártya létrehozva!`);
         } else {
-            showAlert('Kártya vagy vezér ilyen névvel már van!');
+            window.toast.warning('Kártya vagy vezér ilyen névvel már van!');
         }
         switchEditorTab('cards');
     });
-
 }
+
 function createSetPlaceholder() {
     const setName = document.getElementById('setName');
 
     if (setName.value.trim() == "") {
-        showAlert("A szett neve nem lehet öres!");
+        window.toast.warning("A szett neve nem lehet öres!");
         return;
     }
 
@@ -1004,10 +915,11 @@ function createSetPlaceholder() {
         "name": setName.value,
         "cards": window.editorContext.setCards
     }).then(result => {
-        if (result) showAlert(`A(z) ${setName.value} elkészítve!`);
-        else showAlert(`Ilyen nevű szett már létezik`);
+        if (result) window.toast.success(`A(z) ${setName.value} elkészítve!`);
+        else window.toast.warning(`Ilyen nevű szett már létezik`);
     })
 }
+
 function createDungeonPlaceholder() {
     const dungeonName = document.getElementById('dungeonName');
     const dungeonType = document.getElementById('dungeonType');
@@ -1023,12 +935,10 @@ function createDungeonPlaceholder() {
         "boss": window.editorContext.currentSelectedBoss,
         "reward": rewardType.value
     }).then(result => {
-        debugLog(result);
-        showAlert(`A(z) ${dungeonName.value} kazamata létrehozva!`)
+        window.toast.success(`A(z) ${dungeonName.value} kazamata létrehozva!`)
     });
 }
 
-// Data Providers
 async function getTemplatesPlaceholder() {
     if (window.HybridWebView) {
         const worlds = await window.HybridWebView.InvokeDotNet("RequestWorlds");
@@ -1047,14 +957,12 @@ async function getCollections() {
     return await window.HybridWebView.InvokeDotNet("GetCollections");
 }
 
-// Card Grid Switching Function with Animation
 function switchCardGrid(gridType) {
     const cardGrid = document.getElementById('cardGridContainer');
     const powerGrid = document.getElementById('powerCardGridContainer');
     const buttons = document.querySelectorAll('.page-switch-btn');
 
     if (gridType === 'cards') {
-        // Switch to cards
         powerGrid.classList.remove('active');
         powerGrid.classList.add('slide-right');
 
@@ -1064,7 +972,6 @@ function switchCardGrid(gridType) {
         buttons[0].classList.add('active');
         buttons[1].classList.remove('active');
     } else {
-        // Switch to powers
         cardGrid.classList.remove('active');
         cardGrid.classList.add('slide-left');
 
@@ -1076,7 +983,6 @@ function switchCardGrid(gridType) {
     }
 }
 
-// Dungeon View Toggle Function
 let currentDungeonView = 'dungeons';
 
 function toggleDungeonView() {
@@ -1086,7 +992,6 @@ function toggleDungeonView() {
     const panelTitle = document.getElementById('dungeonPanelTitle');
 
     if (currentDungeonView === 'dungeons') {
-        // Switch to paths
         dungeonsWrapper.classList.remove('active');
         dungeonsWrapper.classList.add('slide-left');
 
@@ -1097,7 +1002,6 @@ function toggleDungeonView() {
         panelTitle.textContent = 'Katakombák';
         currentDungeonView = 'paths';
     } else {
-        // Switch to dungeons
         pathsWrapper.classList.remove('active');
         pathsWrapper.classList.add('slide-right');
 
@@ -1110,30 +1014,20 @@ function toggleDungeonView() {
     }
 }
 
-// Make functions globally available
 window.switchCardGrid = switchCardGrid;
 window.toggleDungeonView = toggleDungeonView;
-
-// ====================================================================
-// INIT & MOCK DATA
-// ====================================================================
 
 function requestGameState() {
     if (window.HybridWebView) {
         window.HybridWebView.SendRawMessage('RequestGameState');
-    } else {
-        debugLog('Browser mode: Loading Mock Data', 'warn');
     }
 }
 
-
 window.addEventListener('DOMContentLoaded', () => {
-    debugLog('=== DAMAREEN JS LOADED ===', 'success');
     if (!window.HybridWebView) {
-        debugLog('HybridWebView NOT available – running in browser mode', 'warn');
+        console.warn('HybridWebView NOT available – running in browser mode');
     }
 
-    // Inicializáláskor elrejtjük a játék nézet elemeit, mivel a főmenü aktív
     hideGameViewElements();
     requestGameState();
 });
