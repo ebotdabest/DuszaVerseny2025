@@ -186,6 +186,10 @@ namespace DuszaVerseny2025.Engine.Cards
         public int Damage => _damage;
         public CardTemplate.Type Type => _type;
         public CardTemplate Template => _template;
+        public void Heal(int amount)
+        {
+            _health += amount;
+        }
 
         public BossCard promote()
         {
@@ -214,6 +218,12 @@ namespace DuszaVerseny2025.Engine.Cards
             {
                 target._health = 0;
             }
+        }
+
+        public void ApplyDamage(int amount)
+        {
+            _health -= amount;
+            _health = Math.Max(_health, 0);
         }
     }
 

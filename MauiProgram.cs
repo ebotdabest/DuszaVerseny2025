@@ -309,6 +309,15 @@ public static class MauiProgram
             Console.ReadLine();
             Environment.Exit(0);
         }
+
+        if (args[1] == "wpeek")
+        {
+            System.Console.WriteLine($"Loading world: {int.Parse(args[2])}");
+            var save = SaveManager.LoadWorld(int.Parse(args[2]));
+            System.Console.WriteLine(JsonConvert.SerializeObject(save));
+            Console.ReadLine();
+            Environment.Exit(0);
+        }
         if (args[1] != "--ui")
         {
             // TestMode tm = new TestMode();

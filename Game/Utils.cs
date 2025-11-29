@@ -133,4 +133,31 @@ public class Utils
             _ => ""
         };
     }
+
+    public static PowerCard GetRandomCard(List<PowerCard> cards)
+    {
+        int GetWeight(PowerCard card)
+        {
+            int r = card.getRarity();
+
+            if (r < 5) return 1;
+            if (r < 20) return 5;
+            if (r < 100) return 20;
+            return 50;
+        }
+
+        int totalWeight = cards.Sum(GetWeight);
+
+        int roll = Rng.Next(totalWeight);
+
+        foreach (var card in cards)
+        {
+            int w = GetWeight(card);
+            if (roll < w)
+                return card;
+            roll -= w;
+        }
+
+        return cards[0];
+    }
 }

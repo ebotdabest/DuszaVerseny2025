@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DuszaVerseny2025.Engine;
 using DuszaVerseny2025.Engine.Cards;
-using Microsoft.Maui.Controls;
+using DuszaVerseny2025.Engine.Utils;
 
 namespace DuszaVerseny2025
 {
@@ -179,6 +179,33 @@ namespace DuszaVerseny2025
                     else
                     {
                         jsEvent.values[kvp.Key] = kvp.Value;
+                    }
+                }
+
+                if (ev.event_name == "game:attack")
+                {
+                    PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+                    if (card.getDuration() > 0)
+                    {
+                        Dungeon.activeEnemyPowers.Add(card);
+                        // Send some kinda visual you got this card
+                    }
+                    else
+                    {
+                        card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], false);
+                    }
+                }
+                if (ev.event_name == "player:attack")
+                {
+                    PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+                    if (card.getDuration() > 0)
+                    {
+                        Dungeon.activePlayerPowers.Add(card);
+                        // Send some kinda visual you got this card
+                    }
+                    else
+                    {
+                        card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], true);
                     }
                 }
 

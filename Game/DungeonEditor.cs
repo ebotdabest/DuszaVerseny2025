@@ -31,16 +31,18 @@ namespace DuszaVerseny2025.Engine.Editor
         public PlayerCollection playerInventory = new PlayerCollection();
         public List<CardTemplate> initialDeck = new List<CardTemplate>();
         public List<NamedCollection> collections = new List<NamedCollection>();
+        public List<PowerCard> powerCards = new List<PowerCard>();
+        public List<DungeonPathTemplate> dungeonPaths = new List<DungeonPathTemplate>();
         public int difficulty = 0;
 
         public GameEngine CompileMockEngine()
         {
-            // NOTE: This engine is for editor/mock use.
+            // Note: THIS IS THE FUCKING OFFICIAL ENGINE USED IN THE GAME
+            // THIS IS FUCKED THIS SHOULD NOT BE USED IN GAME WE USE IT THO
             var engine = new GameEngine(cards, dungeons, playerInventory, difficulty);
 
-            // In the game engine ctor, initialDeck is set from PlayerInventory.
-            // For editor usage we explicitly override it.
             engine.initialDeck = initialDeck.ToList();
+            engine.powerCards = powerCards.ToList();
 
             return engine;
         }
@@ -71,10 +73,28 @@ namespace DuszaVerseny2025.Engine.Editor
                 cardTemplates.Add(new CardTemplate(cardSave.damage, cardSave.health, cardSave.name, type));
             }
 
-            // Create lookup for fast and safe name-based access
+            List<PowerCard> powerCards = new List<PowerCard>();
+            foreach (var power in save.powerCards)
+            {
+                switch (power.name)
+                {
+                    case "HealPower":
+                        powerCards.Add(new HealPower(power.duration, power.value, power.name, power.rarity));
+                        break;
+                    case "ShieldPower":
+                        powerCards.Add(new ShieldPower(power.duration, power.value, power.name, power.rarity));
+                        break;
+                    case "DamagePower":
+                        powerCards.Add(new DamagePower(power.duration, power.value, power.name, power.rarity));
+                        break;
+                    case "StrengthPower":
+                        powerCards.Add(new StrengthPower(power.duration, power.value, power.name, power.rarity));
+                        break;
+                }
+            }
+
             var cardByName = cardTemplates.ToDictionary(c => c.name, StringComparer.Ordinal);
 
-            // --- Apply boss overrides ---
             foreach (var bossOverride in save.bosses ?? Array.Empty<WorldSave.BossOverride>())
             {
                 if (bossOverride == null)
@@ -224,6 +244,7 @@ namespace DuszaVerseny2025.Engine.Editor
             dungeonEditor.dungeons = dungeonTemplates;
             dungeonEditor.initialDeck = initialDeck;
             dungeonEditor.collections = namedCollections;
+            dungeonEditor.powerCards = powerCards;
 
             return dungeonEditor;
         }

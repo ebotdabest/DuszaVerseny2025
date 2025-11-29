@@ -1033,15 +1033,20 @@ input[type=range].custom-slider::-webkit-slider-thumb:hover {
         gap: 2vw;
 }
 
+.editor-card {
+    position: relative;
+}
+
 .editor-card::after {
-        content: var(--card-index);
-        background-color: rgb(128, 0, 0);
-        border-radius: 15px;
-        position: absolute;
-        left: 91%;
-        z-index: 500;
-        padding: 6px;
-        top: -8%;
+    content: var(--card-index);
+    background-color: rgb(128, 0, 0);
+    border-radius: 15px;
+    position: absolute;
+    left: 91%;
+    z-index: 500;
+    padding: 6px;
+    top: -8%;
+    display: block;
 }
 
 button.fake-link {
