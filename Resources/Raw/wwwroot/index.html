@@ -188,7 +188,7 @@
                                         <div class="dungeon-list-wrapper slide-right" id="pathsWrapper">
                                                 <div id="dungeonPathsList" class="dungeon-list">
                                                         <div style="color:#666;text-align:center;padding:20px">
-                                                                Útvonalak (Hamarosan...)
+                                                                Katakombák (Hamarosan...)
                                                         </div>
                                                 </div>
                                         </div>
@@ -197,7 +197,7 @@
                                 <!-- Floating Toggle Button -->
                                 <button class="dungeon-view-toggle" id="dungeonViewToggle"
                                         onclick="toggleDungeonView()">
-                                        Útvonalak
+                                        Katakombák
                                 </button>
                         </div>
                 </div>
@@ -208,7 +208,6 @@
                 <button id="btnLoadGame" onclick="loadGame()">Betöltés</button>
                 <button id="btnEditor" onclick="editor()">Világszerkesztő</button>
                 <button id="btnExit" onclick="exit()">Kilépés</button>
-                <button id="btnHollowPurple" onclick="activateHollowPurple()">Skill test</button>
         </div>
 
         <div id="alertModal" class="modal">
@@ -270,7 +269,7 @@
                 <div class="editor-layout">
                         <div class="editor-sidebar">
                                 <button class="editor-tab" onclick="switchEditorTab('settings')">Általános</button>
-                                <button class="editor-tab" onclick="switchEditorTab('plydeck')">Játékos kártyák</button>
+                                <button class="editor-tab" onclick="switchEditorTab('plydeck')">Kezdőkártyák</button>
                                 <button class="editor-tab" onclick="switchEditorTab('cards')">Kártya
                                         Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('abilities')">Képesség
@@ -278,10 +277,10 @@
                                 <button class="editor-tab" onclick="switchEditorTab('sets')">Szett Létrehozása</button>
                                 <button class="editor-tab" onclick="switchEditorTab('dungeons')">Kazamata
                                         Létrehozása</button>
-                                <button class="editor-tab" onclick="switchEditorTab('paths')">Útvonalak</button>
-                                <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">Világ
+                                <button class="editor-tab" onclick="switchEditorTab('paths')">Katakombák</button>
+                                <button class="editor-tab" id="btnSaveWorld" onclick="saveWorld()">Sablon
                                         mentése</button>
-                                <button class="editor-tab" id="btnLoadWorld" onclick="loadWorld()">Világ
+                                <button class="editor-tab" id="btnLoadWorld" onclick="loadWorld()">Sablon
                                         betöltése</button>
                         </div>
 
@@ -348,7 +347,7 @@
                                                 onclick="createCardPlaceholder()">Létrehozás</button>
                                 </div>
                                 <div id="editor-plydeck" class="editor-section">
-                                        <h3>Játékos Kártyái</h3>
+                                        <h3>Kezdőkártyák</h3>
                                         <h5>A játékos kezdőkártyáinak beállítása</h5>
                                         <div id="plyCardSelect">
                                                 <p>Még egy kártyád sincs! Készíts egyet <button class="fake-link"
@@ -469,8 +468,8 @@
 
                                 <!-- Paths Tab -->
                                 <div id="editor-paths" class="editor-section">
-                                        <h3>Útvonalak</h3>
-                                        <p>Térkép útvonalak beállítása (Hamarosan...)</p>
+                                        <h3>Katakombák</h3>
+                                        <p>Térkép (Katakombák) beállítása (Hamarosan...)</p>
                                 </div>
                         </div>
                 </div>
@@ -478,10 +477,6 @@
 
         <!-- Scripts at the end of body (best practice) -->
         <script src="scripts/app.js"></script>
-        <script type="module">
-                import { activateHollowPurple } from './animations/hollowpurple.js';
-                window.activateHollowPurple = activateHollowPurple;
-        </script>
 </body>
 
 </html>

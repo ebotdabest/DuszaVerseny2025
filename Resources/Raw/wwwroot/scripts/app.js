@@ -1094,7 +1094,7 @@ function toggleDungeonView() {
         pathsWrapper.classList.add('active');
 
         toggleBtn.textContent = 'Kazamaták';
-        panelTitle.textContent = 'Útvonalak';
+        panelTitle.textContent = 'Katakombák';
         currentDungeonView = 'paths';
     } else {
         // Switch to dungeons
@@ -1104,7 +1104,7 @@ function toggleDungeonView() {
         dungeonsWrapper.classList.remove('slide-left');
         dungeonsWrapper.classList.add('active');
 
-        toggleBtn.textContent = 'Útvonalak';
+        toggleBtn.textContent = 'Katakombák';
         panelTitle.textContent = 'Kazamaták';
         currentDungeonView = 'dungeons';
     }
