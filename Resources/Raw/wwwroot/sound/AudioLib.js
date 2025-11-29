@@ -275,7 +275,7 @@
           --audio-border: 0 0% 20%;
           --audio-muted: 0 0% 60%;
           --audio-accent: 142 76% 36%;
-          --audio-accent-hover: 45, 100%, 51%;
+          --audio-accent-hover: 142 76% 32%;
         }
 
         /* Light theme */
@@ -285,7 +285,7 @@
           --audio-border: 0 0% 90%;
           --audio-muted: 0 0% 45%;
           --audio-accent: 142 76% 36%;
-          --audio-accent-hover: 45, 100%, 51%;
+          --audio-accent-hover: 142 76% 32%;
         }
       `;
 
@@ -538,12 +538,12 @@
       this.trackTitle.textContent = name;
     }
 
-    playSfx(sfxPath) {
+    playSfx(sfxPath, customVolume = null) {
       if (!this.userInteracted) return;
 
       const url = `${this.options.sfxPath}/${sfxPath}`;
       const audio = new Audio(url);
-      audio.volume = this.volume;
+      audio.volume = customVolume !== null ? customVolume : this.volume;
       audio.play().catch(() => { });
     }
 
@@ -578,10 +578,10 @@
       this.container.classList.toggle('corner-right', !isLeft);
 
       const pos = {
-        top: isTop ? '15px' : 'auto',
-        bottom: isTop ? 'auto' : '15px',
-        left: isLeft ? '15px' : 'auto',
-        right: isLeft ? 'auto' : '15px'
+        top: isTop ? '20px' : 'auto',
+        bottom: isTop ? 'auto' : '20px',
+        left: isLeft ? '20px' : 'auto',
+        right: isLeft ? 'auto' : '20px'
       };
 
       Object.assign(this.container.style, pos);

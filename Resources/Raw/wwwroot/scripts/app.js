@@ -747,7 +747,7 @@ function switchEditorTab(tabId) {
         getCards().then(cards => {
             document.getElementById('worldName').value = window.editorContext.name;
             if (cards.length === 0) {
-                allCardsList.innerHTML = `<p>Úgy néz ki még nincs egyetlen egy kártya ebben a világban.</p>
+                allCardsList.innerHTML = `<p>Úgy néz ki még nincs egyetlen egy kártya sem ebben a világban.</p>
                     \n<p>Menj a <button class="fake-link" onclick="switchEditorTab('cards')"> Kártya Létrehozása</button> oldalra és csináj egyet!</p>`;
                 allCardsList.classList.add('emptyMessage');
                 return;
@@ -1125,7 +1125,7 @@ function toggleDungeonInputs() {
 
         getBosses().then(bosses => {
             if (bosses.length == 0) {
-                bossChooser.innerHTML = '<p>Még jelenleg nincsen egy vezéred sem! Készíts egyet <button class="fake-link" onclick="switchEditorTab(\'cards\')">itt</button>!</p>';
+                bossChooser.innerHTML = '<p>Jelenleg nincsen egy vezéred sem! Készíts egyet <button class="fake-link" onclick="switchEditorTab(\'cards\')">itt</button>!</p>';
                 return;
             }
             bosses.forEach(boss => {
