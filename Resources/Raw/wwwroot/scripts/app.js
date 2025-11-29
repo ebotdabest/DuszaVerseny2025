@@ -144,6 +144,11 @@ function renderDungeons() {
                 <div class="dungeon-lbl">KATTINTS A BELÉPÉSHEZ</div>
             `;
 
+            // Add tooltip on hover (async)
+            btn.onmouseenter = async (e) => await showDungeonTooltip(d, e);
+            btn.onmousemove = (e) => updateTooltipPosition(e);
+            btn.onmouseleave = () => hideDungeonTooltip();
+
             const bossCard = document.createElement('div');
             bossCard.className = 'boss-card-preview';
 
@@ -171,6 +176,301 @@ function renderDungeons() {
         container.innerHTML = '<div style="color:#666;text-align:center;padding:20px">Nincsenek elérhető kazamaták.</div>';
     }
 }
+
+// Dungeon Tooltip System
+let dungeonTooltip = null;
+
+function createDungeonTooltip() {
+    if (!dungeonTooltip) {
+        dungeonTooltip = document.createElement('div');
+        dungeonTooltip.className = 'dungeon-tooltip';
+        document.body.appendChild(dungeonTooltip);
+    }
+    return dungeonTooltip;
+}
+
+async function showDungeonTooltip(dungeon, event) {
+    const tooltip = createDungeonTooltip();
+
+    // Get full dungeon data with cards from backend
+    let dungeonCards = [];
+    try {
+        const dungeonData = await window.HybridWebView.InvokeDotNet('GetDungeonCards', [dungeon.Name]);
+        dungeonCards = JSON.parse(dungeonData);
+    } catch (err) {
+        console.error('Failed to fetch dungeon cards:', err);
+    }
+
+    // Build tooltip content
+    let content = `
+        <div class="dungeon-tooltip-header">${dungeon.Name}</div>
+        <div class="dungeon-tooltip-section">
+            <div class="dungeon-tooltip-label">Méret:</div>
+            <div class="dungeon-tooltip-value">${getDungeonSizeLabel(dungeon.Size)}</div>
+        </div>
+        <div class="dungeon-tooltip-section">
+            <div class="dungeon-tooltip-label">Jutalom:</div>
+            <div class="dungeon-tooltip-value">${getRewardLabel(dungeon.Reward)}</div>
+        </div>
+    `;
+
+    // Add cards if available
+    if (dungeonCards && dungeonCards.length > 0) {
+        content += `
+            <div class="dungeon-tooltip-divider"></div>
+            <div class="dungeon-tooltip-label">Ellenségek (${dungeonCards.length}):</div>
+            <div class="dungeon-tooltip-cards">
+        `;
+
+        dungeonCards.slice(0, 6).forEach(card => {
+            content += `
+                <div class="dungeon-tooltip-card">
+                    <div class="dungeon-tooltip-card-name">${card.Name}</div>
+                    <div class="dungeon-tooltip-card-stats">
+                        <span style="color:#ff5252">⚔${card.Attack}</span>
+                        <span style="color:#05d5fa">♥${card.Health}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (dungeonCards.length > 6) {
+            content += `<div class="dungeon-tooltip-more">+${dungeonCards.length - 6} további...</div>`;
+        }
+
+        content += `</div>`;
+    }
+
+    tooltip.innerHTML = content;
+    tooltip.style.left = event.pageX + 15 + 'px';
+    tooltip.style.top = event.pageY + 'px';
+    tooltip.classList.add('show');
+}
+
+function updateTooltipPosition(event) {
+    if (dungeonTooltip && dungeonTooltip.classList.contains('show')) {
+        dungeonTooltip.style.left = event.pageX + 15 + 'px';
+        dungeonTooltip.style.top = event.pageY + 'px';
+    }
+}
+
+function hideDungeonTooltip() {
+    if (dungeonTooltip) {
+        dungeonTooltip.classList.remove('show');
+    }
+}
+
+function getDungeonSizeLabel(size) {
+    const labels = {
+        'egyszeru': '🔹 Egyszerű',
+        'kis': '🔸 Közepes',
+        'nagy': '🔶 Nagy'
+    };
+    return labels[size] || size;
+}
+
+function getRewardLabel(reward) {
+    const labels = {
+        'eletero': '❤️ Életerő Növelés',
+        'sebzes': '⚔️ Támadás Növelés',
+        'kartya': '🎁 Új Kártya'
+    };
+    return labels[reward] || reward;
+}
+
+// Dungeon Paths System
+async function renderDungeonPaths() {
+    const container = document.getElementById('dungeonPathsList');
+    if (!container) return;
+
+    // Clear placeholder text
+    container.innerHTML = '';
+
+    try {
+        // Fetch paths from backend
+        const paths = await window.HybridWebView.InvokeDotNet('GetPaths');
+
+        if (!paths || paths.length === 0) {
+            container.innerHTML = '<div style="color:#666;text-align:center;padding:20px">Még nincsenek elérhető katakombák.</div>';
+            return;
+        }
+
+        paths.forEach(path => {
+            const pathRow = document.createElement('div');
+            pathRow.className = 'dungeon-path-row';
+
+            const pathBtn = document.createElement('div');
+            pathBtn.className = 'dungeon-path-btn';
+            pathBtn.innerHTML = `
+                <div class="dungeon-path-name">${path.name}</div>
+                <div class="dungeon-path-progress">${path.dungeons.length} Kazamata</div>
+            `;
+
+            // Add expandable tooltip
+            pathBtn.onclick = (e) => {
+                e.stopPropagation();
+                togglePathTooltip(path, pathBtn);
+            };
+
+            pathBtn.onmouseenter = (e) => showPathPreview(path, e);
+            pathBtn.onmousemove = (e) => updateTooltipPosition(e);
+            pathBtn.onmouseleave = () => hideDungeonTooltip();
+
+            const pathIndicator = document.createElement('div');
+            pathIndicator.className = 'dungeon-path-indicator';
+            pathIndicator.innerHTML = `
+                <div class="path-chain">⛓️</div>
+                <div class="path-count">${path.dungeons.length}</div>
+            `;
+
+            pathRow.appendChild(pathBtn);
+            pathRow.appendChild(pathIndicator);
+            container.appendChild(pathRow);
+        });
+    } catch (err) {
+        console.error('Failed to fetch paths:', err);
+        container.innerHTML = '<div style="color:#666;text-align:center;padding:20px">Hiba történt a katakombák betöltésekor.</div>';
+    }
+}
+
+// Path preview tooltip (quick hover)
+function showPathPreview(path, event) {
+    const tooltip = createDungeonTooltip();
+
+    let content = `
+        <div class="dungeon-tooltip-header">${path.name}</div>
+        <div class="dungeon-tooltip-section">
+            <div class="dungeon-tooltip-label">Kazamaták száma:</div>
+            <div class="dungeon-tooltip-value">${path.dungeons.length}</div>
+        </div>
+        <div class="dungeon-tooltip-section">
+            <div class="dungeon-tooltip-label">Összes jutalom:</div>
+            <div class="dungeon-tooltip-value">${path.escapeRewards.length} jutalom</div>
+        </div>
+        <div class="dungeon-tooltip-hint">Kattints a részletekért</div>
+    `;
+
+    tooltip.innerHTML = content;
+    tooltip.style.left = event.pageX + 15 + 'px';
+    tooltip.style.top = event.pageY + 'px';
+    tooltip.classList.add('show');
+}
+
+// Expandable path detail tooltip
+let expandedPathTooltip = null;
+
+function togglePathTooltip(path, buttonElement) {
+    // Close if already open
+    if (expandedPathTooltip && expandedPathTooltip.classList.contains('show')) {
+        expandedPathTooltip.classList.remove('show');
+        setTimeout(() => {
+            if (expandedPathTooltip && expandedPathTooltip.parentNode) {
+                expandedPathTooltip.remove();
+            }
+            expandedPathTooltip = null;
+        }, 300);
+        return;
+    }
+
+    // Create expanded tooltip
+    expandedPathTooltip = document.createElement('div');
+    expandedPathTooltip.className = 'dungeon-path-expanded';
+
+    let content = `
+        <div class="path-expanded-header">
+            <div class="path-expanded-title">${path.name}</div>
+            <button class="path-expanded-close" onclick="closeExpandedPathTooltip()">✕</button>
+        </div>
+        <div class="path-expanded-subtitle">Teljes útvonal áttekintése</div>
+        <div class="path-expanded-content">
+    `;
+
+    path.dungeons.forEach((dungeon, index) => {
+        const reward = path.escapeRewards[index];
+        content += `
+            <div class="path-dungeon-item">
+                <div class="path-dungeon-number">${index + 1}</div>
+                <div class="path-dungeon-info">
+                    <div class="path-dungeon-name">${dungeon.name}</div>
+                    <div class="path-dungeon-meta">
+                        <span>${getDungeonSizeLabel(dungeon.size)}</span>
+                        ${dungeon.hasBoss ? '<span style="color:#ff2a6d">💀 Boss</span>' : ''}
+                    </div>
+                    <div class="path-dungeon-reward">
+                        <span class="path-reward-label">Menekülési jutalom:</span>
+                        <span class="path-reward-value">${reward}</span>
+                    </div>
+                </div>
+            </div>
+            ${index < path.dungeons.length - 1 ? '<div class="path-connector">↓</div>' : ''}
+        `;
+    });
+
+    content += `
+        </div>
+        <div class="path-expanded-footer">
+            <button class="path-start-btn" onclick="startDungeonPath('${path.name}')">
+                ⚔️ Út Megkezdése
+            </button>
+        </div>
+    `;
+
+    expandedPathTooltip.innerHTML = content;
+    document.body.appendChild(expandedPathTooltip);
+
+    // Position near the button
+    const rect = buttonElement.getBoundingClientRect();
+    expandedPathTooltip.style.left = (rect.left + rect.width + 20) + 'px';
+    expandedPathTooltip.style.top = rect.top + 'px';
+
+    // Show with animation
+    setTimeout(() => {
+        expandedPathTooltip.classList.add('show');
+    }, 10);
+}
+
+function closeExpandedPathTooltip() {
+    if (expandedPathTooltip) {
+        expandedPathTooltip.classList.remove('show');
+        setTimeout(() => {
+            if (expandedPathTooltip && expandedPathTooltip.parentNode) {
+                expandedPathTooltip.remove();
+            }
+            expandedPathTooltip = null;
+        }, 300);
+    }
+}
+
+function startDungeonPath(pathName) {
+    closeExpandedPathTooltip();
+    window.toast.info(`"${pathName}" hamarosan elérhető!`);
+    // TODO: Implement path start logic
+    // window.HybridWebView.InvokeDotNet('StartDungeonPath', [pathName]);
+}
+
+// Initialize paths when switching view
+const originalToggleDungeonView = window.toggleDungeonView;
+window.toggleDungeonView = function () {
+    originalToggleDungeonView();
+
+    // Render paths when switching to paths view
+    if (currentDungeonView === 'paths') {
+        renderDungeonPaths();
+    }
+};
+
+// Close expanded tooltip when clicking outside
+document.addEventListener('click', (e) => {
+    if (expandedPathTooltip &&
+        !expandedPathTooltip.contains(e.target) &&
+        !e.target.closest('.dungeon-path-btn')) {
+        closeExpandedPathTooltip();
+    }
+});
+
+// Make function available globally
+window.closeExpandedPathTooltip = closeExpandedPathTooltip;
+window.startDungeonPath = startDungeonPath;
 
 async function onDungeonClick(name) {
     showLoadingScreen(async () => {

@@ -19,8 +19,15 @@ namespace DuszaVerseny2025.Engine.Editor
                 collection = new Collection(initialCards);
             }
         }
+        public class EditorPath
+        {
+            public string name { get; set; } = string.Empty;
+            public List<DungeonTemplate> dungeons { get; set; } = new();
+            public List<DungeonTemplate.DungeonReward> escapeRewards { get; set; } = new();
+        }
         public List<CardTemplate> cards = new List<CardTemplate>();
         public List<DungeonTemplate> dungeons = new List<DungeonTemplate>();
+        public List<EditorPath> dungeonPaths = new List<EditorPath>();
         public PlayerCollection playerInventory = new PlayerCollection();
         public List<CardTemplate> initialDeck = new List<CardTemplate>();
         public List<NamedCollection> collections = new List<NamedCollection>();

@@ -1811,3 +1811,432 @@ select:focus-visible {
         max-height: 300px;
         overflow-y: auto;
 }
+
+/* Enhanced Dungeon Tooltip */
+.dungeon-tooltip {
+        position: fixed;
+        background: linear-gradient(135deg, rgba(10, 10, 10, 0.98), rgba(20, 20, 20, 0.98));
+        backdrop-filter: blur(10px);
+        border: 2px solid var(--accent-red);
+        border-radius: 8px;
+        padding: 15px;
+        max-width: 350px;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(255, 42, 109, 0.3);
+}
+
+.dungeon-tooltip.show {
+        opacity: 1;
+        transform: translateY(0);
+}
+
+.dungeon-tooltip-header {
+        font-family: var(--font-header);
+        font-size: 18px;
+        color: var(--accent-red);
+        text-shadow: 0 0 10px rgba(255, 42, 109, 0.5);
+        margin-bottom: 12px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+}
+
+.dungeon-tooltip-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 5px 0;
+}
+
+.dungeon-tooltip-label {
+        color: #888;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+}
+
+.dungeon-tooltip-value {
+        color: white;
+        font-weight: bold;
+        font-size: 13px;
+}
+
+.dungeon-tooltip-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #333, transparent);
+        margin: 10px 0;
+}
+
+.dungeon-tooltip-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-top: 8px;
+}
+
+.dungeon-tooltip-card {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid #333;
+        border-radius: 4px;
+        padding: 8px;
+}
+
+.dungeon-tooltip-card-name {
+        font-size: 11px;
+        color: white;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+}
+
+.dungeon-tooltip-card-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        font-weight: bold;
+}
+
+.dungeon-tooltip-more {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: #666;
+        font-size: 11px;
+        padding: 5px;
+}
+
+.dungeon-tooltip-boss {
+        background: rgba(255, 42, 109, 0.1);
+        border: 1px solid rgba(255, 42, 109, 0.3);
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+}
+
+.dungeon-tooltip-boss-name {
+        color: var(--accent-red);
+        font-weight: bold;
+        font-size: 14px;
+        margin: 5px 0;
+}
+
+.dungeon-tooltip-hint {
+        text-align: center;
+        color: #666;
+        font-size: 11px;
+        margin-top: 10px;
+        font-style: italic;
+        border-top: 1px solid #222;
+        padding-top: 8px;
+}
+
+/* Dungeon Path Styles */
+.dungeon-path-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 15px;
+}
+
+.dungeon-path-btn {
+        flex: 1;
+        background: linear-gradient(90deg, rgba(26, 26, 26, 0.9), rgba(10, 10, 10, 0.9));
+        border: 1px solid #8b4513;
+        padding: 20px;
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.dungeon-path-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(139, 69, 19, 0.2) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+}
+
+.dungeon-path-btn:hover {
+        background: linear-gradient(90deg, rgba(139, 69, 19, 0.3), rgba(160, 82, 45, 0.3));
+        border-color: #a0522d;
+        box-shadow: 0 0 20px rgba(139, 69, 19, 0.4);
+        transform: translateX(5px);
+}
+
+.dungeon-path-btn:hover::before {
+        opacity: 1;
+}
+
+.dungeon-path-name {
+        font-family: var(--font-header);
+        font-size: 18px;
+        color: #a0522d;
+        text-shadow: 0 0 10px rgba(160, 82, 45, 0.5);
+        margin-bottom: 8px;
+        letter-spacing: 1px;
+}
+
+.dungeon-path-progress {
+        font-size: 12px;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+}
+
+.dungeon-path-indicator {
+        width: 80px;
+        height: 100px;
+        background: rgba(10, 10, 10, 0.8);
+        border: 2px solid #8b4513;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+}
+
+.dungeon-path-row:hover .dungeon-path-indicator {
+        opacity: 1;
+        border-color: #a0522d;
+        box-shadow: 0 0 15px rgba(139, 69, 19, 0.3);
+}
+
+.path-chain {
+        font-size: 24px;
+        opacity: 0.6;
+}
+
+.path-count {
+        font-size: 16px;
+        font-weight: bold;
+        color: #a0522d;
+}
+
+/* Expanded Path Tooltip */
+.dungeon-path-expanded {
+        position: fixed;
+        background: linear-gradient(135deg, rgba(10, 10, 10, 0.98), rgba(20, 20, 20, 0.98));
+        backdrop-filter: blur(10px);
+        border: 2px solid #8b4513;
+        border-radius: 10px;
+        padding: 0;
+        width: 400px;
+        max-height: 80vh;
+        overflow: hidden;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(-20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9),
+                0 0 30px rgba(139, 69, 19, 0.3);
+        display: flex;
+        flex-direction: column;
+}
+
+.dungeon-path-expanded.show {
+        opacity: 1;
+        transform: translateX(0);
+}
+
+.path-expanded-header {
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.3), rgba(160, 82, 45, 0.3));
+        border-bottom: 2px solid #8b4513;
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+}
+
+.path-expanded-title {
+        font-family: var(--font-header);
+        font-size: 20px;
+        color: #a0522d;
+        text-shadow: 0 0 15px rgba(160, 82, 45, 0.5);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+}
+
+.path-expanded-close {
+        background: transparent;
+        border: 1px solid #666;
+        color: #888;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+}
+
+.path-expanded-close:hover {
+        background: var(--accent-red);
+        color: white;
+        border-color: var(--accent-red);
+}
+
+.path-expanded-subtitle {
+        padding: 10px 20px;
+        color: #666;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid #222;
+}
+
+.path-expanded-content {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+        max-height: calc(80vh - 200px);
+}
+
+.path-expanded-content::-webkit-scrollbar {
+        width: 6px;
+}
+
+.path-expanded-content::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+}
+
+.path-expanded-content::-webkit-scrollbar-thumb {
+        background: #8b4513;
+        border-radius: 3px;
+}
+
+.path-dungeon-item {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid #333;
+        border-left: 3px solid #8b4513;
+        border-radius: 6px;
+        transition: 0.2s;
+}
+
+.path-dungeon-item:hover {
+        background: rgba(0, 0, 0, 0.6);
+        border-left-color: #a0522d;
+        box-shadow: 0 0 15px rgba(139, 69, 19, 0.2);
+}
+
+.path-dungeon-number {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #8b4513, #a0522d);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: 0 0 10px rgba(139, 69, 19, 0.5);
+}
+
+.path-dungeon-info {
+        flex: 1;
+}
+
+.path-dungeon-name {
+        font-size: 15px;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 6px;
+}
+
+.path-dungeon-meta {
+        display: flex;
+        gap: 10px;
+        font-size: 11px;
+        color: #888;
+        margin-bottom: 8px;
+}
+
+.path-dungeon-reward {
+        background: rgba(139, 69, 19, 0.2);
+        border: 1px solid rgba(139, 69, 19, 0.4);
+        border-radius: 4px;
+        padding: 6px 10px;
+        font-size: 12px;
+}
+
+.path-reward-label {
+        color: #888;
+        margin-right: 8px;
+}
+
+.path-reward-value {
+        color: #a0522d;
+        font-weight: bold;
+}
+
+.path-connector {
+        text-align: center;
+        color: #8b4513;
+        font-size: 20px;
+        margin: -5px 0;
+        opacity: 0.5;
+}
+
+.path-expanded-footer {
+        border-top: 2px solid #8b4513;
+        padding: 15px 20px;
+        background: rgba(0, 0, 0, 0.3);
+}
+
+.path-start-btn {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #8b4513, #a0522d);
+        border: 2px solid #a0522d;
+        border-radius: 6px;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.path-start-btn:hover {
+        background: linear-gradient(135deg, #a0522d, #cd853f);
+        box-shadow: 0 6px 20px rgba(139, 69, 19, 0.6);
+        transform: translateY(-2px);
+}
+
+.path-start-btn:active {
+        transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+        .dungeon-path-expanded {
+                width: 90vw;
+                left: 5vw !important;
+                right: 5vw;
+        }
+
+        .dungeon-tooltip {
+                max-width: 280px;
+        }
+}
