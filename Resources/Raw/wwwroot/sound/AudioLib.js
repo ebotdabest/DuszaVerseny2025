@@ -578,10 +578,10 @@
       this.container.classList.toggle('corner-right', !isLeft);
 
       const pos = {
-        top: isTop ? '20px' : 'auto',
-        bottom: isTop ? 'auto' : '20px',
-        left: isLeft ? '20px' : 'auto',
-        right: isLeft ? 'auto' : '20px'
+        top: isTop ? '15px' : 'auto',
+        bottom: isTop ? 'auto' : '15px',
+        left: isLeft ? '15px' : 'auto',
+        right: isLeft ? 'auto' : '15px'
       };
 
       Object.assign(this.container.style, pos);
