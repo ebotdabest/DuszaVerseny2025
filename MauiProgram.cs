@@ -290,6 +290,12 @@ public static class MauiProgram
 
     [DllImport("kernel32.dll")] static extern bool AllocConsole();
     [DllImport("kernel32.dll")] static extern bool FreeConsole();
+    [DllImport("kernel32.dll")]
+    static extern bool SetErrorMode(uint uMode);
+
+    const uint SEM_FAILCRITICALERRORS = 1;
+    const uint SEM_NOGPFAULTERRORBOX = 2;
+
 
     // static async Task callbackTest(World.FightEvent ev)
     // {
@@ -300,6 +306,7 @@ public static class MauiProgram
     {
         string[] args = Environment.GetCommandLineArgs();
         AllocConsole();
+
         if (args.Length < 2) Environment.Exit(1);
         if (args[1] == "peek")
         {

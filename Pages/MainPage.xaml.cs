@@ -80,6 +80,7 @@ namespace DuszaVerseny2025
             MauiProgram.currentSaveId = save.saveId;
             MauiProgram.currentSaveName = save.saveName;
             engine.GameWorld.SetBaseId(world.worldId);
+            engine.GameWorld.Difficulty = save.difficulty;
 
             foreach (var cardName in save.unlockedCards)
             {
@@ -533,9 +534,7 @@ namespace DuszaVerseny2025
             if (connected)
             {
                 // Restore logs
-                try { await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();"); }
-                catch (Exception ex) { Debug.WriteLine($"Failed to restore logs: {ex.Message}"); }
-
+                await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();");
                 // Request game state from JS on page load
                 try
                 {

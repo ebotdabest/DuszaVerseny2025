@@ -102,6 +102,9 @@ document.addEventListener('DOMContentLoaded', function () {
                                         });
                                         break;
                                 }
+                                case 'rollDaCard':
+                                    const card = JSON.parse(data);
+                                    break;
                                 case 'navigateBack':
                                         debugLog("JS received navigateBack command", 'info');
                                         break;
@@ -481,6 +484,8 @@ function handleFightEvent(event) {
                 delayedUpdate('arenaPlayerCard', updateFn, 'arenaPlayerCard',
                         () => addHistoryEntry(`Játékos kijátszotta: ${gameState.currentCard.Name}`),
                         () => renderPlayerCards());
+
+
         } else if (event.event_name === "game:attack") {
                 debugLog(`Received game:attack, damage=${event.values.damage}`, 'debug');
                 const damage = event.values.damage;
@@ -503,9 +508,21 @@ function handleFightEvent(event) {
                 // Roll powercard after player attack
                 rollPowercardFromBackend(true); // true = player
         }
+
+        // Notify backend when animations are done so it can proceed
+        notifyBackendWhenReady();
 }
 
-// FIXED: Robust trigger with per-class durations + pending tracking
+function notifyBackendWhenReady() {
+        waitForAnimations(() => {
+                debugLog('Sending resumeGame to backend', 'info');
+                const time = setTimeout(() => {
+                    window.HybridWebView.SendRawMessage('resumeGame');
+                    clearTimeout(time);
+                }, 600);
+        });
+}
+
 function triggerAnimation(elementId, animationClass) {
         const element = document.getElementById(elementId);
         if (!element) {
@@ -566,24 +583,21 @@ function triggerAnimation(elementId, animationClass) {
 // ========== POWERCARD FUNCTIONS ==========
 
 // Function to be called from backend with powercard data
-function rollPowercardFromBackend(isPlayer, powercardData = null) {
+function rollPowercardFromBackend(isPlayer) {
         if (isRolling) {
-                debugLog('Already rolling, skipping powercard roll', 'warn');
-                return;
+            debugLog('Already rolling, skipping powercard roll', 'warn');
+            return;
         }
 
-        // If no data provided, use placeholder for testing
-        // Backend should pass: { name, type, value, duration, icon, description }
-        const powercard = powercardData || PLACEHOLDER_POWERCARDS[Math.floor(Math.random() * PLACEHOLDER_POWERCARDS.length)];
-
-        debugLog(`Backend triggered powercard roll for ${isPlayer ? 'player' : 'enemy'}: ${powercard.name}`, 'info');
-
-        rollPowercard(powercard, isPlayer);
+        window.HybridWebView.SendRawMessage(`cardRoll|${isPlayer ? 'player' : 'enemy'}`);
 }
 
 async function rollPowercard(powercard, isPlayer) {
         if (isRolling) return;
         isRolling = true;
+
+        // Block backend resume until rolling is done
+        pendingAnimations['powercardRoll'] = Date.now() + 1000; // Temporary high value, cleared on finish
 
         debugLog(`Rolling powercard: ${powercard.name} for ${isPlayer ? 'player' : 'enemy'}`, 'info');
 
@@ -599,12 +613,12 @@ async function rollPowercard(powercard, isPlayer) {
 
         // Cycle through cards rapidly
         const cycleCount = 20;
-        const cycleDelay = 100;
+        const cycleDelay = 300;
 
         for (let i = 0; i < cycleCount; i++) {
-                const randomCard = PLACEHOLDER_POWERCARDS[Math.floor(Math.random() * PLACEHOLDER_POWERCARDS.length)];
-                updateRollingCard(randomCard);
-                await new Promise(resolve => setTimeout(resolve, cycleDelay));
+            const randomCard = await window.HybridWebView.InvokeDotNet("RollForPowercard");
+            updateRollingCard(randomCard);
+            await new Promise(resolve => setTimeout(resolve, cycleDelay));
         }
 
         // Show final card
@@ -614,35 +628,35 @@ async function rollPowercard(powercard, isPlayer) {
 
         debugLog(`Revealed powercard: ${powercard.name}`, 'success');
 
-        // Wait for reveal animation
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 2500));
 
-        // Add to appropriate container
         addPowercardToContainer(powercard, isPlayer);
 
-        // Hide overlay
         overlay.style.display = 'none';
         rollingCard.classList.remove('revealed', 'enemy-roll', 'player-roll');
 
         isRolling = false;
+
+        delete pendingAnimations['powercardRoll'];
+        debugLog('Powercard roll finished, cleared pending animation', 'debug');
 }
 
 function updateRollingCard(powercard) {
         const rollingCard = document.getElementById('rollingPowercard');
 
         const typeLabels = {
-                'Heal': '💚 Gyógyítás',
-                'Shield': '🛡️ Pajzs',
-                'InstantDamage': '⚔️ Azonnali Sebzés',
-                'DamageBuff': '💥 Sebzés Erősítés'
+                'HealPower': '💚 Gyógyítás',
+                'ShieldPower': '🛡️ Pajzs',
+                'DamagePower': '⚔️ Azonnali Sebzés',
+                'StrengthPower': '💥 Sebzés Erősítés'
         };
 
         rollingCard.innerHTML = `
-                <div class="rolling-powercard-icon">${powercard.icon}</div>
-                <div class="rolling-powercard-name">${powercard.name}</div>
-                <div class="rolling-powercard-type">${typeLabels[powercard.type]}</div>
-                <div class="rolling-powercard-description">${powercard.description}</div>
-        `;
+        <div class="rolling-powercard-icon">${powercard.icon}</div>
+        <div class="rolling-powercard-name">${powercard.name}</div>
+        <div class="rolling-powercard-type">${typeLabels[powercard.type]}</div>
+        <div class="rolling-powercard-description">${powercard.description}</div>
+    `;
 }
 
 function addPowercardToContainer(powercard, isPlayer) {
@@ -659,11 +673,11 @@ function addPowercardToContainer(powercard, isPlayer) {
                 : '';
 
         powercardEl.innerHTML = `
-                <div class="powercard-icon">${powercard.icon}</div>
-                <div class="powercard-name">${powercard.name}</div>
-                <div class="powercard-description">${powercard.description}</div>
-                ${durationHtml}
-        `;
+        <div class="powercard-icon">${powercard.icon}</div>
+        <div class="powercard-name">${powercard.name}</div>
+        <div class="powercard-description">${powercard.description}</div>
+        ${durationHtml}
+    `;
 
         container.appendChild(powercardEl);
 

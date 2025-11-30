@@ -16,6 +16,7 @@ namespace DuszaVerseny2025
 
         private Deck dungeonDeck;
         private bool isGameRunning = false;
+        private TaskCompletionSource<bool> _resumeSignal;
 
         public GamePage()
         {
@@ -59,196 +60,134 @@ namespace DuszaVerseny2025
 
         private async void OnHybridWebViewRawMessageReceived(object sender, HybridWebViewRawMessageReceivedEventArgs e)
         {
-            string message = e.Message;
-            Debug.WriteLine($"GamePage received: {message}");
+            Debug.WriteLine($"C# Received Message: {e.Message}");
 
-            if (message == "startGameRequested")
+            if (e.Message == "startGameRequested")
             {
-                await StartGame();
-            }
-            else if (message == "navigateBack")
-            {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
+                if (!isGameRunning)
                 {
-                    await Shell.Current.GoToAsync("..");
-                });
+                    isGameRunning = true;
+                    await StartGame();
+                }
             }
+            else if (e.Message == "navigateBack")
+            {
+                await Shell.Current.GoToAsync("..");
+            }
+            else if (e.Message == "resumeGame")
+            {
+                _resumeSignal?.TrySetResult(true);
+            }
+            else if (e.Message.Contains("cardRoll"))
+            {
+                string side = e.Message.Split('|')[1];
+                var card = RollForPowercard();
+                var data = JsonSerializer.Serialize(card);
+                hybridWebView.SendRawMessage($"rollDaCard|{}");
+            }
+        }
+
+        public void SaveGame()
+        {
+            // Save the damn game
         }
 
         private async Task StartGame()
         {
-            if (isGameRunning) return;
-            isGameRunning = true;
-
-            try
+            var startGameData = new StartGameData
             {
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] StartGame called', 'info')");
-
-                if (CurrentDeck == null)
+                PlayerDeck = new SimpleDeck { Cards = CurrentDeck.Cards.Select(c => new SimpleCard(c)).ToList() },
+                Dungeon = new SimpleDungeon
                 {
-                    await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] StartGame failed: CurrentDeck is null', 'error')");
-                    return;
-                }
-                if (Dungeon == null)
-                {
-                    await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] StartGame failed: Dungeon is null', 'error')");
-                    return;
-                }
-                if (dungeonDeck == null)
-                {
-                    await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] StartGame failed: dungeonDeck is null', 'error')");
-                    return;
-                }
+                    Name = Dungeon.Name,
+                    HasBoss = Dungeon.HasBoss,
+                    boss = new SimpleCard(Dungeon.boss)
+                },
+                DungeonDeck = dungeonDeck.Cards.Select(c => new SimpleCard(c)).ToList()
+            };
 
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Creating SimplePlayerDeck...', 'info')");
-                var simplePlayerDeck = new SimpleDeck
-                {
-                    Cards = CurrentDeck.Cards.Select(c => new SimpleCard(c)).ToList()
-                };
+            string json = JsonSerializer.Serialize(startGameData, GamePageJSContext.Default.StartGameData);
+            hybridWebView.SendRawMessage($"startGame|{json}");
 
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Creating SimpleDungeonDeck...', 'info')");
-                var simpleDungeonDeck = dungeonDeck.Cards.Select(c => new SimpleCard(c)).ToList();
 
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Creating StartGameData...', 'info')");
-                var gameData = new StartGameData
-                {
-                    PlayerDeck = simplePlayerDeck,
-                    Dungeon = new SimpleDungeon
-                    {
-                        Name = Dungeon.Name,
-                        HasBoss = Dungeon.HasBoss,
-                        boss = new SimpleCard(Dungeon.boss)
-                    },
-                    DungeonDeck = simpleDungeonDeck
-                };
-
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Serializing StartGameData...', 'info')");
-                string json = JsonSerializer.Serialize(gameData, GamePageJSContext.Default.StartGameData);
-
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Sending startGame message...', 'info')");
-                hybridWebView.SendRawMessage($"startGame|{json}");
-
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Starting fight engine...', 'info')");
-                var result = await MauiProgram.engine.GameWorld.FightDungeonButFancy(Dungeon, CurrentDeck, OnFightEvent);
-
-                string rewardText = "";
-                if (result.Success)
-                {
-                    rewardText = Dungeon.Reward.Grant(MauiProgram.engine.PlayerInventory,
-                    MauiProgram.engine.PlayerInventory.Cards.First(c => c.name == result.lastCard));
-                }
-
-                var gameOverData = new GameOverData
-                {
-                    Success = result.Success,
-                    Reward = rewardText
-                };
-                string resultJson = JsonSerializer.Serialize(gameOverData, GamePageJSContext.Default.GameOverData);
-                hybridWebView.SendRawMessage($"gameOver|{resultJson}");
-            }
-            catch (Exception ex)
+            var result = await MauiProgram.engine.GameWorld.FightDungeonButFancy(Dungeon, CurrentDeck, OnFightEvent);
+            var gameOverData = new GameOverData
             {
-                await hybridWebView.EvaluateJavaScriptAsync($"window.debugLog('[C#] CRASH IN STARTGAME: {ex.Message}', 'error')");
-                Debug.WriteLine($"CRASH IN STARTGAME: {ex}");
-            }
-            finally
-            {
-                isGameRunning = false;
-            }
+                Success = result.Success,
+                Reward = "idk"
+            };
+            string resultJson = JsonSerializer.Serialize(gameOverData, GamePageJSContext.Default.GameOverData);
+            hybridWebView.SendRawMessage($"gameOver|{resultJson}");
+            isGameRunning = false;
         }
 
         private async Task OnFightEvent(World.FightEvent ev)
         {
-            // try
-            // {
-            Debug.WriteLine($"[C#] OnFightEvent: {ev.event_name}");
-
-            // Map the engine event to a serializable format for JS
-            var jsEvent = new FightEventData
+            var eventData = new FightEventData
             {
                 event_name = ev.event_name,
                 values = new Dictionary<string, object>()
             };
-
             foreach (var kvp in ev.values)
             {
                 if (kvp.Value is Card c)
                 {
-                    jsEvent.values[kvp.Key] = new SimpleCard(c);
+                    eventData.values[kvp.Key] = new SimpleCard(c);
                 }
                 else
                 {
-                    jsEvent.values[kvp.Key] = kvp.Value;
+                    eventData.values[kvp.Key] = kvp.Value;
                 }
             }
 
-            //if (ev.event_name == "game:attack")
-            //{
-            //    System.Console.WriteLine("Getting the power cards");
-            //    Console.ReadLine();
-            //    System.Console.WriteLine($"powe cards: {MauiProgram.engine.powerCards.Count}");
-            //    Console.ReadLine();
-            //    if (MauiProgram.engine.powerCards.Count > 0)
-            //    {
-            //        System.Console.WriteLine("There is a shit");
-            //        Console.ReadLine();
-            //        System.Console.WriteLine("Rolling...");
-            //        Console.ReadLine();
-            //        PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
-            //        Console.ReadLine();
-            //        System.Console.WriteLine($"Got the card: {card.getName()}");
-            //        Console.ReadLine();
-            //        if (card.getDuration() > 0)
-            //        {
-            //            Dungeon.activeEnemyPowers.Add(card);
-            //            // Send some kinda visual you got this card
-            //        }
-            //        else
-            //        {
-            //            try
-            //            {
-            //                card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], false);
-            //            }
-            //            catch (Exception e)
-            //            {
-            //                System.Console.WriteLine(e.ToString());
-            //                Console.ReadLine();
-            //            }
-            //        }
-            //        hybridWebView.SendRawMessage($"cardActive|");
-            //    }
-            //}
-//
-            if (ev.event_name == "player:attack")
-            {
-                // PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
-                // if (card.getDuration() > 0)
-                // {
-                //     Dungeon.activePlayerPowers.Add(card);
-                //     // Send some kinda visual you got this card
-                // }
-                // else
-                // {
-                //     card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], true);
-                // }
-            }
+            string json = JsonSerializer.Serialize(eventData, GamePageJSContext.Default.FightEventData);
 
-            string json = JsonSerializer.Serialize(jsEvent, GamePageJSContext.Default.FightEventData);
-
-            MainThread.BeginInvokeOnMainThread(() =>
+            // CRITICAL: Dispatch UI operation to main thread to avoid cross-thread marshalling error
+            await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 hybridWebView.SendRawMessage($"fightEvent|{json}");
             });
 
             if (ev.event_name.Contains("select")) await Task.Delay(500);
-            else await Task.Delay(500);
-            // }
-            //     catch (Exception ex)
-            //     {
-            //         Console.ReadLine();
-            //         System.Console.WriteLine(ex.ToString());
-            //         Console.ReadLine();
-            //     }
+            else
+            {
+                _resumeSignal = new TaskCompletionSource<bool>();
+                await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
+            }
+
+        }
+
+        Dictionary<string, string> ICONS = new()
+        {
+            {"DamagePower", "🔥"},
+            {"HealPower", "💚"},
+            {"ShieldPower", "🛡️"},
+            {"StrengthPower", "💥"}
+        };
+
+        public struct PowerCardObject
+        {
+            public required string name { get; set; }
+            public required string type { get; set; }
+            public required string icon { get; set; }
+            public required int value { get; set; }
+            public required int duration { get; set; }
+            public required string description { get; set; }
+        }
+
+        public PowerCardObject RollForPowercard()
+        {
+            Console.WriteLine("Sup");
+            var powerCard = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+            return new PowerCardObject
+            {
+                name = powerCard.getName(),
+                type = powerCard.GetType().Name,
+                icon = ICONS.ContainsKey(powerCard.GetType().Name) ? ICONS[powerCard.GetType().Name] : "❓",
+                value = powerCard.getValue(),
+                duration = powerCard.getDuration(),
+                description = "magic"
+            };
         }
     }
 

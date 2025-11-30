@@ -57,121 +57,128 @@ namespace DuszaVerseny2025.Engine
             await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", initialEnemy))).ConfigureAwait(false);
             await callback(FightEvent.makeEvent("player:select", ("round", round), ("card", initialPlayer))).ConfigureAwait(false);
             await callback(FightEvent.makeEvent("round_over", ("round", round)));
-
-            bool playerLost = false;
-            while (currentPlayerIndex < playerDeck.Size && currentEnemyIndex < dungeonDeck.Size)
+            try
             {
-                round++;
-                await callback(FightEvent.makeEvent("round", ("round", round)));
-                Card currentPlayerCard = playerDeck.Cards[currentPlayerIndex];
-                Card currentEnemyCard = dungeonDeck.Cards[currentEnemyIndex];
-
-                int enemyChoice = Choice(currentEnemyCard);
-                if (enemyChoice == 0)
+                bool playerLost = false;
+                while (currentPlayerIndex < playerDeck.Size && currentEnemyIndex < dungeonDeck.Size)
                 {
-                    currentEnemyIndex++;
-                    if (currentEnemyIndex >= dungeonDeck.Size)
+                    round++;
+                    await callback(FightEvent.makeEvent("round", ("round", round)));
+                    Card currentPlayerCard = playerDeck.Cards[currentPlayerIndex];
+                    Card currentEnemyCard = dungeonDeck.Cards[currentEnemyIndex];
+
+                    int enemyChoice = Choice(currentEnemyCard);
+                    if (enemyChoice == 0)
                     {
-                        break;
+                        currentEnemyIndex++;
+                        if (currentEnemyIndex >= dungeonDeck.Size)
+                        {
+                            break;
+                        }
+                        currentEnemyCard = dungeonDeck.Cards[currentEnemyIndex];
+                        await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", currentEnemyCard), ("index", currentEnemyIndex)));
                     }
-                    currentEnemyCard = dungeonDeck.Cards[currentEnemyIndex];
-                    await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", currentEnemyCard), ("index", currentEnemyIndex)));
-                }
-                else if (enemyChoice == 1)
-                {
-                    int damageDealt;
-                    Console.WriteLine($"Enemy attack {currentEnemyCard.Name}: {currentEnemyCard.Damage}");
-                    currentEnemyCard.Attack(currentPlayerCard, false, out damageDealt);
-                    await callback(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", currentEnemyCard),
-                        ("card", currentPlayerCard), ("damage", damageDealt)));
-                }
-
-                System.Console.WriteLine(currentPlayerCard.Name + ";" + currentEnemyCard.Health);
-                int playerChoice = Choice(currentPlayerCard);
-                if (playerChoice == 0)
-                {
-                    currentPlayerIndex++;
-                    if (currentPlayerIndex >= playerDeck.Size)
+                    else if (enemyChoice == 1)
                     {
-                        playerLost = true;
-                        break;
+                        int damageDealt;
+                        Console.WriteLine($"Enemy attack {currentEnemyCard.Name}: {currentEnemyCard.Damage}");
+                        currentEnemyCard.Attack(currentPlayerCard, false, out damageDealt);
+                        await callback(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", currentEnemyCard),
+                            ("card", currentPlayerCard), ("damage", damageDealt)));
                     }
-                    currentPlayerCard = playerDeck.Cards[currentPlayerIndex];
-                    await callback(FightEvent.makeEvent("player:select", ("round", round), ("card", currentPlayerCard), ("index", currentPlayerIndex)));
-                }
-                else if (playerChoice == 1)
-                {
-                    int damageDealt;
-                    currentPlayerCard.Attack(currentEnemyCard, true, out damageDealt);
-                    await callback(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
-                }
-                await callback(FightEvent.makeEvent("round_over", ("round", round)));
-            }
 
-            System.Console.WriteLine(playerLost);
-
-            if (playerLost)
-            {
-                await callback(FightEvent.makeEvent("result", ("round", round), ("result", "jatekos vesztett")));
-                return new FightResult(false, "");
-            }
-
-            if (!d.HasBoss)
-            {
-                Card card = playerDeck.Cards[currentPlayerIndex];
-                await callback(FightEvent.makeEvent("result", ("round", round), ("result", $"jatekos nyert{d.Reward.Export()};{card.Name}")));
-                return new FightResult(true, card.Name);
-            }
-
-            BossCard boss = d.boss;
-            bool isDead = false;
-
-            await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", boss), ("isBoss", true)));
-            int dmg;
-            Card currentCard = playerDeck.Cards[currentPlayerIndex];
-            currentCard.Attack(boss, true, out dmg);
-            await callback(FightEvent.makeEvent("player:attack", ("card", currentCard),
-            ("enemy", boss), ("damage", dmg), ("round", round)));
-
-            while (boss.Health > 0 && !isDead)
-            {
-                int damage;
-                boss.Attack(currentCard, false, out damage);
-                await callback(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", boss),
-                        ("card", currentCard), ("damage", damage)));
-
-                if (currentCard.Health <= 0)
-                {
-                    currentPlayerIndex++;
-                    if (currentPlayerIndex >= playerDeck.Size)
+                    System.Console.WriteLine(currentPlayerCard.Name + ";" + currentEnemyCard.Health);
+                    int playerChoice = Choice(currentPlayerCard);
+                    if (playerChoice == 0)
                     {
-                        isDead = true;
-                        break;
+                        currentPlayerIndex++;
+                        if (currentPlayerIndex >= playerDeck.Size)
+                        {
+                            playerLost = true;
+                            break;
+                        }
+                        currentPlayerCard = playerDeck.Cards[currentPlayerIndex];
+                        await callback(FightEvent.makeEvent("player:select", ("round", round), ("card", currentPlayerCard), ("index", currentPlayerIndex)));
                     }
-                    currentCard = playerDeck.Cards[currentPlayerIndex];
-                    await callback(FightEvent.makeEvent("player:select", ("round", round), ("card", currentCard)));
-                    continue;
+                    else if (playerChoice == 1)
+                    {
+                        int damageDealt;
+                        currentPlayerCard.Attack(currentEnemyCard, true, out damageDealt);
+                        await callback(FightEvent.makeEvent("player:attack", ("round", round), ("card", currentPlayerCard), ("enemy", currentEnemyCard), ("damage", damageDealt)));
+                    }
+                    await callback(FightEvent.makeEvent("round_over", ("round", round)));
                 }
-                else
+
+                System.Console.WriteLine(playerLost);
+
+                if (playerLost)
                 {
-                    int plyDmg;
-                    currentCard.Attack(boss, true, out plyDmg);
-                    await callback(FightEvent.makeEvent("player:attack", ("card", currentCard),
-                    ("enemy", boss), ("damage", plyDmg), ("round", round)));
+                    await callback(FightEvent.makeEvent("result", ("round", round), ("result", "jatekos vesztett")));
+                    return new FightResult(false, "");
+                }
+
+                if (!d.HasBoss)
+                {
+                    Card card = playerDeck.Cards[currentPlayerIndex];
+                    await callback(FightEvent.makeEvent("result", ("round", round), ("result", $"jatekos nyert{d.Reward.Export()};{card.Name}")));
+                    return new FightResult(true, card.Name);
+                }
+
+                BossCard boss = d.boss;
+                bool isDead = false;
+
+                await callback(FightEvent.makeEvent("game:select", ("round", round), ("card", boss), ("isBoss", true)));
+                int dmg;
+                Card currentCard = playerDeck.Cards[currentPlayerIndex];
+                currentCard.Attack(boss, true, out dmg);
+                await callback(FightEvent.makeEvent("player:attack", ("card", currentCard),
+                ("enemy", boss), ("damage", dmg), ("round", round)));
+
+                while (boss.Health > 0 && !isDead)
+                {
+                    int damage;
+                    boss.Attack(currentCard, false, out damage);
+                    await callback(FightEvent.makeEvent("game:attack", ("round", round), ("enemy", boss),
+                            ("card", currentCard), ("damage", damage)));
+
+                    if (currentCard.Health <= 0)
+                    {
+                        currentPlayerIndex++;
+                        if (currentPlayerIndex >= playerDeck.Size)
+                        {
+                            isDead = true;
+                            break;
+                        }
+                        currentCard = playerDeck.Cards[currentPlayerIndex];
+                        await callback(FightEvent.makeEvent("player:select", ("round", round), ("card", currentCard)));
+                        continue;
+                    }
+                    else
+                    {
+                        int plyDmg;
+                        currentCard.Attack(boss, true, out plyDmg);
+                        await callback(FightEvent.makeEvent("player:attack", ("card", currentCard),
+                        ("enemy", boss), ("damage", plyDmg), ("round", round)));
+
+                    }
+                    round++;
 
                 }
-                round++;
 
+                if (isDead)
+                {
+                    await callback(FightEvent.makeEvent("result", ("round", round), ("result", "jatekos vesztett")));
+                    return new FightResult(false, "");
+                }
+                await callback(FightEvent.makeEvent("result", ("round", round), ("result", $"jatekos nyert{d.Reward.Export()};{currentCard.Name}")));
+
+                return new FightResult(true, currentCard.Name);
             }
-
-            if (isDead)
+            catch (Exception e)
             {
-                await callback(FightEvent.makeEvent("result", ("round", round), ("result", "jatekos vesztett")));
-                return new FightResult(false, "");
+                System.Console.WriteLine(e.ToString());
+                return null;
             }
-            await callback(FightEvent.makeEvent("result", ("round", round), ("result", $"jatekos nyert{d.Reward.Export()};{currentCard.Name}")));
-
-            return new FightResult(true, currentCard.Name);
         }
 
         public bool FightDungeon(Dungeon d, Deck playerDeck, ref string lastCard, Action<FightEvent> callback)
@@ -310,7 +317,7 @@ namespace DuszaVerseny2025.Engine
 
         int _difficulty;
         int _baseId;
-        public int Difficulty => _difficulty;
+        public int Difficulty { get => _difficulty; set => _difficulty = value; }
         public int BaseId => _baseId;
     }
 
