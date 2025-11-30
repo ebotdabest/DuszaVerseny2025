@@ -81,15 +81,19 @@ namespace DuszaVerseny2025
             else if (e.Message.Contains("cardRoll"))
             {
                 string side = e.Message.Split('|')[1];
+                bool isPlayer = side == "player";
                 var card = RollForPowercard();
-                var data = JsonSerializer.Serialize(card);
-                hybridWebView.SendRawMessage($"rollDaCard|{}");
+                var cardJson = JsonSerializer.Serialize(card, GamePageJSContext.Default.PowerCardObject);
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    hybridWebView.SendRawMessage($"rollDaCard|{isPlayer}|{cardJson}");
+                });
             }
         }
 
         public void SaveGame()
         {
-            // Save the damn game
+            // Save game logic here
         }
 
         private async Task StartGame()
@@ -108,7 +112,6 @@ namespace DuszaVerseny2025
 
             string json = JsonSerializer.Serialize(startGameData, GamePageJSContext.Default.StartGameData);
             hybridWebView.SendRawMessage($"startGame|{json}");
-
 
             var result = await MauiProgram.engine.GameWorld.FightDungeonButFancy(Dungeon, CurrentDeck, OnFightEvent);
             var gameOverData = new GameOverData
@@ -148,13 +151,43 @@ namespace DuszaVerseny2025
                 hybridWebView.SendRawMessage($"fightEvent|{json}");
             });
 
-            if (ev.event_name.Contains("select")) await Task.Delay(500);
+            if (ev.event_name == "game:attack")
+            {
+                System.Console.WriteLine("Rolling the card!");
+                Random r = new Random();
+                var num = r.Next(0, 5);
+                _resumeSignal = new TaskCompletionSource<bool>();
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, false)");
+                });
+                await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
+                // if (num == 2)
+                // {
+                // }
+            }
+            else if (ev.event_name == "player:attack")
+            {
+                System.Console.WriteLine("Rolling player card!");
+                Random r = new Random();
+                var num = r.Next(0, 5);
+                _resumeSignal = new TaskCompletionSource<bool>();
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, true)");
+                });
+                await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
+            }
+            else if (ev.event_name.Contains("select"))
+            {
+                await Task.Delay(500);
+            }
             else
             {
                 _resumeSignal = new TaskCompletionSource<bool>();
                 await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
             }
-
+            // Wait for frontend to signal it's ready (animations done)
         }
 
         Dictionary<string, string> ICONS = new()
@@ -177,7 +210,6 @@ namespace DuszaVerseny2025
 
         public PowerCardObject RollForPowercard()
         {
-            Console.WriteLine("Sup");
             var powerCard = Utils.GetRandomCard(MauiProgram.engine.powerCards);
             return new PowerCardObject
             {
@@ -235,7 +267,6 @@ namespace DuszaVerseny2025
         public string DungeonName { get; set; }
     }
 
-
     public class GameOverData
     {
         public bool Success { get; set; }
@@ -255,6 +286,7 @@ namespace DuszaVerseny2025
     [JsonSerializable(typeof(SimpleCard))]
     [JsonSerializable(typeof(SimpleDeck))]
     [JsonSerializable(typeof(StartGameData))]
+    [JsonSerializable(typeof(GamePage.PowerCardObject))]
     [JsonSerializable(typeof(object))]
     internal partial class GamePageJSContext : JsonSerializerContext
     {
