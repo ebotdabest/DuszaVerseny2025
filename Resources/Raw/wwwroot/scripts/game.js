@@ -1,3 +1,5 @@
+import "../sounds/AudioLib.js";
+
 let gameState = {
         currentDeck: null,
         dungeon: null,
@@ -7,11 +9,28 @@ let gameState = {
         showStart: true,
         showCurrent: false,
         showEnemy: false,
-        showEnd: false
+        showEnd: false,
+        enemyPowercards: [],
+        playerPowercards: []
 };
 
 // Track pending animation end times (ms since epoch) to delay selects and attacks
 let pendingAnimations = {};
+
+// Placeholder powercard templates for testing
+const PLACEHOLDER_POWERCARDS = [
+        { name: "Tűzgolyó", type: "InstantDamage", value: 3, duration: 0, icon: "🔥", description: "Azonnali 3 sebzés" },
+        { name: "Gyógyító Aura", type: "Heal", value: 2, duration: 3, icon: "💚", description: "3 körön át +2 gyógyítás" },
+        { name: "Acélpajzs", type: "Shield", value: 4, duration: 2, icon: "🛡️", description: "2 körön át +4 védelem" },
+        { name: "Erőnövelés", type: "DamageBuff", value: 50, duration: 2, icon: "💥", description: "2 körön át +50% sebzés" },
+        { name: "Villámcsapás", type: "InstantDamage", value: 5, duration: 0, icon: "⚡", description: "Azonnali 5 sebzés" },
+        { name: "Regeneráció", type: "Heal", value: 1, duration: 5, icon: "🌿", description: "5 körön át +1 gyógyítás" },
+        { name: "Jégpajzs", type: "Shield", value: 3, duration: 3, icon: "❄️", description: "3 körön át +3 védelem" },
+        { name: "Vérszomj", type: "DamageBuff", value: 30, duration: 3, icon: "🩸", description: "3 körön át +30% sebzés" }
+];
+
+let isRolling = false;
+let nextRollIsPlayer = false;
 
 function debugLog(message, type) {
         console.log(`[${type.toUpperCase()}] ${message}`);
@@ -34,6 +53,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (backButton) {
                 backButton.addEventListener('click', navigateBack);
                 debugLog('Back button bound', 'success');
+        }
+
+        const testRollButton = document.getElementById('testRollButton');
+        if (testRollButton) {
+                testRollButton.addEventListener('click', testRollPowercard);
+                debugLog('Test roll button bound', 'success');
+                // Show button after game starts (for now, show immediately for testing)
+                testRollButton.style.display = 'block';
         }
 
         // Listen for messages from C#
@@ -531,4 +558,158 @@ function triggerAnimation(elementId, animationClass) {
                         }
                 }, duration);
         }
+}
+
+// ========== POWERCARD FUNCTIONS ==========
+
+function testRollPowercard() {
+        if (isRolling) return;
+
+        const isPlayer = nextRollIsPlayer;
+        nextRollIsPlayer = !nextRollIsPlayer; // Alternate between enemy and player
+
+        debugLog(`Testing powercard roll for ${isPlayer ? 'player' : 'enemy'}`, 'info');
+
+        // Simulate getting a random powercard from backend
+        const rolledCard = PLACEHOLDER_POWERCARDS[Math.floor(Math.random() * PLACEHOLDER_POWERCARDS.length)];
+
+        rollPowercard(rolledCard, isPlayer);
+}
+
+async function rollPowercard(powercard, isPlayer) {
+        if (isRolling) return;
+        isRolling = true;
+
+        debugLog(`Rolling powercard: ${powercard.name} for ${isPlayer ? 'player' : 'enemy'}`, 'info');
+
+        // Show overlay
+        const overlay = document.getElementById('powercardRollOverlay');
+        overlay.style.display = 'flex';
+
+        const rollingCard = document.getElementById('rollingPowercard');
+
+        // Add color class based on who's rolling
+        rollingCard.className = 'rolling-powercard cycling';
+        rollingCard.classList.add(isPlayer ? 'player-roll' : 'enemy-roll');
+
+        // Cycle through cards rapidly
+        const cycleCount = 20;
+        const cycleDelay = 100;
+
+        for (let i = 0; i < cycleCount; i++) {
+                const randomCard = PLACEHOLDER_POWERCARDS[Math.floor(Math.random() * PLACEHOLDER_POWERCARDS.length)];
+                updateRollingCard(randomCard);
+                await new Promise(resolve => setTimeout(resolve, cycleDelay));
+        }
+
+        // Show final card
+        rollingCard.classList.remove('cycling');
+        rollingCard.classList.add('revealed');
+        updateRollingCard(powercard);
+
+        debugLog(`Revealed powercard: ${powercard.name}`, 'success');
+
+        // Wait for reveal animation
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Add to appropriate container
+        addPowercardToContainer(powercard, isPlayer);
+
+        // Hide overlay
+        overlay.style.display = 'none';
+        rollingCard.classList.remove('revealed', 'enemy-roll', 'player-roll');
+
+        isRolling = false;
+}
+
+function updateRollingCard(powercard) {
+        const rollingCard = document.getElementById('rollingPowercard');
+
+        const typeLabels = {
+                'Heal': '💚 Gyógyítás',
+                'Shield': '🛡️ Pajzs',
+                'InstantDamage': '⚔️ Azonnali Sebzés',
+                'DamageBuff': '💥 Sebzés Erősítés'
+        };
+
+        rollingCard.innerHTML = `
+                <div class="rolling-powercard-icon">${powercard.icon}</div>
+                <div class="rolling-powercard-name">${powercard.name}</div>
+                <div class="rolling-powercard-type">${typeLabels[powercard.type]}</div>
+                <div class="rolling-powercard-description">${powercard.description}</div>
+        `;
+}
+
+function addPowercardToContainer(powercard, isPlayer) {
+        const containerId = isPlayer ? 'playerPowercards' : 'enemyPowercards';
+        const container = document.getElementById(containerId);
+
+        // Create powercard element
+        const powercardEl = document.createElement('div');
+        powercardEl.className = `powercard ${isPlayer ? 'player-card' : ''}`;
+        powercardEl.dataset.powercardId = Date.now(); // Unique ID
+
+        const durationHtml = powercard.duration > 0
+                ? `<div class="powercard-duration">${powercard.duration}</div>`
+                : '';
+
+        powercardEl.innerHTML = `
+                <div class="powercard-icon">${powercard.icon}</div>
+                <div class="powercard-name">${powercard.name}</div>
+                <div class="powercard-description">${powercard.description}</div>
+                ${durationHtml}
+        `;
+
+        container.appendChild(powercardEl);
+
+        // Add to gameState
+        const powercardData = { ...powercard, element: powercardEl, id: powercardEl.dataset.powercardId };
+        if (isPlayer) {
+                gameState.playerPowercards.push(powercardData);
+        } else {
+                gameState.enemyPowercards.push(powercardData);
+        }
+
+        debugLog(`Added powercard ${powercard.name} to ${isPlayer ? 'player' : 'enemy'} container`, 'success');
+
+        // Start duration countdown if needed
+        if (powercard.duration > 0) {
+                startPowercardCountdown(powercardEl, powercard.duration, isPlayer);
+        }
+}
+
+function startPowercardCountdown(element, initialDuration, isPlayer) {
+        let duration = initialDuration;
+
+        const countdown = setInterval(() => {
+                duration--;
+
+                const durationEl = element.querySelector('.powercard-duration');
+                if (durationEl) {
+                        durationEl.textContent = duration;
+                }
+
+                if (duration <= 0) {
+                        clearInterval(countdown);
+                        removePowercard(element, isPlayer);
+                }
+        }, 1000); // Update every second for testing (should be every round in real game)
+}
+
+function removePowercard(element, isPlayer) {
+        element.style.animation = 'powercardSlideOut 0.5s ease-in forwards';
+
+        setTimeout(() => {
+                element.remove();
+
+                // Remove from gameState
+                const powercardId = element.dataset.powercardId;
+                if (isPlayer) {
+                        gameState.playerPowercards = gameState.playerPowercards.filter(p => p.id !== powercardId);
+                } else {
+                        gameState.enemyPowercards = gameState.enemyPowercards.filter(p => p.id !== powercardId);
+                }
+
+                debugLog(`Removed expired powercard from ${isPlayer ? 'player' : 'enemy'}`, 'info');
+        }, 500);
 }

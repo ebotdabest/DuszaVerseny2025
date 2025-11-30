@@ -29,6 +29,11 @@
                     </div>
                 </div>
 
+                <!-- Enemy Powercards Container -->
+                <div id="enemyPowercards" class="powercard-container enemy-powers">
+                    <div class="powercard-label">Kazamata Képességek</div>
+                </div>
+
                 <div id="battleArea" class="battle-zone">
                     <div class="battle-card-container">
                         <div id="arenaEnemyCard" class="card arena-card enemy" style="display: none;">
@@ -73,6 +78,11 @@
                     <div id="damagePopupLabel" class="damage-popup"></div>
                 </div>
 
+                <!-- Player Powercards Container -->
+                <div id="playerPowercards" class="powercard-container player-powers">
+                    <div class="powercard-label">Játékos Képességek</div>
+                </div>
+
                 <div class="zone player-zone">
                     <div class="zone-label">Saját pakli</div>
                     <div id="playerDeck" class="deck-container">
@@ -104,6 +114,17 @@
             <button id="backButton" class="btn-secondary">Visszatérés a világodba</button>
         </div>
     </div>
+
+    <!-- Powercard Roll Overlay -->
+    <div id="powercardRollOverlay" class="modal-overlay" style="display: none;">
+        <div class="powercard-roll-container">
+            <div class="powercard-roll-label">⚡ Képesség Dobás ⚡</div>
+            <div id="rollingPowercard" class="rolling-powercard"></div>
+        </div>
+    </div>
+
+    <!-- Test Button (bottom left) -->
+    <button id="testRollButton" class="test-roll-btn" style="display: none;">🎲 Test Roll</button>
 
     <script src="scripts/HybridWebView.js"></script>
     <script type="module" src="animations/ArcaneFX.js"></script>
