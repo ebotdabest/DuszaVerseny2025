@@ -372,6 +372,13 @@ public static class MauiProgram
                 new DungeonPathTemplate("Út 2", dungeons, engine.CardTemplates.ToArray(), new int[] {1,2} )
             };
 
+            engine.powerCards = new()
+            {
+                // new HealPower(0, 5, "Buksi simi", 40),
+                // new DamagePower(0, 500, "Avada Dekavda", 4),
+                new ShieldPower(0, 500, "Shield oooh", 4)
+            };
+
             SaveManager.SaveWorld(1, engine, "Back up");
 
             Console.ReadLine();

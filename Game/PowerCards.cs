@@ -49,15 +49,20 @@ public abstract class PowerCard : IPowerCard
         return roundsLeft;
     }
 
-    public void spendRound()
+    public bool spendRound()
     {
         roundsLeft--;
+        if (roundsLeft <= 0) return true;
+
+        return false;
     }
 
     public int getRarity()
     {
         return rarity;
     }
+
+    public abstract PowerCard Clone();
 }
 
 public class HealPower : PowerCard
@@ -69,6 +74,11 @@ public class HealPower : PowerCard
         currentCard.Heal(getValue());
         return true;
     }
+
+    public override PowerCard Clone()
+    {
+        return new HealPower(getDuration(), getValue(), getName(), getRarity());
+    }
 }
 
 public class ShieldPower : PowerCard
@@ -78,6 +88,11 @@ public class ShieldPower : PowerCard
     public override bool ApplyEffect(Card currentCard, Card currentEnemyCard, bool isPlayer)
     {
         return true;
+    }
+
+    public override PowerCard Clone()
+    {
+        return new ShieldPower(getDuration(), getValue(), getName(), getRarity());
     }
 }
 
@@ -98,6 +113,11 @@ public class DamagePower : PowerCard
             return currentCard.Health <= 0;
         }
     }
+
+    public override PowerCard Clone()
+    {
+        return new DamagePower(getDuration(), getValue(), getName(), getRarity());
+    }
 }
 
 
@@ -108,5 +128,10 @@ public class StrengthPower : PowerCard
     public override bool ApplyEffect(Card currentCard, Card currentEnemyCard, bool isPlayer)
     {
         return true;
+    }
+
+    public override PowerCard Clone()
+    {
+        return new StrengthPower(getDuration(), getValue(), getName(), getRarity());
     }
 }

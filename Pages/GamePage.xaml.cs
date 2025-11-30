@@ -78,17 +78,6 @@ namespace DuszaVerseny2025
             {
                 _resumeSignal?.TrySetResult(true);
             }
-            else if (e.Message.Contains("cardRoll"))
-            {
-                string side = e.Message.Split('|')[1];
-                bool isPlayer = side == "player";
-                var card = RollForPowercard();
-                var cardJson = JsonSerializer.Serialize(card, GamePageJSContext.Default.PowerCardObject);
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    hybridWebView.SendRawMessage($"rollDaCard|{isPlayer}|{cardJson}");
-                });
-            }
         }
 
         public void SaveGame()
@@ -176,6 +165,15 @@ namespace DuszaVerseny2025
                     System.Console.WriteLine("Checking for enemy powercard roll after attack!");
                     if (ev.values.ContainsKey("enemy") && ev.values["enemy"] is Card enemyCard && enemyCard.Health > 0)
                     {
+                        if (playerAbilities.Any(c => c.GetType() == typeof(ShieldPower)))
+                        {
+                            ((Card)ev.values["card"]).Heal((int)ev.values["damage"]);
+                            var pc = playerAbilities.First(c => c.GetType() == typeof(ShieldPower));
+                            if (pc.spendRound()) playerAbilities.Remove(pc);
+
+                            await MainThread.InvokeOnMainThreadAsync(() => hybridWebView.EvaluateJavaScriptAsync($"window.blueBubbleAnimation(false); "));
+                        }
+
                         Random r = new Random();
                         var num = r.Next(0, 5);
                         if (num == 2) // 20% chance
@@ -184,7 +182,13 @@ namespace DuszaVerseny2025
                             _resumeSignal = new TaskCompletionSource<bool>();
                             await MainThread.InvokeOnMainThreadAsync(() =>
                             {
-                                hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, false)");
+                                PowerCard card;
+                                var powerCard = RollForPowercard(out card);
+                                if (card.getDuration() == 0)
+                                {
+                                    hybridWebView.EvaluateJavaScriptAsync($"window.usePower({card.getName()}, false)");
+                                }
+                                hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(powerCard)}, false)");
                             });
                             await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
                         }
@@ -197,17 +201,63 @@ namespace DuszaVerseny2025
                     {
                         Random r = new Random();
                         var num = r.Next(0, 5);
-                        if (num == 2) // 20% chance
+                        if (true) // 20% chance
                         {
                             System.Console.WriteLine("Rolling player powercard!");
                             _resumeSignal = new TaskCompletionSource<bool>();
                             await MainThread.InvokeOnMainThreadAsync(() =>
                             {
-                                hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, true)");
+                                PowerCard card;
+                                var powerCard = RollForPowercard(out card);
+                                hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(powerCard)}, true)");
                             });
                             await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
                         }
                     }
+                }
+            }
+        }
+
+        List<PowerCard> enemyAbilities = new List<PowerCard>();
+        List<PowerCard> playerAbilities = new List<PowerCard>();
+
+        async Task UsePowerCard(Card enemy, Card player, PowerCard card, bool isPlayer)
+        {
+            if (card.GetType() == typeof(HealPower))
+            {
+                if (isPlayer)
+                {
+                    card.ApplyEffect(player, enemy, isPlayer);
+                }
+                else
+                {
+                    card.ApplyEffect(enemy, player, isPlayer);
+                }
+            }
+            else if (card.GetType() == typeof(StrengthPower))
+            {
+                if (isPlayer)
+                {
+                    playerAbilities.Add(card.Clone());
+                }
+                else
+                {
+                    enemyAbilities.Add(card.Clone());
+                }
+            }
+            else if (card.GetType() == typeof(DamagePower))
+            {
+                card.ApplyEffect(player, enemy, isPlayer);
+            }
+            else if (card.GetType() == typeof(ShieldPower))
+            {
+                if (isPlayer)
+                {
+                    playerAbilities.Add(card.Clone());
+                }
+                else
+                {
+                    enemyAbilities.Add(card.Clone());
                 }
             }
         }
@@ -230,9 +280,10 @@ namespace DuszaVerseny2025
             public required string description { get; set; }
         }
 
-        public PowerCardObject RollForPowercard()
+        public PowerCardObject RollForPowercard(out PowerCard card)
         {
             var powerCard = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+            card = powerCard;
             return new PowerCardObject
             {
                 name = powerCard.getName(),

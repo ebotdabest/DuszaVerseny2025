@@ -633,6 +633,10 @@ async function rollPowercard(powercard, isPlayer) {
 
         await sleep(revealDelay);
 
+        if (powercard.duration == 0) {
+            
+        }
+
         addPowercardToContainer(powercard, isPlayer);
 
         overlay.style.transition = 'opacity 0.3s ease-out';
