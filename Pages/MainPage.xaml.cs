@@ -262,7 +262,7 @@ namespace DuszaVerseny2025
             for (int i = 0; i < editor.cards.Count; i++)
             {
                 if (!editor.cards[i].IsBoss) continue;
-                
+
                 cards.Add(new CardData
                 {
                     Name = editor.cards[i].bossName,
@@ -279,7 +279,16 @@ namespace DuszaVerseny2025
 
         void CompleteRemove(CardTemplate card)
         {
-            editor.cards.Remove(card);
+            for (int i = 0; i < editor.cards.Count; i++)
+            {
+                if (editor.cards[i].name == card.name)
+                {
+                    System.Console.WriteLine($"Removing {i}");
+                    editor.cards.RemoveAt(i);
+                    break;
+                }
+            }
+
             foreach (var collection in editor.collections) collection.collection.Purge(card);
             foreach (var dungeon in editor.dungeons)
             {
@@ -291,19 +300,12 @@ namespace DuszaVerseny2025
         public bool DeleteCard(JsonElement request)
         {
             int cardIndex = request.GetProperty("cardIndex").GetInt32();
-            string cardName = request.GetProperty("cardName").GetString();  // For verification
+            string cardName = request.GetProperty("cardName").GetString();
 
             if (cardIndex < 0 || cardIndex >= editor.cards.Count) return false;
-    
-            CardTemplate card = editor.cards[cardIndex];
-    
-            // Verify the name matches (safety check)
-            if (card.name != cardName)
-            {
-                System.Console.WriteLine($"WARNING: Index {cardIndex} mismatch. Expected {cardName}, got {card.name}");
-                return false;
-            }
-    
+
+            CardTemplate card = editor.cards.First(c => c.name == cardName);
+
             if (card.IsBoss)
             {
                 System.Console.WriteLine($"ERROR: Attempted to delete boss card {card.bossName} via DeleteCard");
@@ -350,7 +352,7 @@ namespace DuszaVerseny2025
             {
                 Card.Attribute bossProficiencyAttr = Utils.GetAttributeByName(bossProficiency);
                 CardTemplate newBoss = newCard.ToBoss(bossName, bossProficiencyAttr);
-                
+
                 // Find the index where the boss should be inserted (after the base card)
                 editor.cards.Insert(cardIndex + 1, newBoss);
             }
@@ -395,22 +397,19 @@ namespace DuszaVerseny2025
 
             // Find the base card for this boss
             CardTemplate baseCard = editor.cards.FirstOrDefault(c => !c.IsBoss && c.name == oldBoss.name);
-            
+
             if (baseCard == null)
             {
                 System.Console.WriteLine($"ERROR: Could not find base card for boss {oldBossName}");
                 return false;
             }
 
-            // Remove old boss
             CompleteRemove(oldBoss);
 
-            // Create updated base card if attributes changed
             if (baseCard.Attack != attack || baseCard.Health != health)
             {
                 int baseIndex = editor.cards.IndexOf(baseCard);
-                editor.cards.Remove(baseCard);
-                
+
                 CardTemplate newBaseCard = new CardTemplate(attack, health, baseCard.name, element);
                 editor.cards.Insert(baseIndex, newBaseCard);
                 baseCard = newBaseCard;
@@ -419,7 +418,7 @@ namespace DuszaVerseny2025
             // Create new boss with updated properties
             Card.Attribute bossProficiencyAttr = Utils.GetAttributeByName(bossProficiency);
             CardTemplate newBoss = baseCard.ToBoss(newBossName, bossProficiencyAttr);
-            
+
             // Insert boss at the same index (or after base card if needed)
             int insertIndex = Math.Min(bossIndex, editor.cards.Count);
             editor.cards.Insert(insertIndex, newBoss);

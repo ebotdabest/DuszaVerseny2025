@@ -134,7 +134,7 @@ public class Collection
 
     public void Purge(CardTemplate card)
     {
-        _cards.Remove(card);
+        _cards.RemoveAll(c => c.name == card.name);
     }
 }
 
