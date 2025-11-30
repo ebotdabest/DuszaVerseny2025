@@ -274,10 +274,9 @@
             <div id="allRoutes" class="scrollable-list"></div>
           </div>
 
-          <div id="contextMenu">
-            <button class="context-tab delete-btn" id="contextDelete" onclick="">
-              Törlés
-            </button>
+          <div id="contextMenu" class="context-menu" style="display: none;">
+            <button id="contextEdit" class="context-menu-btn">✏️ Szerkesztés</button>
+            <button id="contextDelete" class="context-menu-btn">🗑️ Törlés</button>
           </div>
         </div>
 
@@ -537,9 +536,9 @@
           <div class="button-row mt-30">
             <button class="action-btn" onclick="createPath()">✓ Mentés</button>
           </div>
-          </div>
         </div>
       </div>
+    </div>
 
     <script src="sound/AudioLib.js"></script>
     <script src="scripts/app.js"></script>

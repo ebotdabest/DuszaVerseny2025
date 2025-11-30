@@ -1093,6 +1093,21 @@ button.fake-link:hover {
         gap: 1vh;
 }
 
+.context-menu-btn {
+        padding: 10px 20px;
+        border: none;
+        background: #2d2d44;
+        color: white;
+        cursor: pointer;
+        transition: background 0.3s;
+        width: 100%;
+        text-align: left;
+}
+
+.context-menu-btn:hover {
+        background: #3d3d54;
+}
+
 #contextClose {
         position: absolute;
         height: 100vh;
