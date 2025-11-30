@@ -275,9 +275,6 @@
           </div>
 
           <div id="contextMenu">
-            <button class="context-tab" id="contextEdit" onclick="">
-              Szerkesztés
-            </button>
             <button class="context-tab delete-btn" id="contextDelete" onclick="">
               Törlés
             </button>
@@ -290,7 +287,7 @@
             <span class="current">Kártya Létrehozása</span>
           </div>
 
-          <h3>🃏 Új Kártya Létrehozása</h3>
+          <h3 id="tt">🃏 Új Kártya Létrehozása</h3>
           <h5>Hozz létre normál kártyákat vagy boss ellenségeket</h5>
 
           <div class="form-group">
@@ -319,7 +316,7 @@
             </select>
           </div>
 
-          <div class="form-group checkbox-group">
+          <div class="form-group checkbox-group" id="bossg">
             <input type="checkbox" id="isBoss" class="tech-checkbox" onchange="toggleBossInputs()" />
             <label for="isBoss">Ez egy Főellenség (Boss)</label>
           </div>
@@ -540,9 +537,9 @@
           <div class="button-row mt-30">
             <button class="action-btn" onclick="createPath()">✓ Mentés</button>
           </div>
+          </div>
         </div>
       </div>
-    </div>
 
     <script src="sound/AudioLib.js"></script>
     <script src="scripts/app.js"></script>

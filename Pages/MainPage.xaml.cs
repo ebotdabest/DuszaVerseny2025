@@ -512,23 +512,54 @@ namespace DuszaVerseny2025
             return true;
         }
 
-        public void CreateDungeonPath(JsonElement path)
+        public bool CreateDungeonPath(JsonElement path)
         {
             var name = path.GetProperty("name").GetString();
+            if (editor.dungeonPaths.Any(d => d.Name == name)) return false;
+
             var rewardSet = path.GetProperty("rewardSet").GetString();
             var pathSequenceProperty = path.GetProperty("pathSequence");
             var sequenceCount = pathSequenceProperty.GetArrayLength();
+            List<DungeonTemplate> dungeons = new List<DungeonTemplate>();
+            List<int> rewards = new List<int>();
             for (int i = 0; i < sequenceCount; i++)
             {
                 var dungeonName = pathSequenceProperty[i].GetProperty("dungeonName").GetString();
                 var cardBonus = pathSequenceProperty[i].GetProperty("cardBonus").GetInt32();
-
+                dungeons.Add(editor.dungeons.First(d => d.name == dungeonName));
+                rewards.Add(cardBonus);
             }
+
+            editor.dungeonPaths.Add(new DungeonPathTemplate(name, dungeons.ToArray(),
+            editor.collections.First(c => c.Name == rewardSet).collection.Cards.ToArray(),
+            rewards.ToArray()));
+
+            return true;
         }
 
         public List<DungeonPathTemplate> GetEditorPaths()
         {
             return editor.dungeonPaths;
+        }
+
+        public void DeleteCollection(string name)
+        {
+            var collection = editor.collections.First(c => c.Name == name);
+            editor.collections.Remove(collection);
+        }
+
+        public void DeleteAbility(string name)
+        {
+            var power = editor.powerCards.First(c => c.getName() == name);
+            editor.powerCards.Remove(power);
+        }
+
+        public void DeleteDungeon(string name)
+        {
+            var dungeon = editor.dungeons.First(d => d.name == name);
+            editor.dungeonPaths.Where(dp => dp.Dungeons.Contains(dungeon)).ToList().ForEach(dp => dp.setDungeons(dp.Dungeons.Where(d => d.name != dungeon.name).ToArray()));
+
+            editor.dungeons.Remove(dungeon);
         }
 
         // Strict editor logic END

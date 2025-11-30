@@ -823,6 +823,7 @@ function openContextMenu(card, isBoss = false) {
     };
 }
 
+
 function closeContextMenu() {
     const contextMenu = document.getElementById('contextMenu');
     contextMenu.style.display = 'none';
@@ -834,20 +835,6 @@ function openContextMenuFunctions(editFunc, deleteFunc) {
     contextMenu.style.setProperty('--context-menu-y', `${window.mouse.y}px`);
     contextMenu.style.setProperty('--context-menu-x', `${window.mouse.x}px`);
     contextMenu.style.display = 'flex';
-
-    if (editFunc == null) {
-        document.getElementById('contextEdit').disabled = true;
-        document.getElementById('contextEdit').onclick = () => {
-            closeContextMenu();
-            switchEditorTab('settings');
-        };
-    } else {
-        document.getElementById('contextEdit').onclick = () => {
-            editFunc();
-            closeContextMenu();
-            switchEditorTab('settings');
-        };
-    }
 
     document.getElementById('contextDelete').onclick = () => {
         deleteFunc();
@@ -866,11 +853,10 @@ async function getPowers() {
 }
 
 async function getPaths() {
-    return []
+    return await window.HybridWebView.InvokeDotNet("GetEditorPaths");
 }
 
-
-function switchEditorTab(tabId) {
+function switchEditorTab(tabId, editingData = null) {
     document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.editor-section').forEach(s => s.classList.remove('active'));
 
@@ -881,9 +867,14 @@ function switchEditorTab(tabId) {
     if (section) section.classList.add('active');
 
     if (tabId == 'sets') {
-        document.getElementById('setName').value = '';
+        if (editingData) {
+            document.getElementById('setName').value = editingData.setName;
+        } else {
+            document.getElementById('setName').value = '';
+        }
         const cardSelectionlist = document.getElementById('cardSelectionList');
         cardSelectionlist.innerHTML = ''
+
 
         window.editorContext.setCards = [];
         window.editorContext.cardObjects = [];
@@ -891,17 +882,16 @@ function switchEditorTab(tabId) {
         getCards().then(cards => {
             cards.forEach(card => {
                 const cardElement = createCardElement(card);
-                window.editorContext.cardObjects.push(cardElement);
-                cardElement.classList.add('editor-card');
-                cardElement.setAttribute("cardName", card.Name);
-                cardElement.onclick = () => {
-                    console.log("Hello?!");
-                    if (!window.editorContext.setCards.includes(card.Name)) window.editorContext.setCards.push(card.Name);
-                    else window.editorContext.setCards.splice(window.editorContext.setCards.indexOf(card.Name), 1);
+                    window.editorContext.cardObjects.push(cardElement);
+                    cardElement.classList.add('editor-card');
+                    cardElement.setAttribute("cardName", card.Name);
+                    cardElement.onclick = () => {
+                        if (!window.editorContext.setCards.includes(card.Name)) window.editorContext.setCards.push(card.Name);
+                        else window.editorContext.setCards.splice(window.editorContext.setCards.indexOf(card.Name), 1);
 
-                    refreshSetCardListNumbers();
-                }
-                cardSelectionlist.appendChild(cardElement);
+                        refreshSetCardListNumbers();
+                    }
+                    cardSelectionlist.appendChild(cardElement);
             });
         });
     } else if (tabId == 'settings') {
@@ -952,7 +942,7 @@ function switchEditorTab(tabId) {
                 });
                 collectionCard.onclick = () => {
                     openContextMenuFunctions(null, () => {
-                        console.log("deleted");
+                        window.HybridWebView.InvokeDotNet("DeleteCollection", col.Name);
                     });
                 };
 
@@ -1007,6 +997,12 @@ function switchEditorTab(tabId) {
                     bossCard.classList.add("not-interesting");
                     bossHolder.appendChild(bossCard);
                 }
+                
+                dungeonCard.onclick = () => {
+                    openContextMenuFunctions(null, () => {
+                        window.HybridWebView.InvokeDotNet("DeleteDungeon", dungeon.Name);
+                    });
+                }
                 dungeonCard.appendChild(title);
                 dungeonCard.appendChild(reward);
                 dungeonCard.appendChild(size);
@@ -1031,9 +1027,40 @@ function switchEditorTab(tabId) {
                 allPowers.appendChild(card);
             })
         });
+
+        const pathContainer = document.getElementById('allRoutes');
         getPaths().then(paths => {
             paths.forEach(path => {
+                const container = document.createElement('div');
+                container.classList.add('dungeon-display')
+                const name = document.createElement('h1');
+                name.innerText = path.Name;
+                
+                const cardDisplay = document.createElement('p');
+                let cards = '';
+                path.Rewards.forEach(card => {
+                    cards += card.Name + ', ';
+                });
 
+                const dungeons = document.createElement('p');
+                let dungeonsText = '';
+                let i = 0;
+                path.Dungeons.forEach(d=> {
+                    dungeonsText += d.name + '[<b>' + path.RewardCounts[i] + '</b>]' + ', ';
+                    i++;
+                });
+
+                dungeonsText = dungeonsText.slice(0, dungeonsText.length-2);
+                cards = cards.slice(0, cards.length-2);
+
+                cardDisplay.innerText = cards;
+                dungeons.innerHTML = dungeonsText;
+
+                container.appendChild(name);
+                container.appendChild(cardDisplay);
+                container.appendChild(dungeons);
+                
+                pathContainer.appendChild(container);
             });
         });
     } else if (tabId == 'cards') {
@@ -1407,20 +1434,8 @@ async function getAbilities() {
 }
 
 async function deleteAbility(abilityName) {
-    try {
-        const result = await window.HybridWebView.InvokeDotNet("DeleteAbility", {
-            abilityName: abilityName
-        });
-
-        if (result) {
-            window.toast.success(`A ${abilityName} képesség törölve!`);
-            switchEditorTab('abilities');
-        } else {
-            window.toast.error('Hiba történt!');
-        }
-    } catch (err) {
-        window.toast.error('Hiba történt a képesség törlésekor!');
-    }
+    window.HybridWebView.InvokeDotNet("DeleteAbility", abilityName);
+    switchEditorTab('settings');
 }
 
 async function renderAbilityList() {

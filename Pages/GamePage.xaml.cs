@@ -151,7 +151,7 @@ namespace DuszaVerseny2025
             });
 
             // Only wait for specific events that need animation time
-            if (ev.event_name == "game:attack" || ev.event_name == "player:attack" || 
+            if (ev.event_name == "game:attack" || ev.event_name == "player:attack" ||
                 ev.event_name.Contains("select"))
             {
                 _resumeSignal = new TaskCompletionSource<bool>();
@@ -168,42 +168,45 @@ namespace DuszaVerseny2025
                 await Task.Delay(100);
             }
 
-            // AFTER the frontend finishes processing, check for powercard rolls
-            if (ev.event_name == "game:attack")
+            if (MauiProgram.engine.powerCards.Count > 0)
             {
-                System.Console.WriteLine("Checking for enemy powercard roll after attack!");
-                if (ev.values.ContainsKey("enemy") && ev.values["enemy"] is Card enemyCard && enemyCard.Health > 0)
+
+                if (ev.event_name == "game:attack")
                 {
-                    Random r = new Random();
-                    var num = r.Next(0, 5);
-                    if (num == 2) // 20% chance
+                    System.Console.WriteLine("Checking for enemy powercard roll after attack!");
+                    if (ev.values.ContainsKey("enemy") && ev.values["enemy"] is Card enemyCard && enemyCard.Health > 0)
                     {
-                        System.Console.WriteLine("Rolling enemy powercard!");
-                        _resumeSignal = new TaskCompletionSource<bool>();
-                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        Random r = new Random();
+                        var num = r.Next(0, 5);
+                        if (num == 2) // 20% chance
                         {
-                            hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, false)");
-                        });
-                        await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
+                            System.Console.WriteLine("Rolling enemy powercard!");
+                            _resumeSignal = new TaskCompletionSource<bool>();
+                            await MainThread.InvokeOnMainThreadAsync(() =>
+                            {
+                                hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, false)");
+                            });
+                            await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
+                        }
                     }
                 }
-            }
-            else if (ev.event_name == "player:attack")
-            {
-                System.Console.WriteLine("Checking for player powercard roll after attack!");
-                if (ev.values.ContainsKey("card") && ev.values["card"] is Card playerCard && playerCard.Health > 0)
+                else if (ev.event_name == "player:attack")
                 {
-                    Random r = new Random();
-                    var num = r.Next(0, 5);
-                    if (num == 2) // 20% chance
+                    System.Console.WriteLine("Checking for player powercard roll after attack!");
+                    if (ev.values.ContainsKey("card") && ev.values["card"] is Card playerCard && playerCard.Health > 0)
                     {
-                        System.Console.WriteLine("Rolling player powercard!");
-                        _resumeSignal = new TaskCompletionSource<bool>();
-                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        Random r = new Random();
+                        var num = r.Next(0, 5);
+                        if (num == 2) // 20% chance
                         {
-                            hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, true)");
-                        });
-                        await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
+                            System.Console.WriteLine("Rolling player powercard!");
+                            _resumeSignal = new TaskCompletionSource<bool>();
+                            await MainThread.InvokeOnMainThreadAsync(() =>
+                            {
+                                hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, true)");
+                            });
+                            await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
+                        }
                     }
                 }
             }

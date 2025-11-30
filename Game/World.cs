@@ -486,6 +486,7 @@ namespace DuszaVerseny2025.Engine
         {
             this.bossTemplate = null;
         }
+
         public override bool Equals(object? obj)
         {
             if (obj is not DungeonTemplate other) return false;
@@ -560,6 +561,11 @@ public class DungeonPathTemplate
     int[] _rewardCounts;
     public CardTemplate[] Rewards => _rewards.ToArray();
     public int[] RewardCounts => _rewardCounts;
+
+    public void setDungeons(DungeonTemplate[] newDungeons)
+    {
+        _dungeons = newDungeons;
+    }
 
     public DungeonPathTemplate(string name, DungeonTemplate[] dungeons, CardTemplate[] rewards, int[] rewardCounts)
     {
