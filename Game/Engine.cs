@@ -21,6 +21,7 @@ namespace DuszaVerseny2025.Engine
 
         public List<CardTemplate> initialDeck = new List<CardTemplate>();
         public List<PowerCard> powerCards = new List<PowerCard>();
+        public List<DungeonPathTemplate> dungeonPaths = new List<DungeonPathTemplate>();
 
         public GameEngine(List<CardTemplate> cards, List<DungeonTemplate> dungeons, PlayerCollection playerInventory, int difficulty)
         {

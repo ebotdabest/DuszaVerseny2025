@@ -196,55 +196,55 @@ async function showDungeonTooltip(dungeon, event) {
     let dungeonCards = [];
     try {
         const dungeonData = await window.HybridWebView.InvokeDotNet('GetDungeonCards', [dungeon.Name]);
-        dungeonCards = JSON.parse(dungeonData);
+        dungeonCards = dungeonData.Cards;
+
+
+        let content = `
+            <div class="dungeon-tooltip-header">${dungeon.Name}</div>
+            <div class="dungeon-tooltip-section">
+                <div class="dungeon-tooltip-label">Méret:</div>
+                <div class="dungeon-tooltip-value">${getDungeonSizeLabel(dungeonData.Size)}</div>
+            </div>
+            <div class="dungeon-tooltip-section">
+                <div class="dungeon-tooltip-label">Jutalom:</div>
+                <div class="dungeon-tooltip-value">${getRewardLabel(dungeonData.Reward)}</div>
+            </div>
+        `;
+
+        // Add cards if available
+        if (dungeonCards && dungeonCards.length > 0) {
+            content += `
+                <div class="dungeon-tooltip-divider"></div>
+                <div class="dungeon-tooltip-label">Ellenségek (${dungeonCards.length}):</div>
+                <div class="dungeon-tooltip-cards">
+            `;
+
+            dungeonCards.slice(0, 6).forEach(card => {
+                content += `
+                    <div class="dungeon-tooltip-card">
+                        <div class="dungeon-tooltip-card-name">${card.Name}</div>
+                        <div class="dungeon-tooltip-card-stats">
+                            <span style="color:#ff5252">⚔${card.Attack}</span>
+                            <span style="color:#05d5fa">♥${card.Health}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (dungeonCards.length > 6) {
+                content += `<div class="dungeon-tooltip-more">+${dungeonCards.length - 6} további...</div>`;
+            }
+
+            content += `</div>`;
+        }
+
+        tooltip.innerHTML = content;
+        tooltip.style.left = event.pageX + 15 + 'px';
+        tooltip.style.top = event.pageY + 'px';
+        tooltip.classList.add('show');
     } catch (err) {
         console.error('Failed to fetch dungeon cards:', err);
     }
-
-    // Build tooltip content
-    let content = `
-        <div class="dungeon-tooltip-header">${dungeon.Name}</div>
-        <div class="dungeon-tooltip-section">
-            <div class="dungeon-tooltip-label">Méret:</div>
-            <div class="dungeon-tooltip-value">${getDungeonSizeLabel(dungeon.Size)}</div>
-        </div>
-        <div class="dungeon-tooltip-section">
-            <div class="dungeon-tooltip-label">Jutalom:</div>
-            <div class="dungeon-tooltip-value">${getRewardLabel(dungeon.Reward)}</div>
-        </div>
-    `;
-
-    // Add cards if available
-    if (dungeonCards && dungeonCards.length > 0) {
-        content += `
-            <div class="dungeon-tooltip-divider"></div>
-            <div class="dungeon-tooltip-label">Ellenségek (${dungeonCards.length}):</div>
-            <div class="dungeon-tooltip-cards">
-        `;
-
-        dungeonCards.slice(0, 6).forEach(card => {
-            content += `
-                <div class="dungeon-tooltip-card">
-                    <div class="dungeon-tooltip-card-name">${card.Name}</div>
-                    <div class="dungeon-tooltip-card-stats">
-                        <span style="color:#ff5252">⚔${card.Attack}</span>
-                        <span style="color:#05d5fa">♥${card.Health}</span>
-                    </div>
-                </div>
-            `;
-        });
-
-        if (dungeonCards.length > 6) {
-            content += `<div class="dungeon-tooltip-more">+${dungeonCards.length - 6} további...</div>`;
-        }
-
-        content += `</div>`;
-    }
-
-    tooltip.innerHTML = content;
-    tooltip.style.left = event.pageX + 15 + 'px';
-    tooltip.style.top = event.pageY + 'px';
-    tooltip.classList.add('show');
 }
 
 function updateTooltipPosition(event) {
@@ -273,6 +273,8 @@ function getRewardLabel(reward) {
     const labels = {
         'eletero': '❤️ Életerő Növelés',
         'sebzes': '⚔️ Támadás Növelés',
+        ';eletero': '❤️ Életerő Növelés',
+        ';sebzes': '⚔️ Támadás Növelés',
         'kartya': '🎁 Új Kártya'
     };
     return labels[reward] || reward;
@@ -707,6 +709,47 @@ function closeContextMenu() {
     document.getElementById('contextClose').style.display = 'none';
 }
 
+function openContextMenuFunctions(editFunc, deleteFunc) {
+    const contextMenu = document.getElementById('contextMenu');
+    contextMenu.style.setProperty('--context-menu-y', `${window.mouse.y}px`);
+    contextMenu.style.setProperty('--context-menu-x', `${window.mouse.x}px`);
+    contextMenu.style.display = 'flex';
+
+    if (editFunc == null) {
+        document.getElementById('contextEdit').disabled = true;
+        document.getElementById('contextEdit').onclick = () => {
+            closeContextMenu();
+            switchEditorTab('settings');
+        };
+    } else {
+        document.getElementById('contextEdit').onclick = () => {
+            editFunc();
+            closeContextMenu();
+            switchEditorTab('settings');
+        };
+    }
+
+    document.getElementById('contextDelete').onclick = () => {
+        deleteFunc();
+        closeContextMenu();
+        switchEditorTab('settings');
+    };
+
+    document.getElementById('contextClose').style.display = 'block';
+}
+
+async function getDungeons() {
+    return await window.HybridWebView.InvokeDotNet("GetDungeons");
+}
+async function getPowers() {
+    return await window.HybridWebView.InvokeDotNet("GetPowerCards");
+}
+
+async function getPaths() {
+    return []
+}
+
+
 function switchEditorTab(tabId) {
     document.querySelectorAll('.editor-tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.editor-section').forEach(s => s.classList.remove('active'));
@@ -766,6 +809,111 @@ function switchEditorTab(tabId) {
                 const cardElement = createCardElement(boss);
                 cardElement.onclick = () => openContextMenu(boss, true);
                 allBosses.appendChild(cardElement);
+            });
+        });
+        const allCollections = document.getElementById('allSets');
+        allCollections.innerHTML = '';
+
+        getCollections().then(collections => {
+            collections.forEach(col => {
+                const collectionCard = document.createElement('div');
+                collectionCard.classList.add("set-card");
+                const collectionName = document.createElement('h4');
+                collectionName.classList.add("set-card-title");
+                collectionName.textContent = col.Name;
+
+                const cardContent = document.createElement('div');
+
+                col.Cards.forEach(card => {
+                    const cardElement = createCardElement(card);
+                    cardElement.onclick = () => { };
+                    cardElement.classList.add("not-interesting");
+                    cardContent.appendChild(cardElement);
+                });
+                collectionCard.onclick = () => {
+                    openContextMenuFunctions(null, () => {
+                        console.log("deleted");
+                    });
+                };
+
+                cardContent.classList.add("set-card-content");
+                collectionCard.appendChild(collectionName);
+                collectionCard.appendChild(cardContent);
+                allCollections.appendChild(collectionCard);
+            });
+        });
+
+        const allDungeons = document.getElementById('allDungeons');
+        allDungeons.innerHTML = '';
+
+        getDungeons().then(dungeons => {
+            dungeons.forEach(dungeon => {
+                const dungeonCard = document.createElement('div');
+                dungeonCard.classList.add("dungeon-display");
+                const title = document.createElement('h4');
+                title.classList.add("dungeon-name-display");
+                title.textContent = dungeon.Name;
+                const reward = document.createElement('p');
+                reward.textContent = `Jutalom: ${getRewardLabel(dungeon.Reward)}`;
+                const size = document.createElement('p');
+                size.textContent = `Méret: ${dungeon.Size}`;
+                const holder = document.createElement('div');
+                holder.classList.add("dungeon-cards-display");
+
+                const cards = document.createElement('div');
+                cards.classList.add("dungeon-cards");
+
+                dungeon.Cards.forEach(card => {
+                    const cardElement = createCardElement(card);
+                    cardElement.onclick = () => { };
+                    cardElement.classList.add("not-interesting");
+
+                    cards.appendChild(cardElement);
+                });
+
+                holder.appendChild(cards);
+                if (dungeon.HasBoss) {
+                    const bossHolder = document.createElement('div');
+                    bossHolder.classList.add("dungeon-boss");
+                    holder.appendChild(bossHolder);
+                    const bossCard = createCardElement({
+                        Name: dungeon.BossName,
+                        Health: dungeon.BossHealth,
+                        Attack: dungeon.BossDamage,
+                        ElementColor: dungeon.BossColor,
+                        IsOwned: true
+                    });
+                    bossCard.onclick = () => { };
+                    bossCard.classList.add("not-interesting");
+                    bossHolder.appendChild(bossCard);
+                }
+                dungeonCard.appendChild(title);
+                dungeonCard.appendChild(reward);
+                dungeonCard.appendChild(size);
+                dungeonCard.appendChild(holder);
+
+                allDungeons.appendChild(dungeonCard);
+            });
+        });
+        const allPowers = document.getElementById('allPowers');
+        allPowers.innerHTML = '';
+        getPowers().then(powers => {
+            console.log(powers);
+            powers.forEach(power => {
+                const card = createAbilityCard({
+                    Name: power.name,
+                    Rarity: power.rarity,
+                    Value: power.value,
+                    Duration: power.duration,
+                    Type: power.type
+                });
+                console.log(card);
+                allPowers.appendChild(card);
+            })
+        });
+        getPaths().then(paths => {
+            paths.forEach(path => {
+
             });
         });
     } else if (tabId == 'cards') {
@@ -840,6 +988,136 @@ function switchEditorTab(tabId) {
                 plyCardSelect.appendChild(cardElement);
             });
         });
+    } else if (tabId == 'paths') {
+        const pathName = document.getElementById('dungeonName');
+        pathName.value = '';
+
+        const rewardSelector = document.getElementById('rewardSetSelector');
+        rewardSelector.innerHTML = '<option value="">Válassz egy szettet</option>';
+
+        const rewardSetPreview = document.getElementById('rewardSetPreview');
+        console.log(rewardSetPreview);
+        window.editorContext.collectionPairs = {};
+        getCollections().then(collections => {
+            collections.forEach(coll => {
+                console.log("cards!");
+                console.log(coll);
+                window.editorContext.collectionPairs[coll.Name] = coll.Cards;
+                const option = document.createElement('option');
+                option.setAttribute('value', coll.Name);
+                option.innerText = coll.Name;
+                rewardSelector.appendChild(option);
+            })
+        })
+
+        const refreshShit = () => {
+            console.log("REFRESHING!!!");
+            console.log(`value: ${rewardSelector.value}`)
+            if (rewardSelector.value == "") {
+                rewardSetPreview.style.display = 'none';
+                return;
+            }
+            console.log("AND NOW MAKING IT VISIBLE!");
+
+            rewardSetPreview.style.display = 'flex';
+            rewardSetPreview.innerHTML = '';
+            const cards = window.editorContext.collectionPairs[rewardSelector.value];
+            let i = 1;
+            cards.forEach(card => {
+                console.log(card);
+                const cardElement = createCardElement(card);
+                cardElement.onclick = () => { };
+                cardElement.classList.add('editor-card', 'not-interesting');
+
+                cardElement.style.setProperty('--card-index', `"${i}"`);
+                rewardSetPreview.appendChild(cardElement);
+                i++;
+            });
+        };
+
+        const dungeonOrderSelector = document.getElementById('dungeonOrderSelector');
+        dungeonOrderSelector.innerHTML = '';
+        window.editorContext.dungeonPathDungeons = [];
+        window.editorContext.pathSequence = [];
+        document.getElementById('pathSequenceContainer').innerHTML = '';
+
+        getDungeons().then(dungeons => {
+            dungeons.forEach(dungeon => {
+                const dungeonCard = document.createElement('div');
+                dungeonCard.classList.add("dungeon-display");
+
+                const title = document.createElement('h4');
+                title.classList.add("dungeon-name-display");
+                title.textContent = dungeon.Name;
+
+                const reward = document.createElement('p');
+                reward.textContent = `Jutalom: ${getRewardLabel(dungeon.Reward)}`;
+
+                const size = document.createElement('p');
+                size.textContent = `Méret: ${dungeon.Size}`;
+
+                const holder = document.createElement('div');
+                holder.classList.add("dungeon-cards-display");
+
+                const cards = document.createElement('div');
+                cards.classList.add("dungeon-cards");
+
+                dungeon.Cards.forEach(card => {
+                    const cardElement = createCardElement(card);
+                    cardElement.onclick = () => { };
+                    cardElement.classList.add("not-interesting");
+                    cards.appendChild(cardElement);
+                });
+
+                holder.appendChild(cards);
+
+                if (dungeon.HasBoss) {
+                    const bossHolder = document.createElement('div');
+                    bossHolder.classList.add("dungeon-boss");
+                    holder.appendChild(bossHolder);
+
+                    const bossCard = createCardElement({
+                        Name: dungeon.BossName,
+                        Health: dungeon.BossHealth,
+                        Attack: dungeon.BossDamage,
+                        ElementColor: dungeon.BossColor,
+                        IsOwned: true
+                    });
+                    bossCard.onclick = () => { };
+                    bossCard.classList.add("not-interesting");
+                    bossHolder.appendChild(bossCard);
+                }
+
+                dungeonCard.appendChild(title);
+                dungeonCard.appendChild(reward);
+                dungeonCard.appendChild(size);
+                dungeonCard.appendChild(holder);
+
+                dungeonCard.onclick = () => {
+                    const index = window.editorContext.pathSequence.findIndex(p => p.dungeonName === dungeon.Name);
+
+                    if (index === -1) {
+                        // Add
+                        window.editorContext.pathSequence.push({
+                            dungeonName: dungeon.Name,
+                            cardBonus: 0
+                        });
+                        dungeonCard.classList.add('selected');
+                    } else {
+                        // Remove
+                        window.editorContext.pathSequence.splice(index, 1);
+                        dungeonCard.classList.remove('selected');
+                    }
+
+                    renderPathSequence();
+                };
+
+                dungeonOrderSelector.appendChild(dungeonCard);
+            });
+        });
+
+        refreshShit();
+        rewardSelector.onchange = () => refreshShit();
     }
 }
 
@@ -1331,7 +1609,47 @@ window.addEventListener('DOMContentLoaded', () => {
 
     hideGameViewElements();
     requestGameState();
+    hideMainMenu();
+
+    showLoadingScreen(() => {
+        showMainMenu(false);
+
+    })
 });
 
 document.addEventListener("mousemove", ev => window.mouse = { 'x': ev.pageX, 'y': ev.pageY });
 document.getElementById('worldName').oninput = (ev) => window.editorContext.name = ev.target.value;
+
+function renderPathSequence() {
+    const container = document.getElementById('pathSequenceContainer');
+    container.innerHTML = '';
+
+    const sequence = window.editorContext.pathSequence;
+
+    sequence.forEach((step, index) => {
+        const card = document.createElement('div');
+        card.className = 'path-step-card';
+
+        card.innerHTML = `
+            <h4 class="dungeon-name">${step.dungeonName}</h4>
+            <label>Card bonus</label>
+            <input type="number" value="${step.cardBonus}" onchange="updatePathStep(${index}, 'cardBonus', this.value)">
+        `;
+
+        container.appendChild(card);
+
+        // Add arrow if there are at least 2 items and this is not the last one
+        if (sequence.length >= 2 && index < sequence.length - 1) {
+            const arrow = document.createElement('div');
+            arrow.className = 'path-arrow';
+            arrow.innerHTML = '➜';
+            container.appendChild(arrow);
+        }
+    });
+}
+
+window.updatePathStep = function (index, field, value) {
+    if (window.editorContext.pathSequence[index]) {
+        window.editorContext.pathSequence[index][field] = parseInt(value) || 0;
+    }
+};

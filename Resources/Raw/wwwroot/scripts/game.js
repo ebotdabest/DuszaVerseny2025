@@ -492,6 +492,7 @@ function handleFightEvent(event) {
                 const historyText = `Kazamata(${gameState.enemyCard.Name}) támad: ${damage} a ${targetCard.Name}(Játékos), élete maradt: ${targetCard.Health}`;
 
                 delayedAttack('arenaEnemyCard', 'arenaPlayerCard', 'attack-right', damage, targetCard, historyText, false);
+                
         } else if (event.event_name === "player:attack") {
                 debugLog(`Received player:attack, damage=${event.values.damage}`, 'debug');
                 const damage = event.values.damage;

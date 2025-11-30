@@ -159,32 +159,45 @@ namespace DuszaVerseny2025
 
         private async Task OnFightEvent(World.FightEvent ev)
         {
-            try
+            // try
+            // {
+            Debug.WriteLine($"[C#] OnFightEvent: {ev.event_name}");
+
+            // Map the engine event to a serializable format for JS
+            var jsEvent = new FightEventData
             {
-                Debug.WriteLine($"[C#] OnFightEvent: {ev.event_name}");
+                event_name = ev.event_name,
+                values = new Dictionary<string, object>()
+            };
 
-                // Map the engine event to a serializable format for JS
-                var jsEvent = new FightEventData
+            foreach (var kvp in ev.values)
+            {
+                if (kvp.Value is Card c)
                 {
-                    event_name = ev.event_name,
-                    values = new Dictionary<string, object>()
-                };
-
-                foreach (var kvp in ev.values)
-                {
-                    if (kvp.Value is Card c)
-                    {
-                        jsEvent.values[kvp.Key] = new SimpleCard(c);
-                    }
-                    else
-                    {
-                        jsEvent.values[kvp.Key] = kvp.Value;
-                    }
+                    jsEvent.values[kvp.Key] = new SimpleCard(c);
                 }
-
-                if (ev.event_name == "game:attack")
+                else
                 {
+                    jsEvent.values[kvp.Key] = kvp.Value;
+                }
+            }
+
+            if (ev.event_name == "game:attack")
+            {
+                System.Console.WriteLine("Getting the power cards");
+                Console.ReadLine();
+                System.Console.WriteLine($"powe cards: {MauiProgram.engine.powerCards.Count}");
+                Console.ReadLine();
+                if (MauiProgram.engine.powerCards.Count > 0)
+                {
+                    System.Console.WriteLine("There is a shit");
+                    Console.ReadLine();
+                    System.Console.WriteLine("Rolling...");
+                    Console.ReadLine();
                     PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+                    Console.ReadLine();
+                    System.Console.WriteLine($"Got the card: {card.getName()}");
+                    Console.ReadLine();
                     if (card.getDuration() > 0)
                     {
                         Dungeon.activeEnemyPowers.Add(card);
@@ -192,37 +205,51 @@ namespace DuszaVerseny2025
                     }
                     else
                     {
-                        card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], false);
+                        try
+                        {
+                            card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], false);
+
+                        }
+                        catch (Exception e)
+                        {
+                            System.Console.WriteLine(e.ToString());
+                            Console.ReadLine();
+                        }
                     }
+                    hybridWebView.SendRawMessage($"cardActive|");
                 }
-                if (ev.event_name == "player:attack")
-                {
-                    PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
-                    if (card.getDuration() > 0)
-                    {
-                        Dungeon.activePlayerPowers.Add(card);
-                        // Send some kinda visual you got this card
-                    }
-                    else
-                    {
-                        card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], true);
-                    }
-                }
-
-                string json = JsonSerializer.Serialize(jsEvent, GamePageJSContext.Default.FightEventData);
-
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    hybridWebView.SendRawMessage($"fightEvent|{json}");
-                });
-
-                if (ev.event_name.Contains("select")) await Task.Delay(500);
-                else await Task.Delay(500);
             }
-            catch (Exception ex)
+
+            if (ev.event_name == "player:attack")
             {
-                Debug.WriteLine($"CRASH IN ONFIGHTEVENT: {ex}");
+                // PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+                // if (card.getDuration() > 0)
+                // {
+                //     Dungeon.activePlayerPowers.Add(card);
+                //     // Send some kinda visual you got this card
+                // }
+                // else
+                // {
+                //     card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], true);
+                // }
             }
+
+            string json = JsonSerializer.Serialize(jsEvent, GamePageJSContext.Default.FightEventData);
+
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                hybridWebView.SendRawMessage($"fightEvent|{json}");
+            });
+
+            if (ev.event_name.Contains("select")) await Task.Delay(500);
+            else await Task.Delay(500);
+            // }
+            //     catch (Exception ex)
+            //     {
+            //         Console.ReadLine();
+            //         System.Console.WriteLine(ex.ToString());
+            //         Console.ReadLine();
+            //     }
         }
     }
 

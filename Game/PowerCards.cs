@@ -23,6 +23,7 @@ public abstract class PowerCard : IPowerCard
         this.duration = duration;
         this.value = value;
         this.name = name;
+        this.rarity = rarity;
         roundsLeft = duration;
     }
 

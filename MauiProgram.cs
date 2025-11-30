@@ -351,6 +351,10 @@ public static class MauiProgram
 
             // SaveManager.SaveWorld(1, engine, "Back up");
 
+            SetupEngine();
+            SaveManager.SaveWorld(0, engine, "Az alap világ");
+            SaveManager.SaveWorld(1, engine, "Back up");
+
 
 
             Console.ReadLine();
@@ -375,6 +379,22 @@ public static class MauiProgram
         builder.Services.AddSingleton<MainPage>();
         builder.Services.AddTransient<GamePage>();
 
+#if WINDOWS
+        Microsoft.Maui.Handlers.WindowHandler.Mapper.AppendToMapping("Fullscreen", (handler, view) =>
+        {
+            var mauiWindow = handler.VirtualView;
+            var nativeWindow = handler.PlatformView;
+
+            nativeWindow.AppWindow.Changed += (s, e) =>
+            {
+                if (nativeWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter p)
+                {
+                    // p.SetBorderAndTitleBar(false, false);
+                    // p.Maximize();
+                }
+            };
+        });
+#endif
         return builder.Build();
     }
 }

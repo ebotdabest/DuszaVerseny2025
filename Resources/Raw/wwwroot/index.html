@@ -125,7 +125,7 @@
       </div>
       <div class="form-group">
         <label>Nehézség: <span id="difficultyValue">5</span></label>
-        <input type="range" id="difficulty" min="0" max="10" value="5" class="custom-slider"
+        <input type="range" id="difficulty" min="0" max="10" value="0" class="custom-slider"
           oninput="document.getElementById('difficultyValue').textContent = this.value" />
       </div>
       <div class="button-row">
@@ -218,7 +218,7 @@
                 + Új Kártya
               </button>
             </div>
-            <div id="allCardsList" class="scrollable-list small"></div>
+            <div id="allCardsList" class="scrollable-list"></div>
           </div>
 
           <div class="mb-30">
@@ -228,7 +228,7 @@
                 + Új Vezér
               </button>
             </div>
-            <div id="allBosses" class="scrollable-list small"></div>
+            <div id="allBosses" class="scrollable-list"></div>
           </div>
 
           <div class="mb-30">
@@ -241,7 +241,7 @@
             <label>A szettek kizárólag a könnyebb kezelés érdekében készültek;
               bármilyen módosítás rajtuk <b>NEM</b> érinti a többi
               kazamatát.</label>
-            <div id="allSets" class="scrollable-list small"></div>
+            <div id="allSets" class="scrollable-list"></div>
           </div>
 
           <div class="mb-30">
@@ -251,7 +251,7 @@
                 +Új Kazamata
               </button>
             </div>
-            <div id="allDungeons" class="scrollable-list small"></div>
+            <div id="allDungeons" class="scrollable-list"></div>
           </div>
 
           <div class="mb-30">
@@ -261,7 +261,7 @@
                 +Új Képesség
               </button>
             </div>
-            <div id="allPowers" class="scrollable-list small"></div>
+            <div id="allPowers" class="scrollable-list"></div>
           </div>
 
           <div class="mb-30">
@@ -271,7 +271,7 @@
                 +Új Katakomba
               </button>
             </div>
-            <div id="allRoutes" class="scrollable-list small"></div>
+            <div id="allRoutes" class="scrollable-list"></div>
           </div>
 
           <div id="contextMenu">
@@ -301,7 +301,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>Támadás:</label>
-              <input type="number" id="cardAttack" value="1" min="0" />
+              <input type="number" id="cardAttack" value="2" min="2" />
             </div>
             <div class="form-group">
               <label>Életerő:</label>
@@ -514,7 +514,38 @@
           </div>
 
           <h3>🗺️ Katakombák</h3>
-          <h5>Hamarosan elérhető funkció</h5>
+
+          <div class="form-group">
+            <label>Katakomba Neve:</label>
+            <input type="text" id="pathName" placeholder="Pl.: Legendák útja, Ikea..." />
+          </div>
+
+          <div class="form-group">
+            <label>Reward Set:</label>
+            <select id="rewardSetSelector"></select>
+          </div>
+
+          <div id="rewardSetPreview" class="scrollable-list"></div>
+
+          <div class="form-group">
+            <label>Cards Granted:</label>
+            <input type="number" id="cardsGranted" value="1" min="1" />
+          </div>
+
+          <div class="form-group">
+            <label>Kazamaták: </label>
+          </div>
+          <div id="dungeonOrderSelector" class="scrollable-list"></div>
+
+          <div class="form-group">
+            <label>Kiválasztott Útvonal:</label>
+          </div>
+          <div id="pathSequenceContainer" class="path-sequence-container"></div>
+
+          <div class="button-row mt-30">
+            <button class="action-btn">✓ Mentés</button>
+          </div>
+          <!--<h5>Hamarosan elérhető funkció</h5>
 
           <div class="coming-soon">
             <div class="construction-icon">🚧</div>
@@ -522,7 +553,7 @@
             <p class="coming-desc">
               A térkép és katakomba rendszer hamarosan elérhető lesz!
             </p>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -538,9 +569,9 @@
       theme: 'dark',
       accentColor: '#ff2a6d'
     });
-
-    player.playPlaylist(['Evolution-Type42.mp3', 'FiniteInfinity-Type42.mp3', 'NewKindofHero-Type42.mp3', 'TheHunter-Type42.mp3', 'UpInFlames-RenéG.Boscio.mp3'], { random: true });
+    player.playPlaylist(['NewKindofHero-Type42.mp3', 'Evolution-Type42.mp3', 'FiniteInfinity-Type42.mp3', 'TheHunter-Type42.mp3', 'UpInFlames-RenéG.Boscio.mp3'], { random: false });
     player.setAutoPlay(true);
+
     document.addEventListener("click", function (e) {
       if (e.target && (e.target.closest('button') || e.target.closest('.save-item-btn')))
         player.playSfx('Select-2.mp3', 0.6);

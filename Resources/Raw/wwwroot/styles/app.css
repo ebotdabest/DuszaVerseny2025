@@ -1034,19 +1034,19 @@ input[type=range].custom-slider::-webkit-slider-thumb:hover {
 }
 
 .editor-card {
-    position: relative;
+        position: relative;
 }
 
 .editor-card::after {
-    content: var(--card-index);
-    background-color: rgb(128, 0, 0);
-    border-radius: 15px;
-    position: absolute;
-    left: 91%;
-    z-index: 500;
-    padding: 6px;
-    top: -8%;
-    display: block;
+        content: var(--card-index);
+        background-color: rgb(128, 0, 0);
+        border-radius: 15px;
+        position: absolute;
+        left: 91%;
+        z-index: 500;
+        padding: 6px;
+        top: -8%;
+        display: block;
 }
 
 button.fake-link {
@@ -2244,4 +2244,180 @@ select:focus-visible {
         .dungeon-tooltip {
                 max-width: 280px;
         }
+}
+
+.editor-card>.card-name::after {
+        content: var(--card-index);
+        background-color: var(--accent-red);
+        color: white;
+        position: absolute;
+        left: 85%;
+        z-index: 500;
+        padding: 6px;
+        top: -2%;
+        display: block;
+}
+
+.set-card {
+        background-color: #242424;
+        width: 100%;
+        padding: 1rem;
+        cursor: pointer;
+}
+
+.set-card * {
+        cursor: pointer;
+}
+
+.set-card:hover {
+        outline: 6px solid var(--accent-red);
+}
+
+.set-card-title {
+        color: rgb(206, 206, 206);
+        margin-top: 0px;
+}
+
+.set-card-content {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 2vw;
+}
+
+#allSets {
+        display: flex;
+        flex-wrap: nowrap;
+        flex-direction: column;
+        gap: 1vw;
+        padding: 1vw;
+}
+
+.dungeon-display {
+        background-color: #242424;
+        padding: 1rem;
+}
+
+.dungeon-name-display {
+        margin-top: 0px;
+}
+
+.dungeon-cards-display {
+        display: flex;
+        gap: 2vw;
+        align-items: flex-start;
+        flex: 1 1 auto;
+}
+
+.dungeon-boss,
+.dungeon-cards {
+        background-color: #1d1d1d;
+        padding: 1em;
+}
+
+.dungeon-cards {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row;
+        flex: 1 1 auto;
+        gap: 1vw;
+        min-width: 0;
+}
+
+#allDungeons {
+        display: flex;
+        flex-direction: column;
+        gap: 1vw;
+}
+
+#allPowers {
+        display: flex;
+        flex-direction: column;
+        gap: 1vw;
+}
+
+#rewardSetPreview {
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: row;
+        gap: 2vw;
+}
+
+/* Path Editor Styles */
+.path-sequence-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid #333;
+        min-height: 100px;
+        align-items: flex-start;
+}
+
+.path-step-card {
+        background: #1a1a1a;
+        border: 1px solid #444;
+        padding: 10px;
+        width: 180px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+}
+
+.path-step-card .dungeon-name {
+        font-size: 14px;
+        color: var(--accent-red);
+        text-align: center;
+        margin: 0;
+}
+
+.path-step-card label {
+        font-size: 10px;
+        color: #888;
+}
+
+.path-step-card input {
+        width: 100%;
+        padding: 5px;
+        background: #0a0a0a;
+        border: 1px solid #333;
+        color: white;
+        font-size: 12px;
+}
+
+.path-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: var(--accent-gold);
+        height: 100%;
+        /* Align with card center roughly */
+        align-self: center;
+}
+
+.dungeon-display.selected {
+        border-color: var(--accent-gold);
+        box-shadow: var(--glow-gold);
+        position: relative;
+}
+
+.dungeon-display.selected::after {
+        content: '✓';
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        width: 24px;
+        height: 24px;
+        background: var(--accent-gold);
+        color: black;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        z-index: 10;
 }

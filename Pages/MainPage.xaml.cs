@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,144 +11,9 @@ using DuszaVerseny2025.Engine.Utils;
 
 namespace DuszaVerseny2025
 {
-    public class CardData
-    {
-        public int Index { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public int Attack { get; set; }
-        public int Health { get; set; }
-        public string ElementColor { get; set; } = string.Empty;
-        public bool IsOwned { get; set; }
-        public bool IsSelected { get; set; }
-    }
-
-    public class DungeonData
-    {
-        public string Name { get; set; } = string.Empty;
-        public bool HasBoss { get; set; }
-        public string BossName { get; set; } = string.Empty;
-        public int BossHealth { get; set; }
-        public int BossDamage { get; set; }
-        public string Size { get; set; } = string.Empty;
-        public string Reward { get; set; } = string.Empty;
-    }
-
-    public class GameStateData
-    {
-        public List<CardData> AvailableCards { get; set; } = new();
-        public List<DungeonData> Dungeons { get; set; } = new();
-        public int MaxDeckSize { get; set; }
-        public int CurrentDeckSize { get; set; }
-    }
-
-    public struct CollectionData
-    {
-        public string Name { get; set; }
-        public CardData[] Cards { get; set; }
-    }
-
-    public class PathData
-    {
-        public string name { get; set; } = string.Empty;
-        public List<string> dungeons { get; set; } = new();
-        public List<string> escapeRewards { get; set; } = new();
-        public List<PathDungeonData> dungeonData { get; set; } = new();
-    }
-
-    public class PathDungeonData
-    {
-        public string Size { get; set; } = string.Empty;
-        public bool HasBoss { get; set; }
-    }
-
-    [JsonSourceGenerationOptions(WriteIndented = false)]
-    [JsonSerializable(typeof(GameStateData))]
-    [JsonSerializable(typeof(CardData))]
-    [JsonSerializable(typeof(List<CardData>))]
-    [JsonSerializable(typeof(DungeonData))]
-    [JsonSerializable(typeof(List<DungeonData>))]
-    [JsonSerializable(typeof(PathData))]
-    [JsonSerializable(typeof(List<PathData>))]
-    [JsonSerializable(typeof(PathDungeonData))]
-    [JsonSerializable(typeof(string))]
-    [JsonSerializable(typeof(int))]
-    internal partial class CardGameJSContext : JsonSerializerContext
-    {
-    }
-
     public partial class MainPage : ContentPage
     {
         public static MainPage Current { get; private set; }
-
-        #region Fields
-
-        private DungeonEditor? editor;
-        private int currentlyEditing = -1;
-
-        #endregion
-
-        #region Initialization
-
-        public MainPage()
-        {
-            InitializeComponent();
-            Current = this;
-
-            hybridWebView.SetInvokeJavaScriptTarget(this);
-
-            MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) =>
-            {
-                MainThread.BeginInvokeOnMainThread(async () =>
-                {
-                    await SendGameStateToJS();
-                });
-            });
-        }
-
-        protected override async void OnAppearing()
-        {
-            base.OnAppearing();
-            Debug.WriteLine("=== MainPage OnAppearing ===");
-
-            await Task.Delay(1000);
-
-            bool connected = false;
-            for (int i = 0; i < 3; i++)
-            {
-                try
-                {
-                    await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Connection established', 'success')");
-                    connected = true;
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Connection attempt {i + 1} failed: {ex.Message}");
-                    await Task.Delay(500);
-                }
-            }
-
-            if (connected)
-            {
-                try { await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();"); }
-                catch (Exception ex) { Debug.WriteLine($"Failed to restore logs: {ex.Message}"); }
-
-                try
-                {
-                    await hybridWebView.EvaluateJavaScriptAsync("if(window.requestGameState) window.requestGameState();");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to trigger requestGameState: {ex.Message}");
-                }
-            }
-
-            Debug.WriteLine("=== MainPage OnAppearing END ===");
-        }
-
-        #endregion
-
-        #region Save and Load Management
 
         private int GetNextSaveId()
         {
@@ -159,12 +25,34 @@ namespace DuszaVerseny2025
             return saves.Max(s => s.saveId) + 1;
         }
 
+        public MainPage()
+        {
+            InitializeComponent();
+            Current = this;
+
+            hybridWebView.SetInvokeJavaScriptTarget(this);
+
+            MessagingCenter.Subscribe<GamePage>(this, "DungeonWon", (sender) =>
+            {
+                // Refresh the UI after dungeon completion
+                MainThread.BeginInvokeOnMainThread(async () =>
+                {
+                    await SendGameStateToJS();
+                });
+            });
+        }
+
         public List<SaveManager.PlayerSave> RequestSaves()
         {
             var saves = SaveManager.GetSaves()
                                    .OrderBy(s => s.saveId)
                                    .ToList();
             return saves;
+        }
+
+        public void MakeADungeonPath(JsonElement e)
+        {
+
         }
 
         public List<SaveManager.WorldDungeonCombo> RequestWorlds()
@@ -183,6 +71,8 @@ namespace DuszaVerseny2025
 
             var engine = DungeonEditor.loadFromWorld(world, dungeons).CompileMockEngine();
             MauiProgram.engine = engine;
+
+            System.Console.WriteLine("Loaded game, and power cards " + $"{engine.powerCards.Count}");
 
             if (MauiProgram.deckBuilder != null)
                 MauiProgram.deckBuilder.engine = engine;
@@ -225,9 +115,9 @@ namespace DuszaVerseny2025
             MauiProgram.currentSaveName = saveName;
 
             var (world, dungeons) = SaveManager.LoadWorld(templateId);
-            var editorInstance = DungeonEditor.loadFromWorld(world, dungeons);
+            var editor = DungeonEditor.loadFromWorld(world, dungeons);
 
-            var engine = editorInstance.CompileMockEngine();
+            var engine = editor.CompileMockEngine();
             MauiProgram.engine = engine;
 
             if (MauiProgram.deckBuilder != null)
@@ -257,9 +147,46 @@ namespace DuszaVerseny2025
             MauiProgram.deckBuilder.Clear();
         }
 
-        #endregion
+        public DungeonData GetDungeonCards(string dungeonName)
+        {
+            System.Console.WriteLine("FUCK SAKE!");
+            System.Console.WriteLine(dungeonName);
+            var d = MauiProgram.engine.GameWorld.Dungeons.First(d => d.name == dungeonName);
+            return new DungeonData
+            {
+                Name = d.name,
+                HasBoss = d.bossTemplate != null,
+                Size = d.type switch
+                {
+                    DungeonTemplate.DungeonType.Small => "Egyszerű",
+                    DungeonTemplate.DungeonType.Medium => "Kis",
+                    DungeonTemplate.DungeonType.Big => "Nagy",
+                },
+                Reward = d.reward.GetType() == typeof(DungeonTemplate.AttributeReward) ? ((DungeonTemplate.AttributeReward)d.reward).Export() : "kartya",
+                Cards = d.collection.Cards.Select(c => new CardData
+                {
+                    Name = c.name,
+                    Health = c.Health,
+                    Attack = c.Attack,
+                    ElementColor = c.ElementColor.ToHex(),
+                    IsOwned = true,
+                    Index = 0
+                }).ToArray()
+            };
+        }
 
-        #region Editor Logic
+        public List<DungeonPathTemplate> GetPaths()
+        {
+            System.Console.WriteLine(MauiProgram.engine.dungeonPaths.Count);
+            // return editor.dungeonPaths;
+            return MauiProgram.engine.dungeonPaths;
+        }
+
+        // Strict editor logic START
+
+        public DungeonEditor editor;
+        public int currentlyEditing = -1;
+
 
         public void InitEditor()
         {
@@ -270,7 +197,7 @@ namespace DuszaVerseny2025
         public bool CreateCard(JsonElement json)
         {
             string name = json.GetProperty("name").GetString();
-            if (editor!.cards.Any(c => c.name == name || c.bossName == name)) return false;
+            if (editor.cards.Any(c => c.name == name || c.bossName == name)) return false;
             int attack = json.GetProperty("attack").GetInt32();
             int health = json.GetProperty("health").GetInt32();
             CardTemplate.Type element = Utils.GetNamedType(json.GetProperty("element").GetString());
@@ -290,22 +217,22 @@ namespace DuszaVerseny2025
 
         public void SaveCurrentlyEditing(string saveName)
         {
-            var engine = editor!.CompileMockEngine();
+            var engine = editor.CompileMockEngine();
             SaveManager.SaveWorld(currentlyEditing, engine, saveName);
         }
 
         public CardData[] GetEditorCards()
         {
-            var cards = new List<CardData>();
-            foreach (var card in editor!.cards)
+            List<CardData> cards = new();
+            for (int i = 0; i < editor.cards.Count; i++)
             {
-                if (card.IsBoss) continue;
+                if (editor.cards[i].IsBoss) continue;
                 cards.Add(new CardData
                 {
-                    Name = card.Name,
-                    Attack = card.Attack,
-                    Health = card.Health,
-                    ElementColor = card.ElementColor.ToHex(),
+                    Name = editor.cards[i].Name,
+                    Attack = editor.cards[i].Attack,
+                    Health = editor.cards[i].Health,
+                    ElementColor = editor.cards[i].ElementColor.ToHex(),
                     IsOwned = true
                 });
             }
@@ -315,9 +242,9 @@ namespace DuszaVerseny2025
 
         public CardData[] GetBossCards()
         {
-            var cards = new List<CardData>();
+            List<CardData> cards = new();
 
-            foreach (CardTemplate boss in editor!.cards.Where(c => c.IsBoss))
+            foreach (CardTemplate boss in editor.cards.Where(c => c.IsBoss))
             {
                 cards.Add(new CardData
                 {
@@ -332,9 +259,9 @@ namespace DuszaVerseny2025
             return cards.ToArray();
         }
 
-        private void CompleteRemove(CardTemplate card)
+        void CompleteRemove(CardTemplate card)
         {
-            editor!.cards.Remove(card);
+            editor.cards.Remove(card);
             foreach (var collection in editor.collections) collection.collection.Purge(card);
             foreach (var dungeon in editor.dungeons)
             {
@@ -347,7 +274,7 @@ namespace DuszaVerseny2025
         {
             string cardName = request.GetProperty("cardName").GetString();
 
-            if (!editor!.cards.Any(c => c.name == cardName)) return false;
+            if (!editor.cards.Any(c => c.name == cardName)) return false;
 
             CardTemplate card = editor.cards.First(c => c.name == cardName);
             CompleteRemove(card);
@@ -358,7 +285,7 @@ namespace DuszaVerseny2025
         public bool DeleteBoss(JsonElement request)
         {
             string bossName = request.GetProperty("bossName").GetString();
-            if (!editor!.cards.Any(c => c.bossName == bossName)) return false;
+            if (!editor.cards.Any(c => c.bossName == bossName)) return false;
 
             CardTemplate boss = editor.cards.First(c => c.bossName == bossName);
             CompleteRemove(boss);
@@ -367,10 +294,11 @@ namespace DuszaVerseny2025
 
         public bool CreateCollection(JsonElement json)
         {
+            System.Console.WriteLine("SUp");
             string name = json.GetProperty("name").GetString();
-            if (editor!.collections.Any(c => c.Name == name)) return false;
+            if (editor.collections.Any(c => c.Name == name)) return false;
 
-            var cards = new List<CardTemplate>();
+            List<CardTemplate> cards = new();
             foreach (var card in json.GetProperty("cards").EnumerateArray())
             {
                 cards.Add(editor.cards.First(c => c.name == card.GetString()));
@@ -379,13 +307,18 @@ namespace DuszaVerseny2025
             editor.collections.Add(new DungeonEditor.NamedCollection(cards, name));
             return true;
         }
+        public struct CollectionData
+        {
+            public string Name { get; set; }
+            public CardData[] Cards { get; set; }
+        }
 
         public CollectionData[] GetCollections()
         {
-            var collections = new CollectionData[editor!.collections.Count];
+            CollectionData[] collections = new CollectionData[editor.collections.Count];
             for (int i = 0; i < editor.collections.Count; i++)
             {
-                var cards = new List<CardData>();
+                List<CardData> cards = new();
                 foreach (var card in editor.collections[i].collection.Cards)
                 {
                     if (card.IsBoss) continue;
@@ -409,19 +342,19 @@ namespace DuszaVerseny2025
 
         public void AddToInitialDeck(string name)
         {
-            CardTemplate card = editor!.cards.First(c => c.name == name);
+            CardTemplate card = editor.cards.First(c => c.name == name);
             editor.initialDeck.Add(card);
         }
 
         public void RemoveFromInitialDeck(string name)
         {
-            CardTemplate card = editor!.cards.First(c => c.name == name);
+            CardTemplate card = editor.cards.First(c => c.name == name);
             editor.initialDeck.Remove(card);
         }
 
         public bool IsInitialCard(string name)
         {
-            return editor!.initialDeck.Any(c => c.name == name);
+            return editor.initialDeck.Any(c => c.name == name);
         }
 
         public object LoadWorldForEditing(int worldId)
@@ -442,24 +375,22 @@ namespace DuszaVerseny2025
             bool hasBoss = json.GetProperty("hasBoss").GetBoolean();
             string reward = json.GetProperty("reward").GetString();
 
-            Collection dungeonCollection = editor!.collections.First(c => c.Name == deckName).collection;
+            Collection dungeonCollection = editor.collections.First(c => c.Name == deckName).collection;
 
             var dungeonType = type switch
             {
                 "egyszeru" => DungeonTemplate.DungeonType.Small,
                 "kis" => DungeonTemplate.DungeonType.Medium,
-                "nagy" => DungeonTemplate.DungeonType.Big,
-                _ => DungeonTemplate.DungeonType.Small
+                "nagy" => DungeonTemplate.DungeonType.Big
             };
 
             DungeonTemplate.DungeonReward dungeonReward;
 
-            if (reward == "kartya")
-                dungeonReward = new DungeonTemplate.CardReward(dungeonCollection.Cards.ToArray());
-            else
-                dungeonReward = new DungeonTemplate.AttributeReward(Utils.GetAttributeByName(reward));
+            if (reward == "kartya") dungeonReward = new DungeonTemplate.CardReward(dungeonCollection.Cards.ToArray());
+            else dungeonReward = new DungeonTemplate.AttributeReward(Utils.GetAttributeByName(reward));
 
             DungeonTemplate template;
+
 
             if (hasBoss)
             {
@@ -479,10 +410,10 @@ namespace DuszaVerseny2025
 
         public void SaveEditor(string name)
         {
-            var collectionSaves = new List<SaveManager.WorldSave.CollectionSave>();
-            foreach (var collection in editor!.collections)
+            List<SaveManager.WorldSave.CollectionSave> collectionSaves = new();
+            foreach (var collection in editor.collections)
             {
-                var cards = new string[collection.collection.Size];
+                string[] cards = new string[collection.collection.Size];
                 for (int i = 0; i < collection.collection.Size; i++) cards[i] = collection.collection[i].name;
                 collectionSaves.Add(new()
                 {
@@ -506,7 +437,7 @@ namespace DuszaVerseny2025
                 name = c.getName(),
                 value = c.getValue(),
                 rarity = c.getRarity(),
-                duration = c.getRarity(),
+                duration = c.getDuration(),
                 type = c.GetType().Name
             }).ToList();
         }
@@ -520,17 +451,25 @@ namespace DuszaVerseny2025
                 BossName = d.bossTemplate?.name,
                 BossHealth = d.bossTemplate?.health ?? 0,
                 BossDamage = d.bossTemplate?.damage ?? 0,
+                BossColor = d.bossTemplate?.ElementColor.ToHex(),
                 Size = d.type switch
                 {
                     DungeonTemplate.DungeonType.Small => "Egyszerű",
                     DungeonTemplate.DungeonType.Medium => "Kis",
                     DungeonTemplate.DungeonType.Big => "Nagy",
                 },
-                Reward = d.reward.GetType() == typeof(DungeonTemplate.AttributeReward) ? ((DungeonTemplate.AttributeReward)d.reward).Export() : "Kártya"
+                Reward = d.reward.GetType() == typeof(DungeonTemplate.AttributeReward) ? ((DungeonTemplate.AttributeReward)d.reward).Export() : "kartya",
+                Cards = d.collection.Cards.Select(c => new CardData
+                {
+                    Name = c.name,
+                    Health = c.Health,
+                    Attack = c.Attack,
+                    ElementColor = c.ElementColor.ToHex(),
+                    IsOwned = true,
+                    Index = 0
+                }).ToArray()
             }).ToList();
         }
-
-        // Removed duplicate GetPaths() that returned List<DungeonPathTemplate> to resolve CS0111
 
         Dictionary<string, Func<int, int, string, int, PowerCard>> cardConstructors = new()
         {
@@ -542,6 +481,7 @@ namespace DuszaVerseny2025
 
         public bool CreateAbility(JsonElement e)
         {
+            System.Console.WriteLine(e.ToString());
             //{"name":"Here vakarás","type":"InstantDamage","value":67,"duration":0,"rarity":62,"description":""}
             string name = e.GetProperty("name").GetString();
             string type = e.GetProperty("type").GetString();
@@ -549,16 +489,66 @@ namespace DuszaVerseny2025
             int duration = e.GetProperty("duration").GetInt32();
             int rarity = e.GetProperty("rarity").GetInt32();
 
-            PowerCard card = cardConstructors[type](value, duration, name, rarity);
+            System.Console.WriteLine($"{name},{type},{value},{duration},{rarity}");
+
+            PowerCard card = cardConstructors[type](duration, value, name, rarity);
             editor.powerCards.Add(card);
             System.Console.WriteLine(editor.powerCards.Count);
+            System.Console.WriteLine("Made!");
             return true;
         }
 
+        public List<DungeonPathTemplate> GetEditorPaths()
+        {
+            return editor.dungeonPaths;
+        }
 
-        #endregion
+        // Strict editor logic END
 
-        #region Game UI and Messaging
+
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            Debug.WriteLine("=== MainPage OnAppearing ===");
+
+            // Give the WebView time to initialize
+            await Task.Delay(1000);
+
+            bool connected = false;
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Connection established', 'success')");
+                    connected = true;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Connection attempt {i + 1} failed: {ex.Message}");
+                    await Task.Delay(500);
+                }
+            }
+
+            if (connected)
+            {
+                // Restore logs
+                try { await hybridWebView.EvaluateJavaScriptAsync("if(window.restoreLogs) window.restoreLogs();"); }
+                catch (Exception ex) { Debug.WriteLine($"Failed to restore logs: {ex.Message}"); }
+
+                // Request game state from JS on page load
+                try
+                {
+                    await hybridWebView.EvaluateJavaScriptAsync("if(window.requestGameState) window.requestGameState();");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to trigger requestGameState: {ex.Message}");
+                }
+            }
+
+            Debug.WriteLine("=== MainPage OnAppearing END ===");
+        }
 
         private async void OnHybridWebViewRawMessageReceived(object sender, HybridWebViewRawMessageReceivedEventArgs e)
         {
@@ -569,87 +559,102 @@ namespace DuszaVerseny2025
                 Debug.WriteLine("Received RequestGameState from JS");
                 await SendGameStateToJS();
             }
-            else if (e.Message == "ExitProgram")
+            if (e.Message == "ExitProgram")
             {
                 Environment.Exit(0);
             }
         }
 
+        // Send complete game state to JavaScript
         private async Task SendGameStateToJS()
         {
-            try
+            // try
+            // {
+            Debug.WriteLine("=== SendGameStateToJS START ===");
+            await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Preparing game state...', 'info')");
+
+            var availableCards = new List<CardData>();
+            int i = 0;
+            foreach (var card in MauiProgram.engine.CardTemplates)
             {
-                Debug.WriteLine("=== SendGameStateToJS START ===");
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Preparing game state...', 'info')");
-
-                var availableCards = new List<CardData>();
-                int i = 0;
-                foreach (var card in MauiProgram.engine!.CardTemplates)
+                // System.Console.WriteLine($"{card.name};{MauiProgram.engine.PlayerInventory.Has(card)}");
+                if (MauiProgram.engine.PlayerInventory.Has(card))
                 {
-                    if (MauiProgram.engine.PlayerInventory.Has(card))
+                    var plyCard = MauiProgram.engine.PlayerInventory[card.Name];
+                    availableCards.Add(new CardData
                     {
-                        var plyCard = MauiProgram.engine.PlayerInventory[card.Name];
-                        availableCards.Add(new CardData
-                        {
-                            Index = i++,
-                            Name = card.Name,
-                            Attack = plyCard.Attack,
-                            Health = plyCard.Health,
-                            ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
-                            IsOwned = true,
-                            IsSelected = MauiProgram.deckBuilder.Any(d => d.name == card.name)
-                        });
-                    }
-                    else
-                    {
-                        availableCards.Add(new CardData
-                        {
-                            Index = i++,
-                            Name = card.Name,
-                            Attack = card.Attack,
-                            Health = card.Health,
-                            ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
-                            IsOwned = false,
-                            IsSelected = MauiProgram.deckBuilder.Any(d => d.name == card.name)
-                        });
-                    }
+                        Index = i++,
+                        Name = card.Name,
+                        Attack = plyCard.damage,
+                        Health = plyCard.Health,
+                        ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
+                        IsOwned = true,
+                        IsSelected = MauiProgram.deckBuilder.Any(d => d.name == card.name)
+                    });
                 }
-
-                var dungeons = GetDungeonsEnhanced();
-
-                var gameState = new GameStateData
+                else
                 {
-                    AvailableCards = availableCards,
-                    Dungeons = dungeons,
-                    MaxDeckSize = (int)MauiProgram.engine.PlayerInventory.CanUse,
-                    CurrentDeckSize = MauiProgram.deckBuilder.Count
-                };
-
-                string json = JsonSerializer.Serialize(gameState, CardGameJSContext.Default.GameStateData);
-                Debug.WriteLine($"JSON length: {json.Length}");
-
-                await hybridWebView.EvaluateJavaScriptAsync($"window.updateGameState({json})");
-                await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Game state sent successfully', 'success')");
-
-                Debug.WriteLine("JavaScript call completed successfully");
-                Debug.WriteLine("=== SendGameStateToJS END ===");
+                    availableCards.Add(new CardData
+                    {
+                        Index = i++,
+                        Name = card.Name,
+                        Attack = card.damage,
+                        Health = card.Health,
+                        ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
+                        IsOwned = false,
+                        IsSelected = MauiProgram.deckBuilder.Any(d => d.name == card.name)
+                    });
+                }
             }
-            catch (Exception ex)
+
+
+            var dungeons = MauiProgram.engine.GameWorld.Dungeons
+                .Select(d => new DungeonData
+                {
+                    Name = d.name,
+                    HasBoss = d.bossTemplate != null,
+                    BossName = d.bossTemplate?.name,
+                    BossHealth = d.bossTemplate?.health ?? 0,
+                    BossDamage = d.bossTemplate?.damage ?? 0
+                }).ToList();
+
+
+            var gameState = new GameStateData
             {
-                Debug.WriteLine($"ERROR in SendGameStateToJS: {ex.Message}");
-                try
-                {
-                    await hybridWebView.EvaluateJavaScriptAsync($"window.debugLog('[C#] Error sending state: {ex.Message}', 'error')");
-                }
-                catch { }
-            }
+                AvailableCards = availableCards,
+                Dungeons = dungeons,
+                MaxDeckSize = (int)MauiProgram.engine.PlayerInventory.CanUse,
+                CurrentDeckSize = MauiProgram.deckBuilder.Count
+            };
+
+
+            string json = JsonSerializer.Serialize(gameState, CardGameJSContext.Default.GameStateData);
+            Debug.WriteLine($"JSON length: {json.Length}");
+
+
+            await hybridWebView.EvaluateJavaScriptAsync($"window.updateGameState({json})");
+            await hybridWebView.EvaluateJavaScriptAsync("window.debugLog('[C#] Game state sent successfully', 'success')");
+
+            Debug.WriteLine("JavaScript call completed successfully");
+            Debug.WriteLine("=== SendGameStateToJS END ===");
+            // }
+            // catch (Exception ex)
+            // {
+            //     Debug.WriteLine($"ERROR in SendGameStateToJS: {ex.Message}");
+            //     try
+            //     {
+            //         await hybridWebView.EvaluateJavaScriptAsync($"window.debugLog('[C#] Error sending state: {ex.Message}', 'error')");
+            //     }
+            //     catch { }
+            // }
         }
 
+        // Called from JavaScript when a card is clicked
         public async Task<string> OnCardTapped(int cardIndex)
         {
             try
             {
-                var template = MauiProgram.engine!.CardTemplates.Where(t => !t.IsBoss).ElementAt(cardIndex);
+                var template = MauiProgram.engine.CardTemplates.Where(t => !t.IsBoss).ElementAt(cardIndex);
 
                 if (!MauiProgram.engine.PlayerInventory.Has(template))
                 {
@@ -660,6 +665,7 @@ namespace DuszaVerseny2025
 
                 if (isSelected)
                 {
+                    // Deselect card
                     var toRemove = MauiProgram.deckBuilder.FirstOrDefault(t => t.name == template.name);
                     if (toRemove != null)
                     {
@@ -668,6 +674,7 @@ namespace DuszaVerseny2025
                 }
                 else
                 {
+                    // Select card
                     if (MauiProgram.deckBuilder.Count >= MauiProgram.engine.PlayerInventory.CanUse)
                     {
                         return JsonSerializer.Serialize(new
@@ -696,11 +703,12 @@ namespace DuszaVerseny2025
             }
         }
 
+        // Called from JavaScript when a dungeon is selected
         public async Task<string> OnDungeonSelected(string dungeonName)
         {
             try
             {
-                var dungeonTemplate = MauiProgram.engine!.GameWorld.Dungeons
+                var dungeonTemplate = MauiProgram.engine.GameWorld.Dungeons
                     .FirstOrDefault(d => d.name == dungeonName);
 
                 if (dungeonTemplate == null)
@@ -741,123 +749,47 @@ namespace DuszaVerseny2025
                 return JsonSerializer.Serialize(new { success = false, message = "Hiba történt!" });
             }
         }
+    }
+    public class GameStateData
+    {
+        public List<CardData> AvailableCards { get; set; }
+        public List<DungeonData> Dungeons { get; set; }
+        public int MaxDeckSize { get; set; }
+        public int CurrentDeckSize { get; set; }
+    }
 
-        public string GetDungeonCards(string dungeonName)
-        {
-            try
-            {
-                var dungeonTemplate = MauiProgram.engine!.GameWorld.Dungeons
-                    .FirstOrDefault(d => d.name == dungeonName);
+    public class CardData
+    {
+        public int Index { get; set; }
+        public string Name { get; set; }
+        public int Attack { get; set; }
+        public int Health { get; set; }
+        public string ElementColor { get; set; }
+        public bool IsOwned { get; set; }
+        public bool IsSelected { get; set; }
+    }
 
-                if (dungeonTemplate == null)
-                {
-                    return JsonSerializer.Serialize(new List<CardData>());
-                }
+    public class DungeonData
+    {
+        public string Name { get; set; }
+        public bool HasBoss { get; set; }
+        public string BossName { get; set; }
+        public int BossHealth { get; set; }
+        public string BossColor { get; set; } = "#0000";
+        public int BossDamage { get; set; }
+        public string Size { get; set; } = string.Empty;
+        public string Reward { get; set; } = string.Empty;
+        public CardData[] Cards { get; set; } = Array.Empty<CardData>();
+    }
 
-                var cards = dungeonTemplate.collection.Cards
-                    .Select(card => new CardData
-                    {
-                        Name = card.Name,
-                        Attack = card.Attack,
-                        Health = card.Health,
-                        ElementColor = card.ElementColor.ToHex() ?? "#1a1a2e",
-                        IsOwned = true,
-                        IsSelected = false
-                    })
-                    .ToList();
-
-                return JsonSerializer.Serialize(cards, CardGameJSContext.Default.ListCardData);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in GetDungeonCards: {ex.Message}");
-                return JsonSerializer.Serialize(new List<CardData>());
-            }
-        }
-
-        public List<PathData> GetPaths()
-        {
-            try
-            {
-                if (editor?.dungeonPaths == null)
-                {
-                    return new List<PathData>();
-                }
-
-                var paths = editor.dungeonPaths.Select(path => new PathData
-                {
-                    name = path.name,
-                    dungeons = path.dungeons.Select(d => d.name).ToList(),
-                    escapeRewards = path.escapeRewards.Select(r =>
-                    {
-                        if (r.GetType() == typeof(DungeonTemplate.AttributeReward))
-                        {
-                            var attrReward = (DungeonTemplate.AttributeReward)r;
-                            return attrReward.Export();
-                        }
-                        else
-                        {
-                            return "kartya";
-                        }
-                    }).ToList(),
-                    dungeonData = path.dungeons.Select(d => new PathDungeonData
-                    {
-                        Size = d.type switch
-                        {
-                            DungeonTemplate.DungeonType.Small => "egyszeru",
-                            DungeonTemplate.DungeonType.Medium => "kis",
-                            DungeonTemplate.DungeonType.Big => "nagy",
-                            _ => "egyszeru"
-                        },
-                        HasBoss = d.bossTemplate != null
-                    }).ToList()
-                }).ToList();
-
-                return paths;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in GetPaths: {ex.Message}");
-                return new List<PathData>();
-            }
-        }
-
-        private List<DungeonData> GetDungeonsEnhanced()
-        {
-            try
-            {
-                if (MauiProgram.engine?.GameWorld?.Dungeons == null)
-                {
-                    return new List<DungeonData>();
-                }
-
-                return MauiProgram.engine.GameWorld.Dungeons
-                    .Select(d => new DungeonData
-                    {
-                        Name = d.name,
-                        HasBoss = d.bossTemplate != null,
-                        BossName = d.bossTemplate?.bossName ?? string.Empty,
-                        BossHealth = d.bossTemplate?.Health ?? 0,
-                        BossDamage = d.bossTemplate?.Attack ?? 0,
-                        Size = d.type switch
-                        {
-                            DungeonTemplate.DungeonType.Small => "egyszeru",
-                            DungeonTemplate.DungeonType.Medium => "kis",
-                            DungeonTemplate.DungeonType.Big => "nagy",
-                            _ => "egyszeru"
-                        },
-                        Reward = d.reward.GetType() == typeof(DungeonTemplate.AttributeReward)
-                            ? ((DungeonTemplate.AttributeReward)d.reward).Export()
-                            : "kartya"
-                    }).ToList();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in GetDungeonsEnhanced: {ex.Message}");
-                return new List<DungeonData>();
-            }
-        }
-
-        #endregion
+    // JSON serialization context
+    [JsonSourceGenerationOptions(WriteIndented = false)]
+    [JsonSerializable(typeof(GameStateData))]
+    [JsonSerializable(typeof(CardData))]
+    [JsonSerializable(typeof(DungeonData))]
+    [JsonSerializable(typeof(string))]
+    [JsonSerializable(typeof(int))]
+    internal partial class CardGameJSContext : JsonSerializerContext
+    {
     }
 }
