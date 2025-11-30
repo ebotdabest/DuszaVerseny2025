@@ -101,6 +101,16 @@ document.addEventListener('DOMContentLoaded', function () {
                                         });
                                         break;
                                 }
+                                case 'sideCards': {
+                                        const cards = JSON.parse(data);
+                                        cards.enemy.forEach(card => {
+                                                addPowercardToContainer(card, false);
+                                        });
+
+                                        cards.player.forEach(card => {
+                                                addPowercardToContainer(card, true);
+                                        });
+                                };
                         }
                 }
         });
@@ -634,7 +644,7 @@ async function rollPowercard(powercard, isPlayer) {
         await sleep(revealDelay);
 
         if (powercard.duration == 0) {
-            
+
         }
 
         addPowercardToContainer(powercard, isPlayer);
@@ -712,11 +722,10 @@ function addPowercardToContainer(powercard, isPlayer) {
         } else {
                 gameState.enemyPowercards.push(powercardData);
         }
+}
 
+function removePowercard(element) {
 
-        if (powercard.duration > 0) {
-                startPowercardCountdown(powercardEl, powercard.duration, isPlayer);
-        }
 }
 
 function startPowercardCountdown(element, initialDuration, isPlayer) {

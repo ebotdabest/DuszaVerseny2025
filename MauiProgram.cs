@@ -62,8 +62,10 @@ class TestMode
     void Fight(string[] args, List<DungeonTemplate> dungeons, List<CardTemplate> cards, PlayerCollection playerInventory, Deck currentDeck, string path)
     {
         StringBuilder builder = new StringBuilder();
-        GameEngine engine = new GameEngine(cards, dungeons, playerInventory, 1);
+        GameEngine engine = new GameEngine(cards, dungeons, playerInventory, 0);
         Dungeon dungeon = engine.GameWorld.generateDungeon(engine.GameWorld.Dungeons.Where(d => d.name == args[0]).First());
+
+        MauiProgram.engine = engine;
 
         builder.AppendLine($"harc kezdodik;{dungeon.Name}");
         builder.AppendLine();
@@ -333,8 +335,16 @@ public static class MauiProgram
         }
         if (args[1] != "--ui")
         {
-            // TestMode tm = new TestMode();
-            // tm.DoTest(args[1]);
+            TestMode tm = new TestMode();
+            try
+            {
+                tm.DoTest(args[1]);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
 
             // var cards = new List<CardTemplate>
             // {
@@ -343,7 +353,7 @@ public static class MauiProgram
             // };
 
             // var dungeon = new DungeonTemplate(DungeonTemplate.DungeonType.Small, "Smegma Castle",
-            // new Collection(cards), new DungeonTemplate.AttributeReward(Card.Attribute.Damage));
+            // new Collection(cards), new DungeonTemplateributeReward(Card.Attribute.Damage));
             // PlayerCollection pc = new PlayerCollection();
             // pc.AddToCollection(cards[0]);
             // GameEngine e = new GameEngine(cards, new() { dungeon }, pc, 3);
@@ -364,22 +374,22 @@ public static class MauiProgram
 
             // SaveManager.SaveWorld(1, engine, "Back up");
 
-            SetupEngine();
-            SaveManager.SaveWorld(0, engine, "Az alap világ");
-            DungeonTemplate[] dungeons = new DungeonTemplate[] { engine.GameWorld.Dungeons[0], engine.GameWorld.Dungeons[1] };
-            engine.dungeonPaths = new()
-            {
-                new DungeonPathTemplate("Út 2", dungeons, engine.CardTemplates.ToArray(), new int[] {1,2} )
-            };
+            // SetupEngine();
+            // SaveManager.SaveWorld(0, engine, "Az alap világ");
+            // DungeonTemplate[] dungeons = new DungeonTemplate[] { engine.GameWorld.Dungeons[0], engine.GameWorld.Dungeons[1] };
+            // engine.dungeonPaths = new()
+            // {
+            //     new DungeonPathTemplate("Út 2", dungeons, engine.CardTemplates.ToArray(), new int[] {1,2} )
+            // };
 
-            engine.powerCards = new()
-            {
-                // new HealPower(0, 5, "Buksi simi", 40),
-                // new DamagePower(0, 500, "Avada Dekavda", 4),
-                new ShieldPower(0, 500, "Shield oooh", 4)
-            };
+            // engine.powerCards = new()
+            // {
+            //     // new HealPower(0, 5, "Buksi simi", 40),
+            //     // new DamagePower(0, 500, "Avada Dekavda", 4),
+            //     new ShieldPower(0, 500, "Shield oooh", 4)
+            // };
 
-            SaveManager.SaveWorld(1, engine, "Back up");
+            // SaveManager.SaveWorld(1, engine, "Back up");
 
             Console.ReadLine();
             FreeConsole();

@@ -586,6 +586,8 @@ public class DungeonPath
     Func<World.FightEvent, Task> callbackFunc;
     DungeonPathTemplate _template;
 
+    public DungeonPathTemplate Template => _template;
+
     public DungeonPath(DungeonPathTemplate template, Deck playerDeck, Func<World.FightEvent, Task> callback)
     {
         this.playerDeck = playerDeck;
@@ -595,6 +597,7 @@ public class DungeonPath
 
     public async Task<bool> FightPath(GameEngine engine)
     {
+        await callbackFunc(World.FightEvent.makeEvent("dungeonp:start", ("dungeon", Dungeon.fromTemplate(_template.Dungeons[0]))));
         bool hasLostOnce = false;
         for (int state = 0; !hasLostOnce && state < _template.Dungeons.Length; state++)
         {
@@ -613,7 +616,8 @@ public class DungeonPath
         var res = await engine.GameWorld.FightDungeonButFancy(d, playerDeck.Clone(), OnFightEvent);
         if (res.Success)
         {
-            await callbackFunc(World.FightEvent.makeEvent("dungeonp:dungeonwon", ("dungeonidx", dungeon), ("round", -1)));
+            await callbackFunc(World.FightEvent.makeEvent("dungeonp:dungeonwon", ("dungeonidx", dungeon),
+            ("round", -1), ("nextDungeon", d)));
             return true;
         }
 
