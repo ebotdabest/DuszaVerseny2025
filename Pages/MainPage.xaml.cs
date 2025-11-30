@@ -183,6 +183,19 @@ namespace DuszaVerseny2025
             return MauiProgram.engine.dungeonPaths;
         }
 
+        public List<SaveManager.WorldSave.PowerCardSave> GetAbilityCards()
+        {
+            return MauiProgram.engine.powerCards.Select(c => new SaveManager.WorldSave.PowerCardSave
+            {
+                name = c.getName(),
+                value = c.getValue(),
+                rarity = c.getRarity(),
+                duration = c.getDuration(),
+                type = c.GetType().Name
+            }).ToList();
+        }
+
+
         // Strict editor logic START
 
         public DungeonEditor editor;
@@ -497,6 +510,20 @@ namespace DuszaVerseny2025
             System.Console.WriteLine(editor.powerCards.Count);
             System.Console.WriteLine("Made!");
             return true;
+        }
+
+        public void CreateDungeonPath(JsonElement path)
+        {
+            var name = path.GetProperty("name").GetString();
+            var rewardSet = path.GetProperty("rewardSet").GetString();
+            var pathSequenceProperty = path.GetProperty("pathSequence");
+            var sequenceCount = pathSequenceProperty.GetArrayLength();
+            for (int i = 0; i < sequenceCount; i++)
+            {
+                var dungeonName = pathSequenceProperty[i].GetProperty("dungeonName").GetString();
+                var cardBonus = pathSequenceProperty[i].GetProperty("cardBonus").GetInt32();
+
+            }
         }
 
         public List<DungeonPathTemplate> GetEditorPaths()

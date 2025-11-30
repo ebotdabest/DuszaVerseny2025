@@ -80,7 +80,7 @@ namespace DuszaVerseny2025.Engine.Save
                 public string name { get; set; } = string.Empty;
                 public string[] dungeons { get; set; } = Array.Empty<string>();
                 public string[] rewards { get; set; } = Array.Empty<string>();
-                public int rewardCount { get; set; } = 0;
+                public int[] rewardCounts { get; set; } = Array.Empty<int>();
             }
 
             public string templateName { get; set; } = string.Empty;
@@ -267,9 +267,10 @@ namespace DuszaVerseny2025.Engine.Save
                 name = p.Name,
                 dungeons = p.Dungeons.Select(d => d.name).ToArray(),
                 rewards = p.Rewards.Select(r => r.name).ToArray(),
-                rewardCount = p.RewardCount
-            });
+                rewardCounts = p.RewardCounts
+            }).ToArray();
 
+            System.Console.WriteLine(paths.Length);
             var worldSave = new WorldSave
             {
                 templateName = templateName ?? string.Empty,
@@ -279,7 +280,7 @@ namespace DuszaVerseny2025.Engine.Save
                 worldId = id,
                 collections = collections.ToArray(),
                 powerCards = powerCards,
-                dungeonPaths = paths.ToArray()
+                dungeonPaths = paths
             };
 
 

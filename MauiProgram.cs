@@ -360,9 +360,13 @@ public static class MauiProgram
 
             SetupEngine();
             SaveManager.SaveWorld(0, engine, "Az alap világ");
+            DungeonTemplate[] dungeons = new DungeonTemplate[] { engine.GameWorld.Dungeons[0], engine.GameWorld.Dungeons[1] };
+            engine.dungeonPaths = new()
+            {
+                new DungeonPathTemplate("Út 2", dungeons, engine.CardTemplates.ToArray(), new int[] {1,2} )
+            };
+
             SaveManager.SaveWorld(1, engine, "Back up");
-
-
 
             Console.ReadLine();
             FreeConsole();
@@ -373,10 +377,10 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
-            .ConfigureFonts(fonts =>
-            {
-                fonts.AddFont("RetroByte.ttf", "RetroByte");
-            });
+                .ConfigureFonts(fonts =>
+                {
+                    fonts.AddFont("RetroByte.ttf", "RetroByte");
+                });
 
 #if DEBUG
         builder.Services.AddHybridWebViewDeveloperTools();

@@ -36,6 +36,7 @@ namespace DuszaVerseny2025.Engine.Editor
 
             engine.initialDeck = initialDeck.ToList();
             engine.powerCards = powerCards.ToList();
+            engine.dungeonPaths = dungeonPaths.ToList();
 
             return engine;
         }
@@ -233,11 +234,17 @@ namespace DuszaVerseny2025.Engine.Editor
                 namedCollections.Add(new NamedCollection(cards, collection.collectionName));
             }
 
+            var dungeonPaths = save.dungeonPaths.Select(dp => new DungeonPathTemplate(dp.name,
+                dp.dungeons.Select(d => dungeonTemplates.First(dd => dd.name == d)).ToArray(),
+                dp.rewards.Select(r => cardTemplates.First(t => t.name == r)).ToArray(),
+                dp.rewardCounts)).ToList();
+
             dungeonEditor.cards = cardTemplates;
             dungeonEditor.dungeons = dungeonTemplates;
             dungeonEditor.initialDeck = initialDeck;
             dungeonEditor.collections = namedCollections;
             dungeonEditor.powerCards = powerCards;
+            dungeonEditor.dungeonPaths = dungeonPaths;
 
             return dungeonEditor;
         }

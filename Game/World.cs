@@ -557,15 +557,16 @@ public class DungeonPathTemplate
     public DungeonTemplate[] Dungeons => _dungeons.ToArray();
     public string Name => _name;
     CardTemplate[] _rewards;
-    int _rewardCount;
+    int[] _rewardCounts;
     public CardTemplate[] Rewards => _rewards.ToArray();
-    public int RewardCount => _rewardCount;
+    public int[] RewardCounts => _rewardCounts;
 
-    public DungeonPathTemplate(string name, DungeonTemplate[] dungeons, CardTemplate[] rewards)
+    public DungeonPathTemplate(string name, DungeonTemplate[] dungeons, CardTemplate[] rewards, int[] rewardCounts)
     {
         _dungeons = dungeons;
         _name = name;
         _rewards = rewards;
+        _rewardCounts = rewardCounts;
     }
 }
 
