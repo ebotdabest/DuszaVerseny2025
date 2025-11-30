@@ -75,6 +75,14 @@ namespace DuszaVerseny2025.Engine.Save
                 public string type { get; set; } = string.Empty;
             }
 
+            public class DungeonPathSave
+            {
+                public string name { get; set; } = string.Empty;
+                public string[] dungeons { get; set; } = Array.Empty<string>();
+                public string[] rewards { get; set; } = Array.Empty<string>();
+                public int rewardCount { get; set; } = 0;
+            }
+
             public string templateName { get; set; } = string.Empty;
             public CardSave[] cards { get; set; } = Array.Empty<CardSave>();
             public BossOverride[] bosses { get; set; } = Array.Empty<BossOverride>();
@@ -82,6 +90,7 @@ namespace DuszaVerseny2025.Engine.Save
             public PowerCardSave[] powerCards { get; set; } = Array.Empty<PowerCardSave>();
             public string[] starterDeck { get; set; } = Array.Empty<string>();
             public required int worldId { get; set; }
+            public required DungeonPathSave[] dungeonPaths;
         }
 
 
@@ -253,6 +262,14 @@ namespace DuszaVerseny2025.Engine.Save
                 type = c.GetType().Name
             }).ToArray();
 
+            var paths = engine.dungeonPaths.Select(p => new WorldSave.DungeonPathSave
+            {
+                name = p.Name,
+                dungeons = p.Dungeons.Select(d => d.name).ToArray(),
+                rewards = p.Rewards.Select(r => r.name).ToArray(),
+                rewardCount = p.RewardCount
+            });
+
             var worldSave = new WorldSave
             {
                 templateName = templateName ?? string.Empty,
@@ -261,7 +278,8 @@ namespace DuszaVerseny2025.Engine.Save
                 starterDeck = initialCards,
                 worldId = id,
                 collections = collections.ToArray(),
-                powerCards = powerCards
+                powerCards = powerCards,
+                dungeonPaths = paths.ToArray()
             };
 
 
