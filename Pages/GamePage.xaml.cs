@@ -182,44 +182,43 @@ namespace DuszaVerseny2025
                 }
             }
 
-            if (ev.event_name == "game:attack")
-            {
-                System.Console.WriteLine("Getting the power cards");
-                Console.ReadLine();
-                System.Console.WriteLine($"powe cards: {MauiProgram.engine.powerCards.Count}");
-                Console.ReadLine();
-                if (MauiProgram.engine.powerCards.Count > 0)
-                {
-                    System.Console.WriteLine("There is a shit");
-                    Console.ReadLine();
-                    System.Console.WriteLine("Rolling...");
-                    Console.ReadLine();
-                    PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
-                    Console.ReadLine();
-                    System.Console.WriteLine($"Got the card: {card.getName()}");
-                    Console.ReadLine();
-                    if (card.getDuration() > 0)
-                    {
-                        Dungeon.activeEnemyPowers.Add(card);
-                        // Send some kinda visual you got this card
-                    }
-                    else
-                    {
-                        try
-                        {
-                            card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], false);
-
-                        }
-                        catch (Exception e)
-                        {
-                            System.Console.WriteLine(e.ToString());
-                            Console.ReadLine();
-                        }
-                    }
-                    hybridWebView.SendRawMessage($"cardActive|");
-                }
-            }
-
+            //if (ev.event_name == "game:attack")
+            //{
+            //    System.Console.WriteLine("Getting the power cards");
+            //    Console.ReadLine();
+            //    System.Console.WriteLine($"powe cards: {MauiProgram.engine.powerCards.Count}");
+            //    Console.ReadLine();
+            //    if (MauiProgram.engine.powerCards.Count > 0)
+            //    {
+            //        System.Console.WriteLine("There is a shit");
+            //        Console.ReadLine();
+            //        System.Console.WriteLine("Rolling...");
+            //        Console.ReadLine();
+            //        PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);
+            //        Console.ReadLine();
+            //        System.Console.WriteLine($"Got the card: {card.getName()}");
+            //        Console.ReadLine();
+            //        if (card.getDuration() > 0)
+            //        {
+            //            Dungeon.activeEnemyPowers.Add(card);
+            //            // Send some kinda visual you got this card
+            //        }
+            //        else
+            //        {
+            //            try
+            //            {
+            //                card.ApplyEffect((Card)ev.values["card"], (Card)ev.values["enemy"], false);
+            //            }
+            //            catch (Exception e)
+            //            {
+            //                System.Console.WriteLine(e.ToString());
+            //                Console.ReadLine();
+            //            }
+            //        }
+            //        hybridWebView.SendRawMessage($"cardActive|");
+            //    }
+            //}
+//
             if (ev.event_name == "player:attack")
             {
                 // PowerCard card = Utils.GetRandomCard(MauiProgram.engine.powerCards);

@@ -1,5 +1,3 @@
-import "../sounds/AudioLib.js";
-
 let gameState = {
         currentDeck: null,
         dungeon: null,
@@ -30,7 +28,6 @@ const PLACEHOLDER_POWERCARDS = [
 ];
 
 let isRolling = false;
-let nextRollIsPlayer = false;
 
 function debugLog(message, type) {
         console.log(`[${type.toUpperCase()}] ${message}`);
@@ -38,13 +35,20 @@ function debugLog(message, type) {
 
 document.addEventListener('DOMContentLoaded', function () {
         debugLog('=== GAME PAGE LOADED ===', 'info');
+        const player = new AudioPlayer({
+                musicPath: './sound/music',
+                sfxPath: './sound/effects',
+                corner: 'bottom-right',
+                theme: 'dark',
+                accentColor: '#ff2a6d'
+        });
 
-        // Bind buttons
         const startButton = document.getElementById('startButton');
         const backButton = document.getElementById('backButton');
 
         if (startButton) {
                 startButton.addEventListener('click', startGameFromJS);
+                player.playSfx('StartClick.wav');
                 debugLog('Start button bound', 'success');
         } else {
                 debugLog('Start button not found!', 'error');
@@ -53,14 +57,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (backButton) {
                 backButton.addEventListener('click', navigateBack);
                 debugLog('Back button bound', 'success');
-        }
-
-        const testRollButton = document.getElementById('testRollButton');
-        if (testRollButton) {
-                testRollButton.addEventListener('click', testRollPowercard);
-                debugLog('Test roll button bound', 'success');
-                // Show button after game starts (for now, show immediately for testing)
-                testRollButton.style.display = 'block';
         }
 
         // Listen for messages from C#
@@ -492,7 +488,10 @@ function handleFightEvent(event) {
                 const historyText = `Kazamata(${gameState.enemyCard.Name}) támad: ${damage} a ${targetCard.Name}(Játékos), élete maradt: ${targetCard.Health}`;
 
                 delayedAttack('arenaEnemyCard', 'arenaPlayerCard', 'attack-right', damage, targetCard, historyText, false);
-                
+
+                // Roll powercard after enemy attack
+                rollPowercardFromBackend(false); // false = enemy
+
         } else if (event.event_name === "player:attack") {
                 debugLog(`Received player:attack, damage=${event.values.damage}`, 'debug');
                 const damage = event.values.damage;
@@ -500,6 +499,9 @@ function handleFightEvent(event) {
                 const historyText = `Játékos(${gameState.currentCard.Name}) támad: ${damage} a ${targetCard.Name}(Kazamata), élete maradt: ${targetCard.Health}`;
 
                 delayedAttack('arenaPlayerCard', 'arenaEnemyCard', 'attack-left', damage, targetCard, historyText, true);
+
+                // Roll powercard after player attack
+                rollPowercardFromBackend(true); // true = player
         }
 }
 
@@ -563,18 +565,20 @@ function triggerAnimation(elementId, animationClass) {
 
 // ========== POWERCARD FUNCTIONS ==========
 
-function testRollPowercard() {
-        if (isRolling) return;
+// Function to be called from backend with powercard data
+function rollPowercardFromBackend(isPlayer, powercardData = null) {
+        if (isRolling) {
+                debugLog('Already rolling, skipping powercard roll', 'warn');
+                return;
+        }
 
-        const isPlayer = nextRollIsPlayer;
-        nextRollIsPlayer = !nextRollIsPlayer; // Alternate between enemy and player
+        // If no data provided, use placeholder for testing
+        // Backend should pass: { name, type, value, duration, icon, description }
+        const powercard = powercardData || PLACEHOLDER_POWERCARDS[Math.floor(Math.random() * PLACEHOLDER_POWERCARDS.length)];
 
-        debugLog(`Testing powercard roll for ${isPlayer ? 'player' : 'enemy'}`, 'info');
+        debugLog(`Backend triggered powercard roll for ${isPlayer ? 'player' : 'enemy'}: ${powercard.name}`, 'info');
 
-        // Simulate getting a random powercard from backend
-        const rolledCard = PLACEHOLDER_POWERCARDS[Math.floor(Math.random() * PLACEHOLDER_POWERCARDS.length)];
-
-        rollPowercard(rolledCard, isPlayer);
+        rollPowercard(powercard, isPlayer);
 }
 
 async function rollPowercard(powercard, isPlayer) {
@@ -713,4 +717,17 @@ function removePowercard(element, isPlayer) {
 
                 debugLog(`Removed expired powercard from ${isPlayer ? 'player' : 'enemy'}`, 'info');
         }, 500);
+}
+
+// Backend hook function - call this to update a powercard's duration
+function updatePowercardDuration(powercardId, newDuration, isPlayer) {
+        const cards = isPlayer ? gameState.playerPowercards : gameState.enemyPowercards;
+        const card = cards.find(c => c.id === powercardId);
+
+        if (card && card.element) {
+                const durationEl = card.element.querySelector('.powercard-duration');
+                if (durationEl) {
+                        durationEl.textContent = newDuration;
+                }
+        }
 }

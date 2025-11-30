@@ -847,6 +847,56 @@ button {
     animation: deathFade 0.8s ease-in forwards;
 }
 
+/* Power Indicators */
+.play-area {
+    position: relative !important;
+}
+
+.powers-container {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 10;
+}
+
+.enemy-powers {
+    top: 10px;
+    left: 10px;
+}
+
+.player-powers {
+    bottom: 10px;
+    left: 10px;
+}
+
+.powers-label {
+    font-size: 11px;
+    color: var(--accent-gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+.powers-list {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    max-width: 300px;
+}
+
+.power-item {
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid var(--accent-gold);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
 /* Powercard Containers */
 .powercard-container {
     position: absolute;
@@ -1078,28 +1128,4 @@ button {
     color: var(--text-secondary);
     text-align: center;
     line-height: 1.5;
-}
-
-/* Test Roll Button */
-.test-roll-btn {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: var(--accent-gold);
-    color: #000;
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: bold;
-    border: 2px solid #000;
-    border-radius: 8px;
-    cursor: pointer;
-    z-index: 1001;
-    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.5);
-    transition: all 0.3s;
-}
-
-.test-roll-btn:hover {
-    background: #ffed4e;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.7);
 }

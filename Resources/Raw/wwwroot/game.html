@@ -23,23 +23,11 @@
 
         <div class="main-content">
             <div class="play-area">
-                <!-- Enemy Powers Indicator -->
-                <div class="powers-container enemy-powers">
-                    <div class="powers-label">Enemy Powers</div>
-                    <div class="powers-list" id="enemyPowersList">
-                        <!-- Placeholder items - max 3 -->
-                    </div>
-                </div>
 
                 <div class="zone enemy-zone">
                     <div class="zone-label">Ellenfél paklija</div>
                     <div id="enemyDeck" class="deck-container">
                     </div>
-                </div>
-
-                <!-- Enemy Powercards Container -->
-                <div id="enemyPowercards" class="powercard-container enemy-powers">
-                    <div class="powercard-label">Kazamata Képességek</div>
                 </div>
 
                 <div id="battleArea" class="battle-zone">
@@ -86,22 +74,9 @@
                     <div id="damagePopupLabel" class="damage-popup"></div>
                 </div>
 
-                <!-- Player Powercards Container -->
-                <div id="playerPowercards" class="powercard-container player-powers">
-                    <div class="powercard-label">Játékos Képességek</div>
-                </div>
-
                 <div class="zone player-zone">
                     <div class="zone-label">Saját pakli</div>
                     <div id="playerDeck" class="deck-container">
-                    </div>
-                </div>
-
-                <!-- Player Powers Indicator -->
-                <div class="powers-container player-powers">
-                    <div class="powers-label">Player Powers</div>
-                    <div class="powers-list" id="playerPowersList">
-                        <!-- Placeholder items - max 3 -->
                     </div>
                 </div>
             </div>
@@ -139,10 +114,8 @@
         </div>
     </div>
 
-    <!-- Test Button (bottom left) -->
-    <button id="testRollButton" class="test-roll-btn" style="display: none;">🎲 Test Roll</button>
-
     <script src="scripts/HybridWebView.js"></script>
+    <script src="sound/AudioLib.js"></script>
     <script type="module" src="animations/ArcaneFX.js"></script>
     <script type="module" src="animations/ElementalAttacks.js"></script>
     <script src="scripts/game.js"></script>
