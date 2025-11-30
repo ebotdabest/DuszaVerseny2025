@@ -540,79 +540,13 @@
           <div class="button-row mt-30">
             <button class="action-btn" onclick="createPath()">✓ Mentés</button>
           </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="scripts/app.js"></script>
-  <script src="sound/AudioLib.js"></script>
-  <script>
-    const player = new AudioPlayer({
-      musicPath: './sound/music',
-      sfxPath: './sound/effects',
-      corner: 'top-right',
-      theme: 'dark',
-      accentColor: '#ff2a6d'
-    });
-    player.playPlaylist(['NewKindofHero-Type42.mp3', 'Evolution-Type42.mp3', 'FiniteInfinity-Type42.mp3', 'TheHunter-Type42.mp3', 'UpInFlames-RenéG.Boscio.mp3'], { random: false });
-    player.setAutoPlay(true);
+    <script src="sound/AudioLib.js"></script>
+    <script src="scripts/app.js"></script>
 
-    document.addEventListener("click", function (e) {
-      if (e.target && (e.target.closest('button') || e.target.closest('.save-item-btn')))
-        player.playSfx('Select-2.mp3', 0.6);
-
-      if (e.target && e.target.closest('.card'))
-        player.playSfx('Select-1.mp3', 0.6);
-
-      if (e.target && e.target.closest('.dungeon-btn'))
-        player.playSfx('Swipe-1.mp3', 0.6);
-
-      if (e.target && e.target.closest('.dungeon-path-btn'))
-        player.playSfx('Swipe-2.mp3', 0.6);
-
-      if (e.target && e.target.tagName === 'INPUT')
-        player.playSfx('Cursor-1.mp3', 0.4);
-    });
-    let lastHoveredCard = null;
-    document.addEventListener("mouseover", function (e) {
-      if (e.target && (e.target.closest('button') || e.target.closest('.save-item-btn')))
-        player.playSfx('Cursor-4.mp3', 0.6);
-
-      const card = e.target.closest('.card');
-      if (card && card !== lastHoveredCard) {
-        player.playSfx('Cursor-3.mp3', 0.6);
-        lastHoveredCard = card;
-      } else if (!card) {
-        lastHoveredCard = null;
-      }
-
-      if (e.target && (e.target.closest('.dungeon-btn') || e.target.closest('.dungeon-path-btn')))
-        player.playSfx('Cursor-5.mp3', 0.6);
-
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-        player.playSfx('Cursor-2.mp3', 0.4);
-      }
-    });
-    document.addEventListener("focus", function (e) {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
-        player.playSfx('Cursor-1.mp3', 0.4);
-      }
-    }, true);
-    const toastObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.addedNodes.length) {
-          mutation.addedNodes.forEach((node) => {
-            if (node.classList && node.classList.contains('toast')) {
-              if (node.classList.contains('error')) player.playSfx('Error-1.mp3', 0.8);
-              else if (node.classList.contains('warning')) player.playSfx('Cancel-1.mp3', 0.8);
-              else player.playSfx('PopupOpen-1.mp3', 0.6);
-            }
-          });
-        }
-      });
-    });
-    toastObserver.observe(document.body, { childList: true, subtree: true });
-  </script>
 </body>
 
 </html>

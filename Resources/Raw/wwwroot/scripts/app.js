@@ -1,5 +1,71 @@
 let gameState = null;
 
+const player = new AudioPlayer({
+    musicPath: './sound/music',
+    sfxPath: './sound/effects',
+    corner: 'top-right',
+    theme: 'dark',
+    accentColor: '#ff2a6d'
+});
+player.playPlaylist(['NewKindofHero-Type42.mp3', 'Evolution-Type42.mp3', 'FiniteInfinity-Type42.mp3', 'TheHunter-Type42.mp3', 'UpInFlames-RenéG.Boscio.mp3'], { random: false });
+player.setAutoPlay(true);
+
+document.addEventListener("click", function (e) {
+    if (e.target && (e.target.closest('button') || e.target.closest('.save-item-btn')))
+        player.playSfx('Select-2.mp3', 0.6);
+
+    if (e.target && e.target.closest('.card'))
+        player.playSfx('Select-1.mp3', 0.6);
+
+    if (e.target && e.target.closest('.dungeon-btn'))
+        player.playSfx('Swipe-1.mp3', 0.6);
+
+    if (e.target && e.target.closest('.dungeon-path-btn'))
+        player.playSfx('Swipe-2.mp3', 0.6);
+
+    if (e.target && e.target.tagName === 'INPUT')
+        player.playSfx('Cursor-1.mp3', 0.4);
+});
+let lastHoveredCard = null;
+document.addEventListener("mouseover", function (e) {
+    if (e.target && (e.target.closest('button') || e.target.closest('.save-item-btn')))
+        player.playSfx('Cursor-4.mp3', 0.6);
+
+    const card = e.target.closest('.card');
+    if (card && card !== lastHoveredCard) {
+        player.playSfx('Cursor-3.mp3', 0.6);
+        lastHoveredCard = card;
+    } else if (!card) {
+        lastHoveredCard = null;
+    }
+
+    if (e.target && (e.target.closest('.dungeon-btn') || e.target.closest('.dungeon-path-btn')))
+        player.playSfx('Cursor-5.mp3', 0.6);
+
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        player.playSfx('Cursor-2.mp3', 0.4);
+    }
+});
+document.addEventListener("focus", function (e) {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) {
+        player.playSfx('Cursor-1.mp3', 0.4);
+    }
+}, true);
+const toastObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length) {
+            mutation.addedNodes.forEach((node) => {
+                if (node.classList && node.classList.contains('toast')) {
+                    if (node.classList.contains('error')) player.playSfx('Error-1.mp3', 0.8);
+                    else if (node.classList.contains('warning')) player.playSfx('Cancel-1.mp3', 0.8);
+                    else player.playSfx('PopupOpen-1.mp3', 0.6);
+                }
+            });
+        }
+    });
+});
+toastObserver.observe(document.body, { childList: true, subtree: true });
+
 function hideGameViewElements() {
     const headerBtn = document.getElementById('headerBackButton');
     const content = document.getElementById('mainGameContent');
@@ -13,6 +79,21 @@ function showGameViewElements() {
     if (headerBtn) headerBtn.style.display = 'flex';
     if (content) content.style.display = 'flex';
 }
+
+window.requestGameState = function () {
+    if (window.HybridWebView) {
+        window.HybridWebView.SendRawMessage('RequestGameState');
+    }
+    if (player) {
+        player.resume();
+    }
+};
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && player) {
+        player.resume();
+    }
+});
 
 window.updateGameState = function (state) {
     gameState = state;
@@ -513,6 +594,7 @@ window.closeExpandedPathTooltip = closeExpandedPathTooltip;
 window.startDungeonPath = startDungeonPath;
 
 async function onDungeonClick(name) {
+    player.pause();
     showLoadingScreen(async () => {
         try {
             const result = await window.HybridWebView.InvokeDotNet('OnDungeonSelected', [name]);
@@ -1580,18 +1662,18 @@ function switchCardGrid(gridType) {
         powerGrid.classList.remove('active');
         powerGrid.classList.add('slide-right');
         powerGrid.style.display = 'none';
-        
+
         cardGrid.classList.remove('slide-left');
         cardGrid.classList.add('active');
         cardGrid.style.display = 'grid';
-        
+
         buttons[0].classList.add('active');
         buttons[1].classList.remove('active');
     } else {
         cardGrid.classList.remove('active');
         cardGrid.classList.add('slide-left');
         cardGrid.style.display = 'none';
-        
+
         powerGrid.classList.remove('slide-right');
         powerGrid.classList.add('active');
         powerGrid.style.display = 'grid';

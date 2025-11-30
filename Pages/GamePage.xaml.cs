@@ -37,13 +37,13 @@ namespace DuszaVerseny2025
             dungeonDeck = Dungeon.compileDeck();
 
             // Wait for WebView to be ready
-            await Task.Delay(500);
+            await Task.Delay(800);
 
             // Navigate to game.html
             await hybridWebView.EvaluateJavaScriptAsync("window.location.href = 'game.html';");
 
-            // Wait a bit more for the page to load
-            await Task.Delay(300);
+            // Wait for page to fully load
+            await Task.Delay(500);
 
             SendGameInitData();
         }
@@ -145,49 +145,68 @@ namespace DuszaVerseny2025
 
             string json = JsonSerializer.Serialize(eventData, GamePageJSContext.Default.FightEventData);
 
-            // CRITICAL: Dispatch UI operation to main thread to avoid cross-thread marshalling error
             await MainThread.InvokeOnMainThreadAsync(() =>
             {
                 hybridWebView.SendRawMessage($"fightEvent|{json}");
             });
 
-            if (ev.event_name == "game:attack")
+            // Only wait for specific events that need animation time
+            if (ev.event_name == "game:attack" || ev.event_name == "player:attack" || 
+                ev.event_name.Contains("select"))
             {
-                System.Console.WriteLine("Rolling the card!");
-                Random r = new Random();
-                var num = r.Next(0, 5);
                 _resumeSignal = new TaskCompletionSource<bool>();
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, false)");
-                });
-                await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
-                // if (num == 2)
-                // {
-                // }
+                await Task.WhenAny(_resumeSignal.Task, Task.Delay(10000)); // Reduced timeout
             }
-            else if (ev.event_name == "player:attack")
+            else if (ev.event_name == "round" || ev.event_name == "round_over")
             {
-                System.Console.WriteLine("Rolling player card!");
-                Random r = new Random();
-                var num = r.Next(0, 5);
-                _resumeSignal = new TaskCompletionSource<bool>();
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, true)");
-                });
-                await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
-            }
-            else if (ev.event_name.Contains("select"))
-            {
-                await Task.Delay(500);
+                // Short delay for round transitions - don't wait for resumeGame
+                await Task.Delay(300);
             }
             else
             {
-                _resumeSignal = new TaskCompletionSource<bool>();
-                await Task.WhenAny(_resumeSignal.Task, Task.Delay(20000));
+                // Minimal delay for other events
+                await Task.Delay(100);
             }
-            // Wait for frontend to signal it's ready (animations done)
+
+            // AFTER the frontend finishes processing, check for powercard rolls
+            if (ev.event_name == "game:attack")
+            {
+                System.Console.WriteLine("Checking for enemy powercard roll after attack!");
+                if (ev.values.ContainsKey("enemy") && ev.values["enemy"] is Card enemyCard && enemyCard.Health > 0)
+                {
+                    Random r = new Random();
+                    var num = r.Next(0, 5);
+                    if (num == 2) // 20% chance
+                    {
+                        System.Console.WriteLine("Rolling enemy powercard!");
+                        _resumeSignal = new TaskCompletionSource<bool>();
+                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        {
+                            hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, false)");
+                        });
+                        await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
+                    }
+                }
+            }
+            else if (ev.event_name == "player:attack")
+            {
+                System.Console.WriteLine("Checking for player powercard roll after attack!");
+                if (ev.values.ContainsKey("card") && ev.values["card"] is Card playerCard && playerCard.Health > 0)
+                {
+                    Random r = new Random();
+                    var num = r.Next(0, 5);
+                    if (num == 2) // 20% chance
+                    {
+                        System.Console.WriteLine("Rolling player powercard!");
+                        _resumeSignal = new TaskCompletionSource<bool>();
+                        await MainThread.InvokeOnMainThreadAsync(() =>
+                        {
+                            hybridWebView.EvaluateJavaScriptAsync($"window.rollPowercard({JsonSerializer.Serialize(RollForPowercard())}, true)");
+                        });
+                        await Task.WhenAny(_resumeSignal.Task, Task.Delay(15000));
+                    }
+                }
+            }
         }
 
         Dictionary<string, string> ICONS = new()
@@ -222,6 +241,7 @@ namespace DuszaVerseny2025
             };
         }
     }
+
 
     public class SimpleCard
     {

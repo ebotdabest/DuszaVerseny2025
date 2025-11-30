@@ -12,30 +12,29 @@ let gameState = {
         playerPowercards: []
 };
 
-// Track pending animation end times (ms since epoch) to delay selects and attacks
-let pendingAnimations = {};
-
-// Placeholder powercard templates for testing
-const PLACEHOLDER_POWERCARDS = [
-        { name: "Tűzgolyó", type: "InstantDamage", value: 3, duration: 0, icon: "🔥", description: "Azonnali 3 sebzés" },
-        { name: "Gyógyító Aura", type: "Heal", value: 2, duration: 3, icon: "💚", description: "3 körön át +2 gyógyítás" },
-        { name: "Acélpajzs", type: "Shield", value: 4, duration: 2, icon: "🛡️", description: "2 körön át +4 védelem" },
-        { name: "Erőnövelés", type: "DamageBuff", value: 50, duration: 2, icon: "💥", description: "2 körön át +50% sebzés" },
-        { name: "Villámcsapás", type: "InstantDamage", value: 5, duration: 0, icon: "⚡", description: "Azonnali 5 sebzés" },
-        { name: "Regeneráció", type: "Heal", value: 1, duration: 5, icon: "🌿", description: "5 körön át +1 gyógyítás" },
-        { name: "Jégpajzs", type: "Shield", value: 3, duration: 3, icon: "❄️", description: "3 körön át +3 védelem" },
-        { name: "Vérszomj", type: "DamageBuff", value: 30, duration: 3, icon: "🩸", description: "3 körön át +30% sebzés" }
-];
-
+// Event queue system for sequential processing
+let eventQueue = [];
+let isProcessingEvent = false;
 let isRolling = false;
+processNextEvent();
 
-function debugLog(message, type = 'info') {
-        console.log(`[${type.toUpperCase()}] ${message}`);
-}
+let player = null;
+
+const playerObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length) {
+                        mutation.addedNodes.forEach((node) => {
+                                if (node.classList && node.classList.contains('audio-player-container')) {
+                                        node.style.display = 'none';
+                                }
+                        });
+                }
+        });
+});
+playerObserver.observe(document.body, { childList: true, subtree: true });
 
 document.addEventListener('DOMContentLoaded', function () {
-        debugLog('=== GAME PAGE LOADED ===', 'info');
-        const player = new AudioPlayer({
+        player = new AudioPlayer({
                 musicPath: './sound/music',
                 sfxPath: './sound/effects',
                 corner: 'bottom-right',
@@ -47,25 +46,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const backButton = document.getElementById('backButton');
 
         if (startButton) {
-                // FIX: play SFX on click, not on load
                 startButton.addEventListener('click', () => {
-                        player.playSfx('StartClick.wav');
+                        if (player) player.playSfx('StartClick.wav');
                         startGameFromJS();
                 });
-                debugLog('Start button bound', 'success');
-        } else {
-                debugLog('Start button not found!', 'error');
         }
 
         if (backButton) {
                 backButton.addEventListener('click', navigateBack);
-                debugLog('Back button bound', 'success');
         }
 
-        // Listen for messages from C#
         window.addEventListener('HybridWebViewMessageReceived', function (e) {
                 const message = e.detail.message;
-                debugLog(`Received from C#: ${message}`, 'info');
 
                 const parts = message.split('|');
                 if (parts.length >= 2) {
@@ -78,7 +70,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                         if (topLabel) {
                                                 topLabel.textContent = initData.DungeonName;
                                         }
-                                        debugLog(`Game initialized: ${initData.DungeonName}`, 'success');
                                         break;
                                 }
                                 case 'startGame': {
@@ -93,52 +84,50 @@ document.addEventListener('DOMContentLoaded', function () {
                                         gameState.showStart = false;
                                         const startOverlay = document.getElementById('startOverlay');
                                         if (startOverlay) startOverlay.style.display = 'none';
-                                        debugLog('Game started', 'success');
                                         break;
                                 }
                                 case 'fightEvent': {
                                         const event = JSON.parse(data);
-                                        handleFightEvent(event);
+                                        queueEvent(event);
                                         break;
                                 }
                                 case 'gameOver': {
                                         const result = JSON.parse(data);
-                                        let rewardText = "";
-                                        if (result.Success) {
-                                                rewardText = result.Reward;
-                                        }
-                                        debugLog(`Game over received. Success = ${result.Success}`, 'info');
-                                        // FIX: actually show end screen
-                                        showEndScreen(result, rewardText);
+                                        let rewardText = result.Success ? result.Reward : "";
+
+                                        queueEvent({
+                                                event_name: 'gameOver',
+                                                values: { result: result, rewardText: rewardText }
+                                        });
                                         break;
                                 }
-                        }
-                } else {
-                        debugLog(`Received simple message from C#: ${message}`, 'info');
-                        if (message === 'navigateBack') {
-                                debugLog("JS received navigateBack command (simple)", 'info');
                         }
                 }
         });
 });
 
-function waitForAnimations(callback) {
-        const check = () => {
-            const now = Date.now();
-            let maxPending = 0;
-            for (const time of Object.values(pendingAnimations)) {
-                    if (time > maxPending) maxPending = time;
-            }
-            if (maxPending <= now) {
-                    debugLog('All animations completed, proceeding with callback', 'debug');
-                    callback();
-            } else {
-                    debugLog(`Still pending animations until ${maxPending}, checking again in 50ms`, 'debug');
-                    setTimeout(check, 50);
-            }
-        };
-        check();
+function queueEvent(event) {
+        eventQueue.push(event);
+        // debugLog(`Event queued: ${event.event_name} (Queue size: ${eventQueue.length})`, 'debug');
+        processNextEvent();
 }
+
+async function processNextEvent() {
+        if (isProcessingEvent || eventQueue.length === 0) return;
+
+        isProcessingEvent = true;
+        const event = eventQueue.shift();
+
+        await handleFightEvent(event);
+
+        isProcessingEvent = false;
+
+        if (eventQueue.length > 0) {
+                setTimeout(() => processNextEvent(), 300);
+        }
+}
+
+// ========== RENDER FUNCTIONS ==========
 
 function renderEnemyCards() {
         const container = document.getElementById('enemyDeck');
@@ -146,7 +135,6 @@ function renderEnemyCards() {
 
         container.innerHTML = '';
 
-        // FIX: guard against null dungeon
         if (gameState.dungeon && gameState.dungeon.HasBoss) {
                 renderBossCard();
         }
@@ -157,10 +145,8 @@ function renderBossCard() {
         if (gameState.enemyCard && gameState.enemyCard.IsBoss) return;
         if (!gameState.dungeon) return;
 
-        // FIX: use PascalCase Boss to match HasBoss
         const boss = gameState.dungeon.Boss || gameState.dungeon.boss;
         if (!boss) {
-                debugLog('Dungeon has HasBoss but Boss is missing', 'warn');
                 return;
         }
 
@@ -206,31 +192,30 @@ function createCardElement(card, isBoss, isEnemy) {
 
         const placeholderClass = isEnemy ? 'enemy-placeholder' : 'player-placeholder';
         cardDiv.innerHTML = `
-<div class="card-inner">
-    <div class="card-name">${card.Name}</div>
-    <div class="card-image-placeholder ${placeholderClass}"></div>
-    <div class="stats">
-        <div class="stat damage">
-            <span>⚔️</span> ${card.Damage}
+        <div class="card-inner">
+            <div class="card-name">${card.Name}</div>
+            <div class="card-image-placeholder ${placeholderClass}"></div>
+            <div class="stats">
+                <div class="stat damage">
+                    <span>⚔️</span> ${card.Damage}
+                </div>
+                <div class="stat health">
+                    <span>❤️</span> ${card.Health}
+                </div>
+            </div>
         </div>
-        <div class="stat health">
-            <span>❤️</span> ${card.Health}
-        </div>
-    </div>
-</div>
-`;
+    `;
         if (card.ElementColor) {
                 cardDiv.style.background = `linear-gradient(135deg, ${card.ElementColor} 0%, #222 100%)`;
         }
         return cardDiv;
 }
 
+// ========== GAME FLOW FUNCTIONS ==========
+
 function startGameFromJS() {
-        debugLog('Start button clicked, sending request to C#', 'info');
         if (window.HybridWebView && window.HybridWebView.SendRawMessage) {
                 window.HybridWebView.SendRawMessage('startGameRequested');
-        } else {
-                debugLog('HybridWebView not available', 'error');
         }
 }
 
@@ -241,7 +226,15 @@ function addHistoryEntry(text) {
         const entry = document.createElement('div');
         entry.className = 'history-entry';
         entry.textContent = text;
+
+        entry.style.opacity = '0';
         historyContainer.appendChild(entry);
+
+        requestAnimationFrame(() => {
+                entry.style.transition = 'opacity 0.3s ease-in';
+                entry.style.opacity = '1';
+        });
+
         historyContainer.scrollTop = historyContainer.scrollHeight;
 }
 
@@ -249,15 +242,15 @@ function updateRoundText(round) {
         const roundText = document.getElementById('roundText');
         if (roundText) {
                 roundText.textContent = `${round}. kör`;
+                roundText.classList.add('pulse-animation');
+                setTimeout(() => roundText.classList.remove('pulse-animation'), 600);
         }
 }
 
-// Megbízható, CSS alapú damage popup animáció (unchanged)
 function showDamageLabel(damage, isPlayer) {
         const label = document.getElementById('damagePopupLabel');
         if (!label) return;
 
-        // Használjuk a támadó színét a sebzéshez (pl. kazamata támad = piros, játékos támad = arany)
         label.style.color = isPlayer ? 'var(--accent-red)' : 'var(--accent-gold)';
         label.textContent = `-${damage}`;
 
@@ -271,7 +264,7 @@ function showDamageLabel(damage, isPlayer) {
         setTimeout(() => {
                 label.style.display = 'none';
                 label.classList.remove('animate-damage-popup');
-        }, 1000);
+        }, 1200);
 }
 
 function showEndScreen(result, rewardText = "") {
@@ -291,7 +284,7 @@ function showEndScreen(result, rewardText = "") {
         if (result.Success) {
                 if (endText) {
                         endText.textContent = 'Nyertél!';
-                        endText.style.color = ''; // CSS gradient handles color
+                        endText.style.color = '';
                 }
                 if (endReward) {
                         endReward.textContent = rewardText;
@@ -299,7 +292,7 @@ function showEndScreen(result, rewardText = "") {
         } else {
                 if (endText) {
                         endText.textContent = 'Vesztettél!';
-                        endText.style.color = 'var(--accent-red)'; // Fallback/consistency
+                        endText.style.color = 'var(--accent-red)';
                 }
                 if (endReward) {
                         endReward.textContent = '';
@@ -308,7 +301,6 @@ function showEndScreen(result, rewardText = "") {
 }
 
 function navigateBack() {
-        debugLog('Back button clicked, sending request to C#', 'info');
         if (window.HybridWebView && window.HybridWebView.SendRawMessage) {
                 window.HybridWebView.SendRawMessage('navigateBack');
         }
@@ -319,7 +311,6 @@ function updateArenaCard(elementId, card, isBoss, isEnemy) {
         if (!arenaCard || !card) return;
         arenaCard.style.display = 'flex';
 
-        // Clean animation classes before update to reset transforms/opacity
         arenaCard.classList.remove('attack-left', 'attack-right', 'damage-shake', 'death-fade');
 
         const healthEl = isEnemy ?
@@ -348,130 +339,242 @@ function updateArenaCard(elementId, card, isBoss, isEnemy) {
         }
 }
 
-// Helper for delayed updates (handles pending anims + draw)
-function delayedUpdate(elementId, updateFn, drawId, historyFn, renderFn, baseDelay = 0) {
-        const now = Date.now();
-        const pendingTime = pendingAnimations[elementId] || 0;
-        const actualDelay = Math.max(baseDelay, pendingTime > now ? pendingTime - now : 0);
-        debugLog(`delayedUpdate for ${elementId}: pendingTime=${pendingTime}, now=${now}, actualDelay=${actualDelay}ms`, 'debug');
+// ========== EVENT HANDLERS WITH PROPER TIMING ==========
 
-        setTimeout(() => {
-                debugLog(`delayedUpdate timeout fired for ${elementId} after ${actualDelay}ms`, 'debug');
-                updateFn();
-                if (window.animateDraw && drawId) {
-                        const el = document.getElementById(drawId);
-                        if (el) {
-                                debugLog(`Calling animateDraw on ${drawId}`, 'debug');
-                                el.classList.remove('attack-left', 'attack-right', 'damage-shake', 'death-fade');
-                                window.animateDraw(drawId);
-                                const drawEndTime = Date.now() + 1000;
-                                pendingAnimations[drawId] = drawEndTime;
-                                debugLog(`Set pending draw anim end for ${drawId}: ${drawEndTime}`, 'debug');
-                                setTimeout(() => {
-                                        delete pendingAnimations[drawId];
-                                        debugLog(`Cleared pending draw anim for ${drawId}`, 'debug');
-                                }, 1000);
-                        } else {
-                                debugLog(`Element ${drawId} not found for animateDraw`, 'warn');
+async function handleFightEvent(event) {
+        switch (event.event_name) {
+                case "round":
+                        updateRoundText(event.values.round);
+                        addHistoryEntry(`${event.values.round}. Kör`);
+                        await sleep(600); // Reduced from 800
+                        notifyBackend();
+                        break;
+
+                case "round_over":
+                        addHistoryEntry(`${event.values.round}. kör vége`);
+                        await sleep(400); // Reduced from 600
+                        notifyBackend();
+                        break;
+
+                case "result":
+                        await sleep(200); // Reduced from 400
+                        notifyBackend();
+                        break;
+
+                case "game:select":
+                        gameState.enemyCard = event.values.card;
+                        const isBoss = event.values.isBoss || false;
+                        player.playSfx('EnemySelect.wav');
+                        updateArenaCard('arenaEnemyCard', gameState.enemyCard, isBoss, true);
+
+                        if (window.animateDraw) {
+                                window.animateDraw('arenaEnemyCard');
                         }
-                }
-                if (historyFn) {
-                        debugLog(`Calling historyFn for ${elementId}`, 'debug');
-                        historyFn();
-                }
-                if (renderFn) {
-                        debugLog(`Calling renderFn for ${elementId}`, 'debug');
-                        renderFn();
-                }
-                debugLog(`delayedUpdate completed for ${elementId}`, 'debug');
-        }, actualDelay);
+
+                        addHistoryEntry(`Kazamata kijátszotta: ${gameState.enemyCard.Name}`);
+                        renderEnemyCards();
+
+                        await sleep(1000); // Reduced from 1200
+                        notifyBackend();
+                        break;
+
+                case "player:select":
+                        gameState.currentCard = event.values.card;
+                        player.playSfx('PlayerSelect.wav');
+                        updateArenaCard('arenaPlayerCard', gameState.currentCard, false, false);
+
+                        if (window.animateDraw) {
+                                window.animateDraw('arenaPlayerCard');
+                        }
+
+                        addHistoryEntry(`Játékos kijátszotta: ${gameState.currentCard.Name}`);
+                        renderPlayerCards();
+
+                        await sleep(1000); // Reduced from 1200
+                        notifyBackend();
+                        break;
+
+                case "game:attack":
+                        if (!gameState.enemyCard) {
+                                notifyBackend();
+                                break;
+                        }
+                        player.playSfx('TakeDamage.mp3');
+                        await handleAttack(
+                                'arenaEnemyCard',
+                                'arenaPlayerCard',
+                                'attack-right',
+                                event.values.damage,
+                                event.values.card,
+                                `Kazamata(${gameState.enemyCard.Name}) támad: ${event.values.damage} a ${event.values.card.Name}(Játékos), élete maradt: ${event.values.card.Health}`,
+                                false,
+                                gameState.enemyCard
+                        );
+                        break;
+
+                case "player:attack":
+                        if (!gameState.currentCard) {
+                                notifyBackend();
+                                break;
+                        }
+
+                        if (!event.values.enemy) {
+                                notifyBackend();
+                                break;
+                        }
+                        player.playSfx('TakeDamage.mp3');
+                        await handleAttack(
+                                'arenaPlayerCard',
+                                'arenaEnemyCard',
+                                'attack-left',
+                                event.values.damage,
+                                event.values.enemy,
+                                `Játékos(${gameState.currentCard.Name}) támad: ${event.values.damage} a ${event.values.enemy.Name}(Kazamata), élete maradt: ${event.values.enemy.Health}`,
+                                true,
+                                gameState.currentCard
+                        );
+                        break;
+
+                case "gameOver":
+                        await sleep(1000); // Reduced from 1500
+                        showEndScreen(event.values.result, event.values.rewardText);
+                        break;
+
+                default:
+                        notifyBackend();
+        }
 }
 
-// Helper for delayed attacks to avoid overlap with prior damage-shake
-function delayedAttack(attackerId, targetId, attackClass, damage, targetCard, historyText, isPlayerAttack, baseDelay = 0) {
-        const now = Date.now();
-        const pendingTime = pendingAnimations[attackerId] || 0;
-        const actualDelay = Math.max(baseDelay, pendingTime > now ? pendingTime - now : 0);
-        debugLog(`delayedAttack for ${attackerId}: pendingTime=${pendingTime}, now=${now}, actualDelay=${actualDelay}ms`, 'debug');
+async function handleAttack(attackerId, targetId, attackClass, damage, targetCard, historyText, isPlayerAttack, attackerCard) {
+        // Guard against null values
+        if (!targetCard) {
+                notifyBackend();
+                return;
+        }
+
+        if (!attackerCard) {
+                notifyBackend();
+                return;
+        }
 
         const isLethal = targetCard.Health <= 0;
 
-        setTimeout(() => {
-                debugLog(`delayedAttack timeout fired for ${attackerId} after ${actualDelay}ms`, 'debug');
+        const healthElId = targetId === 'arenaEnemyCard' ? 'enemyHealth' : 'playerHealth';
+        const healthEl = document.getElementById(healthElId);
+        if (healthEl) {
+                healthEl.textContent = targetCard.Health;
+        }
 
-                const healthElId = targetId === 'arenaEnemyCard' ? 'enemyHealth' : 'playerHealth';
-                const healthEl = document.getElementById(healthElId);
-                if (healthEl) {
-                        healthEl.textContent = targetCard.Health;
-                }
-                addHistoryEntry(historyText);
+        addHistoryEntry(historyText);
 
-                debugLog(`Triggering ${attackClass} on ${attackerId}`, 'debug');
-                triggerAnimation(attackerId, attackClass);
+        // Attack animation
+        const attacker = document.getElementById(attackerId);
+        if (attacker) {
+                attacker.classList.add(attackClass);
+                await sleep(600);
+                attacker.classList.remove(attackClass);
+        }
 
-                let attackerColor = null;
-                if (isPlayerAttack) {
-                        attackerColor = gameState.currentCard ? gameState.currentCard.ElementColor : null;
-                } else {
-                        attackerColor = gameState.enemyCard ? gameState.enemyCard.ElementColor : null;
-                }
+        // Elemental effects and damage
+        if (window.playElementalAttack && attackerCard.ElementColor) {
+                if (isLethal && window.playElementalFinisher) {
+                        window.playElementalFinisher(attackerId, targetId, attackerCard.ElementColor);
 
-                if (window.playElementalAttack && attackerColor) {
-                        debugLog(`Playing Elemental Attack: ${attackerColor}`, 'info');
-
-                        if (isLethal && window.playElementalFinisher) {
-                                debugLog(`Triggering FINISHER for ${attackerColor}`, 'info');
-                                const elementType = getElementTypeFromColor(attackerColor);
-                                const finisherDurations = {
-                                        'FIRE': 1500,
-                                        'WATER': 1700,
-                                        'EARTH': 1300,
-                                        'AIR': 1500,
-                                        'NONE': 1000
-                                };
-                                const finisherDuration = (finisherDurations[elementType] || 1000) + 200;
-                                const finisherEndTime = Date.now() + finisherDuration;
-                                pendingAnimations['finisher'] = Math.max(pendingAnimations['finisher'] || 0, finisherEndTime);
-                                debugLog(`Set pending finisher end for ${elementType}: ${finisherEndTime} (${finisherDuration}ms)`, 'debug');
+                        const target = document.getElementById(targetId);
+                        if (target) {
+                                // Add damage shake during finisher
                                 setTimeout(() => {
-                                        delete pendingAnimations['finisher'];
-                                        debugLog(`Cleared pending finisher for ${elementType}`, 'debug');
-                                }, finisherDuration);
+                                        target.classList.add('damage-shake');
+                                        showDamageLabel(damage, !isPlayerAttack);
+                                }, 200);
 
-                                window.playElementalFinisher(attackerId, targetId, attackerColor);
+                                setTimeout(() => {
+                                        target.classList.remove('damage-shake');
+                                }, 800);
+                        }
+
+                        // Wait for finisher to complete
+                        await sleep(2000);
+
+                        // Death fade after finisher
+                        if (target) {
+                                target.classList.add('death-fade');
+                                await sleep(800);
+                        }
+
+                        const deathText = targetId === 'arenaEnemyCard'
+                                ? `${targetCard.Name}(Kazamata) legyőzve!`
+                                : `${targetCard.Name}(Játékos) kártya legyőzve!`;
+                        addHistoryEntry(deathText);
+
+                        // Extra pause after death
+                        await sleep(500);
+
+                } else {
+                        // NON-LETHAL HIT - Regular attack
+                        window.playElementalAttack(attackerId, targetId, attackerCard.ElementColor);
+                        await sleep(400);
+
+                        const target = document.getElementById(targetId);
+                        if (target) {
+                                target.classList.add('damage-shake');
+                                showDamageLabel(damage, !isPlayerAttack);
+                                await sleep(600);
+                                target.classList.remove('damage-shake');
+                        }
+
+                        // Check if this attack killed them (Health reached 0 but wasn't lethal before)
+                        if (targetCard.Health <= 0 && target) {
+                                await sleep(300);
+                                target.classList.add('death-fade');
+                                await sleep(800);
 
                                 const deathText = targetId === 'arenaEnemyCard'
                                         ? `${targetCard.Name}(Kazamata) legyőzve!`
-                                        : `${gameState.currentCard ? gameState.currentCard.Name : targetCard.Name}(Játékos) kártya legyőzve!`;
+                                        : `${targetCard.Name}(Játékos) kártya legyőzve!`;
                                 addHistoryEntry(deathText);
 
-                                debugLog(`Skipping damage-shake and death-fade for lethal finisher on ${targetId}`, 'debug');
-                        } else {
-                                window.playElementalAttack(attackerId, targetId, attackerColor);
+                                await sleep(500);
                         }
                 }
+        } else {
+                await sleep(400);
 
-                if (!isLethal) {
-                        setTimeout(() => {
-                                debugLog(`Triggering damage-shake on ${targetId} after 250ms`, 'debug');
-                                triggerAnimation(targetId, 'damage-shake');
-                                showDamageLabel(damage, !isPlayerAttack);
-
-                                if (targetCard.Health <= 0) {
-                                        setTimeout(() => {
-                                                debugLog(`Triggering death-fade on ${targetId} after 800ms from attack`, 'debug');
-                                                triggerAnimation(targetId, 'death-fade');
-                                                const deathText = targetId === 'arenaEnemyCard'
-                                                        ? `${targetCard.Name}(Kazamata) legyőzve!`
-                                                        : `${gameState.currentCard ? gameState.currentCard.Name : targetCard.Name}(Játékos) kártya legyőzve!`;
-                                                addHistoryEntry(deathText);
-                                        }, 550);
-                                }
-                        }, 250);
+                const target = document.getElementById(targetId);
+                if (target) {
+                        target.classList.add('damage-shake');
+                        showDamageLabel(damage, !isPlayerAttack);
+                        await sleep(600);
+                        target.classList.remove('damage-shake');
                 }
 
-                debugLog(`delayedAttack completed for ${attackerId}`, 'debug');
-        }, actualDelay);
+                if (isLethal && target) {
+                        await sleep(300);
+                        target.classList.add('death-fade');
+                        await sleep(800);
+
+                        const deathText = targetId === 'arenaEnemyCard'
+                                ? `${targetCard.Name}(Kazamata) legyőzve!`
+                                : `${targetCard.Name}(Játékos) kártya legyőzve!`;
+                        addHistoryEntry(deathText);
+
+                        await sleep(500);
+                }
+        }
+
+        // Final pause before notifying backend
+        await sleep(400);
+        notifyBackend();
+}
+
+function notifyBackend() {
+        if (window.HybridWebView && window.HybridWebView.SendRawMessage) {
+                window.HybridWebView.SendRawMessage('resumeGame');
+        }
+}
+
+function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function getElementTypeFromColor(hexColor) {
@@ -493,185 +596,55 @@ function getElementTypeFromColor(hexColor) {
         return 'NONE';
 }
 
-function handleFightEvent(event) {
-        debugLog(`Handling fight event: ${event.event_name} at ${Date.now()}`, 'info');
-        if (event.event_name === "round") {
-                updateRoundText(event.values.round);
-                addHistoryEntry(`${event.values.round}. Kör`);
-                notifyBackendWhenReady();
-        } else if (event.event_name === "round_over") {
-                addHistoryEntry(`${event.values.round}. kör vége`);
-                notifyBackendWhenReady();
-        } else if (event.event_name === "result") {
-                debugLog(`Fight result: ${event.values.result}`, 'info');
-                notifyBackendWhenReady();
-        } else if (event.event_name === "game:select") {
-                debugLog(`Received game:select, setting up delay for arenaEnemyCard`, 'debug');
-                gameState.enemyCard = event.values.card;
-                const isBoss = event.values.isBoss || false;
-                const updateFn = () => {
-                        debugLog(`Updating arenaEnemyCard for ${gameState.enemyCard.Name}`, 'debug');
-                        updateArenaCard('arenaEnemyCard', gameState.enemyCard, isBoss, true);
-                };
-                delayedUpdate(
-                        'arenaEnemyCard',
-                        updateFn,
-                        'arenaEnemyCard',
-                        () => addHistoryEntry(`Kazamata kijátszotta: ${gameState.enemyCard.Name}`),
-                        () => renderEnemyCards()
-                );
-                notifyBackendWhenReady();
-        } else if (event.event_name === "player:select") {
-                debugLog(`Received player:select, setting up delay for arenaPlayerCard`, 'debug');
-                gameState.currentCard = event.values.card;
-                const updateFn = () => {
-                        debugLog(`Updating arenaPlayerCard for ${gameState.currentCard.Name}`, 'debug');
-                        updateArenaCard('arenaPlayerCard', gameState.currentCard, false, false);
-                };
-                delayedUpdate(
-                        'arenaPlayerCard',
-                        updateFn,
-                        'arenaPlayerCard',
-                        () => addHistoryEntry(`Játékos kijátszotta: ${gameState.currentCard.Name}`),
-                        () => renderPlayerCards()
-                );
-                notifyBackendWhenReady();
-        } else if (event.event_name === "game:attack") {
-                debugLog(`Received game:attack, damage=${event.values.damage}`, 'debug');
-                const damage = event.values.damage;
-                const targetCard = event.values.card;
-                const historyText = `Kazamata(${gameState.enemyCard.Name}) támad: ${damage} a ${targetCard.Name}(Játékos), élete maradt: ${targetCard.Health}`;
-
-                delayedAttack('arenaEnemyCard', 'arenaPlayerCard', 'attack-right', damage, targetCard, historyText, false);
-        } else if (event.event_name === "player:attack") {
-                debugLog(`Received player:attack, damage=${event.values.damage}`, 'debug');
-                const damage = event.values.damage;
-                const targetCard = event.values.enemy;
-                const historyText = `Játékos(${gameState.currentCard.Name}) támad: ${damage} a ${targetCard.Name}(Kazamata), élete maradt: ${targetCard.Health}`;
-
-                delayedAttack('arenaPlayerCard', 'arenaEnemyCard', 'attack-left', damage, targetCard, historyText, true);
-        }
-}
-
-function notifyBackendWhenReady() {
-        waitForAnimations(() => {
-                debugLog('Sending resumeGame to backend', 'info');
-                const time = setTimeout(() => {
-                        if (window.HybridWebView && window.HybridWebView.SendRawMessage) {
-                                window.HybridWebView.SendRawMessage('resumeGame');
-                        } else {
-                                debugLog('HybridWebView not available for resumeGame', 'error');
-                        }
-                        clearTimeout(time);
-                }, 600);
-        });
-}
-
-function triggerAnimation(elementId, animationClass) {
-        const element = document.getElementById(elementId);
-        if (!element) {
-                debugLog(`Element ${elementId} not found for ${animationClass}`, 'warn');
-                return;
-        }
-
-        const durations = {
-                'attack-right': 500,
-                'attack-left': 500,
-                'damage-shake': 500,
-                'death-fade': 800
-        };
-        const duration = durations[animationClass] || 1000;
-
-        debugLog(`Starting ${animationClass} on ${elementId} at ${Date.now()} (duration: ${duration}ms)`, 'debug');
-
-        element.classList.remove(animationClass);
-        void element.offsetWidth;
-
-        element.classList.add(animationClass);
-
-        const endTime = Date.now() + duration;
-        pendingAnimations[elementId] = Math.max(pendingAnimations[elementId] || 0, endTime);
-        debugLog(`Set pending end for ${elementId} (${animationClass}): ${endTime} (max with existing)`, 'debug');
-
-        if (animationClass !== 'death-fade') {
-                setTimeout(() => {
-                        const currentEl = document.getElementById(elementId);
-                        if (currentEl === element) {
-                                element.classList.remove(animationClass);
-                                debugLog(`Ended ${animationClass} on ${elementId} at ${Date.now()}`, 'debug');
-                        } else {
-                                debugLog(`Element ${elementId} changed during ${animationClass}, skipping cleanup`, 'warn');
-                        }
-                        if (pendingAnimations[elementId] <= Date.now()) {
-                                delete pendingAnimations[elementId];
-                                debugLog(`Cleared pending for ${elementId}`, 'debug');
-                        }
-                }, duration);
-        } else {
-                setTimeout(() => {
-                        if (pendingAnimations[elementId] <= Date.now()) {
-                                delete pendingAnimations[elementId];
-                                debugLog(`Cleared pending for ${elementId} (death-fade kept for forwards)`, 'debug');
-                        }
-                }, duration);
-        }
-}
-
-// ========== POWERCARD FUNCTIONS ==========
+// ========== POWERCARD FUNCTIONS WITH SLOWER ANIMATION ==========
 
 async function rollPowercard(powercard, isPlayer) {
         if (isRolling) return;
         isRolling = true;
 
-        // More accurate block: cycleCount * cycleDelay + reveal delay
-        const cycleCount = 20;
-        const cycleDelay = 300;
-        const revealDelay = 500;
-        const totalDuration = cycleCount * cycleDelay + revealDelay;
+        const cycleCount = 8;
+        const cycleDelay = 150;
+        const revealDelay = 1000;
 
-        pendingAnimations['powercardRoll'] = Date.now() + totalDuration;
-        debugLog(`Rolling powercard: ${powercard.name} for ${isPlayer ? 'player' : 'enemy'} (totalDuration=${totalDuration}ms)`, 'info');
 
         const overlay = document.getElementById('powercardRollOverlay');
         const rollingCard = document.getElementById('rollingPowercard');
         if (!overlay || !rollingCard) {
-                debugLog('Powercard roll elements missing in DOM', 'error');
                 isRolling = false;
-                delete pendingAnimations['powercardRoll'];
                 return;
         }
 
         overlay.style.display = 'flex';
-
         rollingCard.className = 'rolling-powercard cycling';
         rollingCard.classList.add(isPlayer ? 'player-roll' : 'enemy-roll');
 
         for (let i = 0; i < cycleCount; i++) {
                 const randomCard = await window.HybridWebView.InvokeDotNet("RollForPowercard");
                 if (randomCard) {
-                    updateRollingCard(randomCard);
+                        updateRollingCard(randomCard);
                 }
-                await new Promise(resolve => setTimeout(resolve, cycleDelay));
+                await sleep(cycleDelay);
         }
 
         rollingCard.classList.remove('cycling');
         rollingCard.classList.add('revealed');
         updateRollingCard(powercard);
 
-        debugLog(`Revealed powercard: ${powercard.name}`, 'success');
 
-        await new Promise(resolve => setTimeout(resolve, revealDelay));
+        await sleep(revealDelay);
 
         addPowercardToContainer(powercard, isPlayer);
 
+        overlay.style.transition = 'opacity 0.3s ease-out';
+        overlay.style.opacity = '0';
+        await sleep(300);
+
         overlay.style.display = 'none';
+        overlay.style.opacity = '1';
         rollingCard.classList.remove('revealed', 'enemy-roll', 'player-roll');
 
         isRolling = false;
-
-        delete pendingAnimations['powercardRoll'];
-        debugLog('Powercard roll finished, cleared pending animation', 'debug');
-        notifyBackendWhenReady();
+        notifyBackend();
 }
 
 window.rollPowercard = rollPowercard;
@@ -701,13 +674,14 @@ function addPowercardToContainer(powercard, isPlayer) {
         const containerId = isPlayer ? 'playerPowercards' : 'enemyPowercards';
         const container = document.getElementById(containerId);
         if (!container) {
-                debugLog(`Powercard container ${containerId} not found`, 'error');
                 return;
         }
 
         const powercardEl = document.createElement('div');
         powercardEl.className = `powercard ${isPlayer ? 'player-card' : ''}`;
         powercardEl.dataset.powercardId = String(Date.now());
+        powercardEl.style.opacity = '0';
+        powercardEl.style.transform = 'scale(0.8)';
 
         const durationHtml = powercard.duration > 0
                 ? `<div class="powercard-duration">${powercard.duration}</div>`
@@ -722,6 +696,12 @@ function addPowercardToContainer(powercard, isPlayer) {
 
         container.appendChild(powercardEl);
 
+        requestAnimationFrame(() => {
+                powercardEl.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                powercardEl.style.opacity = '1';
+                powercardEl.style.transform = 'scale(1)';
+        });
+
         const powercardData = { ...powercard, element: powercardEl, id: powercardEl.dataset.powercardId };
         if (isPlayer) {
                 gameState.playerPowercards.push(powercardData);
@@ -729,7 +709,6 @@ function addPowercardToContainer(powercard, isPlayer) {
                 gameState.enemyPowercards.push(powercardData);
         }
 
-        debugLog(`Added powercard ${powercard.name} to ${isPlayer ? 'player' : 'enemy'} container`, 'success');
 
         if (powercard.duration > 0) {
                 startPowercardCountdown(powercardEl, powercard.duration, isPlayer);
@@ -745,17 +724,22 @@ function startPowercardCountdown(element, initialDuration, isPlayer) {
                 const durationEl = element.querySelector('.powercard-duration');
                 if (durationEl) {
                         durationEl.textContent = duration;
+
+                        durationEl.classList.add('pulse');
+                        setTimeout(() => durationEl.classList.remove('pulse'), 300);
                 }
 
                 if (duration <= 0) {
                         clearInterval(countdown);
                         removePowercard(element, isPlayer);
                 }
-        }, 1000); // per second for testing
+        }, 1000);
 }
 
 function removePowercard(element, isPlayer) {
-        element.style.animation = 'powercardSlideOut 0.5s ease-in forwards';
+        element.style.transition = 'all 0.5s ease-in';
+        element.style.opacity = '0';
+        element.style.transform = 'scale(0.8) translateY(20px)';
 
         setTimeout(() => {
                 const powercardId = element.dataset.powercardId;
@@ -766,12 +750,9 @@ function removePowercard(element, isPlayer) {
                 } else {
                         gameState.enemyPowercards = gameState.enemyPowercards.filter(p => p.id !== powercardId);
                 }
-
-                debugLog(`Removed expired powercard from ${isPlayer ? 'player' : 'enemy'}`, 'info');
         }, 500);
 }
 
-// Backend hook function - call this to update a powercard's duration
 function updatePowercardDuration(powercardId, newDuration, isPlayer) {
         const idStr = String(powercardId);
         const cards = isPlayer ? gameState.playerPowercards : gameState.enemyPowercards;

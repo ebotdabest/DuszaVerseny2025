@@ -283,6 +283,12 @@ public static class MauiProgram
 
         engine = new GameEngine(templates, dungeons, inventory, 0);
         deckBuilder.engine = engine;
+
+        // Populate power cards
+        engine.powerCards.Add(new HealPower(0, 5, "Kis Gyógyital", 1));
+        engine.powerCards.Add(new ShieldPower(2, 0, "Pajzs", 1));
+        engine.powerCards.Add(new DamagePower(0, 5, "Tűzgolyó", 1));
+        engine.powerCards.Add(new StrengthPower(2, 2, "Erő Ital", 1));
     }
 
     public static int currentSaveId;
