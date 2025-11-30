@@ -248,7 +248,7 @@ namespace DuszaVerseny2025
                     Health = editor.cards[i].Health,
                     ElementColor = editor.cards[i].ElementColor.ToHex(),
                     IsOwned = true,
-                    Index = i  // ADD: Store the actual index in editor.cards
+                    Index = i
                 });
             }
 
@@ -270,7 +270,7 @@ namespace DuszaVerseny2025
                     Health = editor.cards[i].Health,
                     ElementColor = editor.cards[i].ElementColor.ToHex(),
                     IsOwned = true,
-                    Index = i  // ADD: Store the actual index in editor.cards
+                    Index = i
                 });
             }
 
